@@ -7,6 +7,9 @@ public class FeedReader
 {
     private static readonly HttpClient HttpClient = new();
 
+    private static readonly XNamespace Atom =
+        "http://www.w3.org/2005/Atom";
+
     public async Task<List<FeedItem>> ReadAsync(string feedUrl)
     {
         using HttpResponseMessage response =
@@ -22,21 +25,92 @@ public class FeedReader
             LoadOptions.None,
             CancellationToken.None);
 
-        List<FeedItem> items = [];
+        XElement? root = document.Root;
 
-        foreach (XElement element in document.Descendants("item"))
+        if (root is null)
         {
-            FeedItem item = new()
-            {
-                Title = (string?)element.Element("title") ?? "",
-                Link = (string?)element.Element("link") ?? "",
-                Description =
-                    (string?)element.Element("description") ?? ""
-            };
-
-            items.Add(item);
+            throw new InvalidDataException(
+                "The document has no root element.");
         }
 
-        return items;
+        if (root.Name.LocalName == "rss")
+        {
+            return ReadRss(root);
+        }
+
+        if (root.Name == Atom + "feed")
+        {
+            return ReadAtom(root);
+        }
+
+        throw new InvalidDataException(
+            $"Unsupported feed format: {root.Name}");
+    }
+
+    private static List<FeedItem> ReadRss(XElement root)
+    {
+        XElement? channel = root
+            .Elements()
+            .FirstOrDefault(element =>
+                element.Name.LocalName == "channel");
+
+        if (channel is null)
+        {
+            throw new InvalidDataException(
+                "The RSS document has no channel element.");
+        }
+
+        return channel
+            .Elements()
+            .Where(element => element.Name.LocalName == "item")
+            .Select(element => new FeedItem
+            {
+                Title = GetElementValue(element, "title"),
+                Link = GetElementValue(element, "link"),
+                Description = GetElementValue(
+                    element, "description")
+            })
+            .ToList();
+    }
+
+    private static List<FeedItem> ReadAtom(XElement root)
+    {
+        return root
+            .Elements(Atom + "entry")
+            .Select(element => new FeedItem
+            {
+                Title = (string?)element.Element(Atom + "title")
+                    ?? "",
+                Link = GetAtomLink(element),
+                Description =
+                    (string?)element.Element(Atom + "summary")
+                    ?? (string?)element.Element(Atom + "content")
+                    ?? ""
+            })
+            .ToList();
+    }
+
+
+    private static string GetElementValue(
+        XElement parent, string name)
+    {
+        XElement? element = parent
+            .Elements()
+            .FirstOrDefault(element =>
+                element.Name.LocalName == name);
+
+        return (string?)element ?? "";
+    }
+
+
+    private static string GetAtomLink(XElement entry)
+    {
+        XElement? link = entry
+            .Elements(Atom + "link")
+            .FirstOrDefault(element =>
+                (string?)element.Attribute("rel") is null
+                or "alternate");
+
+        return (string?)link?.Attribute("href") ?? "";
     }
 }

@@ -7,4 +7,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\RssReader.Core\RssReader.Core.csproj" />
+  </ItemGroup>
+
 </Project>

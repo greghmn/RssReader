@@ -1,10 +1,5 @@
-﻿Console.WriteLine("RSS Reader");
-Console.WriteLine("My first .NET project is running!");
+﻿using RssReader.Core;
 
-Console.WriteLine();
-Console.Write("Enter your name: ");
+GreetingService greetingService = new();
 
-string? name = Console.ReadLine();
-
-Console.WriteLine($"Welcome, {name}!");
-//this is a change  
+Console.WriteLine(greetingService.GetGreeting());

@@ -1,5 +1,14 @@
-﻿using RssReader.Core;
+﻿
+using RssReader.Core;
 
-GreetingService greetingService = new();
+FeedReader reader = new();
 
-Console.WriteLine(greetingService.GetGreeting());
+List<FeedItem> items = await reader.ReadAsync(
+    "https://feeds.bbci.co.uk/news/rss.xml");
+
+foreach (FeedItem item in items)
+{
+    Console.WriteLine(item.Title);
+    Console.WriteLine(item.Link);
+    Console.WriteLine();
+}

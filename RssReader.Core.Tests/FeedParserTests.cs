@@ -66,4 +66,63 @@ public class FeedParserTests
         Assert.Throws<InvalidDataException>(
             () => FeedParser.Parse(document));
     }
+
+    [Fact]
+    public void Parse_RssItemWithoutDescription_UsesEmptyString()
+    {
+        XDocument document = XDocument.Parse("""
+        <rss version="2.0">
+          <channel>
+            <item>
+              <title>Article without description</title>
+              <link>https://example.com/article</link>
+            </item>
+          </channel>
+        </rss>
+        """);
+
+        List<FeedItem> items = FeedParser.Parse(document);
+
+        Assert.Single(items);
+        Assert.Equal("", items[0].Description);
+    }
+
+    [Fact]
+    public void Parse_AtomEntryWithSelfAndAlternateLinks_PrefersAlternate()
+    {
+        XDocument document = XDocument.Parse("""
+        <feed xmlns="http://www.w3.org/2005/Atom">
+          <title>Example Feed</title>
+          <entry>
+            <title>Example Article</title>
+            <link rel="self" href="https://example.com/api/article" />
+            <link rel="alternate" href="https://example.com/article" />
+            <summary>Example summary</summary>
+          </entry>
+        </feed>
+        """);
+
+        List<FeedItem> items = FeedParser.Parse(document);
+
+        Assert.Single(items);
+        Assert.Equal(
+            "https://example.com/article",
+            items[0].Link);
+    }
+
+    [Fact]
+    public void Parse_EmptyRssFeed_ReturnsEmptyList()
+    {
+        XDocument document = XDocument.Parse("""
+        <rss version="2.0">
+          <channel>
+            <title>Empty Feed</title>
+          </channel>
+        </rss>
+        """);
+
+        List<FeedItem> items = FeedParser.Parse(document);
+
+        Assert.Empty(items);
+    }
 }

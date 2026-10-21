@@ -3,11 +3,11 @@
 public class FeedService
 {
     private readonly SubscriptionService _subscriptionService;
-    private readonly FeedReader _feedReader;
+    private readonly IFeedReader _feedReader;
 
     public FeedService(
         SubscriptionService subscriptionService,
-        FeedReader feedReader)
+        IFeedReader feedReader)
     {
         _subscriptionService = subscriptionService;
         _feedReader = feedReader;

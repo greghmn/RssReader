@@ -3,7 +3,7 @@ using System.Xml.Linq;
 
 namespace RssReader.Core;
 
-public class FeedReader
+public class FeedReader: IFeedReader
 {
     private static readonly HttpClient HttpClient = new();
 

@@ -10,7 +10,7 @@ public class FakeFeedReader : IFeedReader
 
     //implement the interface 
 
-    public Task<List<FeedItem>> ReadAsync(string feedUrl)
+    public Task<List<FeedItem>> ReadAsync(string feedUrl, CancellationToken cancellationToken = default)
     {
         LastRequestedUrl = feedUrl;
 

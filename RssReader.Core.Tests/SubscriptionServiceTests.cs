@@ -28,6 +28,32 @@ public class SubscriptionServiceTests
         Assert.Single(subscriptions);
         Assert.Equal(subscription.Url, subscriptions[0].Url);
     }
+    
+    //Testing invalid subscription URLs 
+
+    [Theory]
+    [InlineData("google.com")]
+    [InlineData("ftp://example.com/feed.xml")]
+    [InlineData("file:///feed.xml")]
+    public async Task AddAsync_InvalidUrl_ThrowsArgumentException(
+        string url)
+    {
+        // Arrange
+        var repository = new FakeSubscriptionRepository();
+        var service = new SubscriptionService(repository);
+
+        var subscription = new FeedSubscription
+        {
+            Url = url,
+            Title = "Invalid Feed"
+        };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => service.AddAsync(subscription));
+
+        Assert.Empty(await service.GetAllAsync());
+    }
 
     [Fact]
     public async Task AddAsync_DuplicateUrl_ReturnsFalse()

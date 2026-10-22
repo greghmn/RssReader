@@ -168,17 +168,26 @@ while (true)
                     break;
                 }
 
-                bool added = await subscriptionService.AddAsync(
-                    new FeedSubscription
-                    {
-                        Url = url.Trim(),
-                        Title = title.Trim()
-                    });
+                try
+                {
+                    bool added = await subscriptionService.AddAsync(
+                        new FeedSubscription
+                        {
+                            Url = url.Trim(),
+                            Title = title.Trim()
+                        });
 
-                Console.WriteLine(
-                    added
-                        ? "Subscription added."
-                        : "That subscription already exists.");
+                    Console.WriteLine(
+                        added
+                            ? "Subscription added."
+                            : "That subscription already exists.");
+                }
+                catch (ArgumentException)
+                {
+                    Console.WriteLine(
+                        "Please enter a valid absolute HTTP or HTTPS URL, " +
+                        "such as https://example.com/feed.xml.");
+                }
 
                 break;
             }

@@ -1,4 +1,6 @@
 ﻿
+using System.Transactions;
+
 namespace RssReader.Core;
 
 public class SubscriptionService
@@ -17,6 +19,24 @@ public class SubscriptionService
 
     public async Task<bool> AddAsync(FeedSubscription subscription)
     {
+        /*
+         Current order: 
+        1. Validate URL syntax and scheme
+        2. Retrieve existing subscriptions 
+        3. Check for duplicates 
+        4. Save subscription if not present already
+         */
+        if (!Uri.TryCreate(
+        subscription.Url,
+        UriKind.Absolute,
+        out Uri? feedUri)
+    || (feedUri.Scheme != Uri.UriSchemeHttp
+        && feedUri.Scheme != Uri.UriSchemeHttps))
+        {
+            throw new ArgumentException(
+                "The subscription URL must be an absolute HTTP or HTTPS URL.",
+                nameof(subscription));
+        }
         List<FeedSubscription> existingSubscriptions =
             await _repository.GetAllAsync();
 

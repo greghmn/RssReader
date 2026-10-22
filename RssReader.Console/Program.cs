@@ -18,7 +18,7 @@ await repository.InitializeAsync();
 var subscriptionService = new SubscriptionService(repository);
 
 IFeedReader feedReader = new FeedReader();
-
+//Finally, get the feed up and running.
 var feedService = new FeedService(
     subscriptionService,
     feedReader);

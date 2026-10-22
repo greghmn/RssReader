@@ -1,5 +1,6 @@
 ﻿
 using RssReader.Core;
+using Microsoft.Data.Sqlite;
 
 namespace RssReader.Core.Tests;
 
@@ -46,6 +47,8 @@ public class SqliteSubscriptionRepositoryTests
         }
         finally
         {
+            SqliteConnection.ClearAllPools();
+
             if (File.Exists(databasePath))
             {
                 File.Delete(databasePath);
@@ -85,6 +88,8 @@ public class SqliteSubscriptionRepositoryTests
         }
         finally
         {
+            SqliteConnection.ClearAllPools();
+
             if (File.Exists(databasePath))
             {
                 File.Delete(databasePath);
@@ -131,6 +136,8 @@ public class SqliteSubscriptionRepositoryTests
         }
         finally
         {
+            SqliteConnection.ClearAllPools();
+
             if (File.Exists(databasePath))
             {
                 File.Delete(databasePath);

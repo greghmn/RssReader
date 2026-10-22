@@ -258,5 +258,34 @@ public class FeedParserTests
             items[0].PublishedAt);
     }
 
+    //Harden the feed parsing
+    [Fact]
+    public void Parse_RssItemWithDublinCoreDate_ParsesPublishedAt()
+    {
+        // Arrange
+        XDocument document = XDocument.Parse("""
+        <rss version="2.0"
+             xmlns:dc="http://purl.org/dc/elements/1.1/">
+            <channel>
+                <title>Example Feed</title>
+                <item>
+                    <title>Example Article</title>
+                    <link>https://example.com/article</link>
+                    <dc:date>2024-06-10T14:30:00Z</dc:date>
+                </item>
+            </channel>
+        </rss>
+        """);
+
+        // Act
+        List<FeedItem> items = FeedParser.Parse(document);
+
+        // Assert
+        Assert.Single(items);
+        Assert.Equal(
+            DateTimeOffset.Parse("2024-06-10T14:30:00Z"),
+            items[0].PublishedAt);
+    }
+
 
 }

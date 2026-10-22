@@ -7,6 +7,8 @@ public static class FeedParser
 {
     private static readonly XNamespace Atom =
         "http://www.w3.org/2005/Atom";
+    private static readonly XNamespace DublinCore =
+    "http://purl.org/dc/elements/1.1/";
 
     public static List<FeedItem> Parse(XDocument document)
     {
@@ -40,7 +42,7 @@ public static class FeedParser
                     Link = GetElementValue(element, "link"),
                     Description =
                         GetElementValue(element, "description"),
-                    PublishedAt = ParseDate(GetElementValue(element, "pubDate"))
+                    PublishedAt = ParseDate(GetElementValue(element, "pubDate")) ?? ParseDate((string?)element.Element(DublinCore + "date") ?? "")
                 })
                 .ToList();
         }

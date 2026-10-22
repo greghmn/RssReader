@@ -6,10 +6,12 @@ namespace RssReader.Core.Tests;
 public class SubscriptionServiceTests
 {
     [Fact]
-    public void Add_ValidSubscription_AddsIt()
+    public async Task AddAsync_ValidSubscription_AddsIt()
     {
         // Arrange
-        var service = new SubscriptionService();
+        var repository = new FakeSubscriptionRepository();
+        var service = new SubscriptionService(repository);
+
         var subscription = new FeedSubscription
         {
             Url = "https://example.com/feed.xml",
@@ -17,71 +19,82 @@ public class SubscriptionServiceTests
         };
 
         // Act
-        bool result = service.Add(subscription);
+        bool result = await service.AddAsync(subscription);
+        List<FeedSubscription> subscriptions =
+            await service.GetAllAsync();
 
         // Assert
         Assert.True(result);
-        Assert.Single(service.GetAll());
-        Assert.Equal(subscription, service.GetAll()[0]);
+        Assert.Single(subscriptions);
+        Assert.Equal(subscription.Url, subscriptions[0].Url);
     }
 
     [Fact]
-    public void Add_DuplicateUrl_ReturnsFalse()
+    public async Task AddAsync_DuplicateUrl_ReturnsFalse()
     {
         // Arrange
-        var service = new SubscriptionService();
-        var subscription = new FeedSubscription
+        var repository = new FakeSubscriptionRepository();
+        var service = new SubscriptionService(repository);
+
+        await service.AddAsync(new FeedSubscription
         {
             Url = "https://example.com/feed.xml",
             Title = "Example Feed"
-        };
-
-        service.Add(subscription);
+        });
 
         // Act
-        bool result = service.Add(new FeedSubscription
+        bool result = await service.AddAsync(new FeedSubscription
         {
             Url = "https://example.com/feed.xml",
             Title = "Duplicate Feed"
         });
 
+        List<FeedSubscription> subscriptions =
+            await service.GetAllAsync();
+
         // Assert
         Assert.False(result);
-        Assert.Single(service.GetAll());
+        Assert.Single(subscriptions);
     }
 
     [Fact]
-    public void Remove_ExistingSubscription_RemovesIt()
+    public async Task RemoveAsync_ExistingSubscription_RemovesIt()
     {
         // Arrange
-        var service = new SubscriptionService();
-        var subscription = new FeedSubscription
+        var repository = new FakeSubscriptionRepository();
+        var service = new SubscriptionService(repository);
+
+        await service.AddAsync(new FeedSubscription
         {
             Url = "https://example.com/feed.xml",
             Title = "Example Feed"
-        };
-
-        service.Add(subscription);
+        });
 
         // Act
-        bool result = service.Remove(subscription.Url);
+        bool result = await service.RemoveAsync(
+            "https://example.com/feed.xml");
+
+        List<FeedSubscription> subscriptions =
+            await service.GetAllAsync();
 
         // Assert
         Assert.True(result);
-        Assert.Empty(service.GetAll());
+        Assert.Empty(subscriptions);
     }
 
     [Fact]
-    public void Remove_UnknownUrl_ReturnsFalse()
+    public async Task RemoveAsync_UnknownUrl_ReturnsFalse()
     {
         // Arrange
-        var service = new SubscriptionService();
+        var repository = new FakeSubscriptionRepository();
+        var service = new SubscriptionService(repository);
 
         // Act
-        bool result = service.Remove("https://example.com/missing.xml");
+        bool result = await service.RemoveAsync(
+            "https://example.com/missing.xml");
 
         // Assert
         Assert.False(result);
-        Assert.Empty(service.GetAll());
+        Assert.Empty(await service.GetAllAsync());
     }
 }

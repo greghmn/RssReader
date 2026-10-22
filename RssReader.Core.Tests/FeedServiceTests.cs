@@ -1,4 +1,5 @@
-﻿using RssReader.Core;
+﻿
+using RssReader.Core;
 
 namespace RssReader.Core.Tests;
 
@@ -8,12 +9,13 @@ public class FeedServiceTests
     public async Task GetItemsAsync_UnsubscribedUrl_ThrowsException()
     {
         // Arrange
-        var subscriptionService = new SubscriptionService();
-        var feedReader = new FeedReader();
+        var repository = new FakeSubscriptionRepository();
+        var subscriptionService = new SubscriptionService(repository);
+        var fakeReader = new FakeFeedReader();
 
         var feedService = new FeedService(
             subscriptionService,
-            feedReader);
+            fakeReader);
 
         // Act and Assert
         await Assert.ThrowsAsync<InvalidOperationException>(
@@ -25,29 +27,30 @@ public class FeedServiceTests
     public async Task GetItemsAsync_SubscribedUrl_ReturnsFeedItems()
     {
         // Arrange
-        var subscriptionService = new SubscriptionService();
+        var repository = new FakeSubscriptionRepository();
+        var subscriptionService = new SubscriptionService(repository);
 
-        subscriptionService.Add(new FeedSubscription
+        await subscriptionService.AddAsync(new FeedSubscription
         {
             Url = "https://example.com/feed.xml",
             Title = "Example Feed"
         });
 
         var expectedItems = new List<FeedItem>
-    {
-        new()
         {
-            Title = "First Article",
-            Link = "https://example.com/article-1",
-            Description = "The first article."
-        },
-        new()
-        {
-            Title = "Second Article",
-            Link = "https://example.com/article-2",
-            Description = "The second article."
-        }
-    };
+            new()
+            {
+                Title = "First Article",
+                Link = "https://example.com/article-1",
+                Description = "The first article."
+            },
+            new()
+            {
+                Title = "Second Article",
+                Link = "https://example.com/article-2",
+                Description = "The second article."
+            }
+        };
 
         var fakeReader = new FakeFeedReader
         {
@@ -69,5 +72,4 @@ public class FeedServiceTests
             "https://example.com/feed.xml",
             fakeReader.LastRequestedUrl);
     }
-
 }

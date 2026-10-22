@@ -1,4 +1,5 @@
-﻿namespace RssReader.Core;
+﻿
+namespace RssReader.Core;
 
 public class FeedService
 {
@@ -15,13 +16,14 @@ public class FeedService
 
     public async Task<List<FeedItem>> GetItemsAsync(string feedUrl)
     {
-        bool isSubscribed = _subscriptionService
-            .GetAll()
-            .Any(subscription =>
-                string.Equals(
-                    subscription.Url.TrimEnd('/'),
-                    feedUrl.TrimEnd('/'),
-                    StringComparison.OrdinalIgnoreCase));
+        List<FeedSubscription> subscriptions =
+            await _subscriptionService.GetAllAsync();
+
+        bool isSubscribed = subscriptions.Any(subscription =>
+            string.Equals(
+                subscription.Url.TrimEnd('/'),
+                feedUrl.TrimEnd('/'),
+                StringComparison.OrdinalIgnoreCase));
 
         if (!isSubscribed)
         {

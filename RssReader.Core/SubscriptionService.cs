@@ -3,16 +3,24 @@ namespace RssReader.Core;
 
 public class SubscriptionService
 {
-    private readonly List<FeedSubscription> _subscriptions = [];
+    private readonly ISubscriptionRepository _repository;
 
-    public IReadOnlyList<FeedSubscription> GetAll()
+    public SubscriptionService(ISubscriptionRepository repository)
     {
-        return _subscriptions.AsReadOnly();
+        _repository = repository;
     }
 
-    public bool Add(FeedSubscription subscription)
+    public async Task<List<FeedSubscription>> GetAllAsync()
     {
-        bool alreadyExists = _subscriptions.Any(existing =>
+        return await _repository.GetAllAsync();
+    }
+
+    public async Task<bool> AddAsync(FeedSubscription subscription)
+    {
+        List<FeedSubscription> existingSubscriptions =
+            await _repository.GetAllAsync();
+
+        bool alreadyExists = existingSubscriptions.Any(existing =>
             string.Equals(
                 existing.Url.TrimEnd('/'),
                 subscription.Url.TrimEnd('/'),
@@ -23,13 +31,16 @@ public class SubscriptionService
             return false;
         }
 
-        _subscriptions.Add(subscription);
+        await _repository.AddAsync(subscription);
         return true;
     }
 
-    public bool Remove(string url)
+    public async Task<bool> RemoveAsync(string url)
     {
-        FeedSubscription? subscription = _subscriptions
+        List<FeedSubscription> existingSubscriptions =
+            await _repository.GetAllAsync();
+
+        FeedSubscription? subscription = existingSubscriptions
             .FirstOrDefault(existing =>
                 string.Equals(
                     existing.Url.TrimEnd('/'),
@@ -41,7 +52,6 @@ public class SubscriptionService
             return false;
         }
 
-        _subscriptions.Remove(subscription);
-        return true;
+        return await _repository.RemoveAsync(subscription.Url);
     }
 }

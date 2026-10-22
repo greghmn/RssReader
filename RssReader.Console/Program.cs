@@ -139,12 +139,21 @@ while (true)
 
                 Console.WriteLine($"\nArticles from {selectedSubscription.Title}:\n");
 
+
                 foreach (FeedItem item in items)
                 {
                     Console.WriteLine(item.Title);
                     Console.WriteLine(item.Link);
+
+                    if (item.PublishedAt.HasValue)
+                    {
+                        Console.WriteLine(
+                            $"Published: {item.PublishedAt.Value.ToLocalTime():g}");
+                    }
+
                     Console.WriteLine();
                 }
+
 
                 break;
             }

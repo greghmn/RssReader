@@ -92,8 +92,44 @@ while (true)
                 FeedSubscription selectedSubscription =
                     subscriptions[selection - 1];
 
-                List<FeedItem> items = await feedService.GetItemsAsync(
-                    selectedSubscription.Url);
+
+                List<FeedItem> items;
+
+                try
+                {
+                    items = await feedService.GetItemsAsync(
+                        selectedSubscription.Url);
+                }
+                catch (HttpRequestException)
+                {
+                    Console.WriteLine(
+                        "Could not retrieve the feed. Check the URL and your network connection.");
+                    break;
+                }
+                catch (OperationCanceledException)
+                {
+                    Console.WriteLine(
+                        "The feed request timed out or was cancelled.");
+                    break;
+                }
+                catch (System.Xml.XmlException)
+                {
+                    Console.WriteLine(
+                        "The server response contains invalid XML.");
+                    break;
+                }
+                catch (InvalidDataException)
+                {
+                    Console.WriteLine(
+                        "The response is not a supported RSS or Atom feed.");
+                    break;
+                }
+                catch (ArgumentException)
+                {
+                    Console.WriteLine(
+                        "Please enter a valid absolute HTTP or HTTPS feed URL, such as https://example.com/feed.xml.");
+                    break;
+                }
 
                 if (items.Count == 0)
                 {

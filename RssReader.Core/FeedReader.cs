@@ -14,9 +14,20 @@ public class FeedReader : IFeedReader
         string feedUrl,
         CancellationToken cancellationToken = default)
     {
+        if (!Uri.TryCreate(
+        feedUrl,
+        UriKind.Absolute,
+        out Uri? feedUri)
+    || (feedUri.Scheme != Uri.UriSchemeHttp
+        && feedUri.Scheme != Uri.UriSchemeHttps))
+        {
+            throw new ArgumentException(
+                "The feed URL must be an absolute HTTP or HTTPS URL.",
+                nameof(feedUrl));
+        }
         using HttpResponseMessage response =
             await HttpClient.GetAsync(
-                feedUrl,
+                feedUri,
                 HttpCompletionOption.ResponseHeadersRead,
                 cancellationToken);
 

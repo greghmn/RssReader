@@ -1,5 +1,5 @@
-﻿
-using System.Xml.Linq;
+﻿using System.Xml.Linq;
+using System.Globalization;
 
 namespace RssReader.Core;
 
@@ -39,7 +39,8 @@ public static class FeedParser
                     Title = GetElementValue(element, "title"),
                     Link = GetElementValue(element, "link"),
                     Description =
-                        GetElementValue(element, "description")
+                        GetElementValue(element, "description"),
+                    PublishedAt = ParseDate(GetElementValue(element, "pubDate"))
                 })
                 .ToList();
         }
@@ -56,7 +57,13 @@ public static class FeedParser
                     Description =
                         (string?)element.Element(Atom + "summary")
                         ?? (string?)element.Element(Atom + "content")
-                        ?? ""
+                        ?? "",
+                    PublishedAt = ParseDate(
+                        (string?)element.Element(Atom + "published")
+                        ?? "")
+                    ?? ParseDate(
+                        (string?)element.Element(Atom + "updated")
+                          ?? "")
                 })
                 .ToList();
         }
@@ -74,6 +81,19 @@ public static class FeedParser
                 element.Name.LocalName == name);
 
         return (string?)element ?? "";
+    }
+    private static DateTimeOffset? ParseDate(string value)
+    {
+        if (DateTimeOffset.TryParse(
+                value,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AllowWhiteSpaces,
+                out DateTimeOffset date))
+        {
+            return date;
+        }
+
+        return null;
     }
 
     private static string GetAtomLink(XElement entry)

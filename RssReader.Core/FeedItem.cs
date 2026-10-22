@@ -9,5 +9,6 @@ namespace RssReader.Core
         public string Title { get; init; } = "";
         public string Link { get; init; } = "";
         public string Description { get; init; } = "";
+        public DateTimeOffset? PublishedAt { get; init; }
     }
 }

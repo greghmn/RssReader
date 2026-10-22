@@ -1,5 +1,4 @@
-﻿
-using System.Xml.Linq;
+﻿using System.Xml.Linq;
 using RssReader.Core;
 using Xunit;
 
@@ -125,4 +124,139 @@ public class FeedParserTests
 
         Assert.Empty(items);
     }
+
+    [Fact]
+    public void Parse_RssItemWithPubDate_ParsesPublishedAt()
+    {
+        // Arrange
+        XDocument document = XDocument.Parse("""
+        <rss version="2.0">
+            <channel>
+                <title>Example Feed</title>
+                <item>
+                    <title>Example Article</title>
+                    <link>https://example.com/article</link>
+                    <description>An example.</description>
+                    <pubDate>Wed, 21 Oct 2015 07:28:00 GMT</pubDate>
+                </item>
+            </channel>
+        </rss>
+        """);
+
+        // Act
+        List<FeedItem> items = FeedParser.Parse(document);
+
+        // Assert
+        Assert.Single(items);
+        Assert.Equal(
+            DateTimeOffset.Parse("Wed, 21 Oct 2015 07:28:00 GMT"),
+            items[0].PublishedAt);
+    }
+
+    [Fact]
+    public void Parse_AtomEntryWithPublishedAndUpdated_PrefersPublished()
+    {
+        // Arrange
+        XDocument document = XDocument.Parse("""
+        <feed xmlns="http://www.w3.org/2005/Atom">
+            <title>Example Feed</title>
+            <entry>
+                <title>Example Article</title>
+                <link href="https://example.com/article" />
+                <published>2020-01-15T10:00:00Z</published>
+                <updated>2020-02-20T12:00:00Z</updated>
+                <summary>An example.</summary>
+            </entry>
+        </feed>
+        """);
+
+        // Act
+        List<FeedItem> items = FeedParser.Parse(document);
+
+        // Assert
+        Assert.Single(items);
+        Assert.Equal(
+            DateTimeOffset.Parse("2020-01-15T10:00:00Z"),
+            items[0].PublishedAt);
+    }
+
+    [Fact]
+    public void Parse_AtomEntryWithoutPublished_UsesUpdated()
+    {
+        // Arrange
+        XDocument document = XDocument.Parse("""
+        <feed xmlns="http://www.w3.org/2005/Atom">
+            <title>Example Feed</title>
+            <entry>
+                <title>Updated Article</title>
+                <link href="https://example.com/article" />
+                <updated>2024-06-10T14:30:00Z</updated>
+                <summary>An updated article.</summary>
+            </entry>
+        </feed>
+        """);
+
+        // Act
+        List<FeedItem> items = FeedParser.Parse(document);
+
+        // Assert
+        Assert.Single(items);
+        Assert.Equal(
+            DateTimeOffset.Parse("2024-06-10T14:30:00Z"),
+            items[0].PublishedAt);
+    }
+
+    //Test when no data is provided
+    [Fact]
+    public void Parse_AtomEntryWithoutDates_ReturnsNullPublishedAt()
+    {
+        // Arrange
+        XDocument document = XDocument.Parse("""
+        <feed xmlns="http://www.w3.org/2005/Atom">
+            <title>Example Feed</title>
+            <entry>
+                <title>Undated Article</title>
+                <link href="https://example.com/article" />
+                <summary>An article without dates.</summary>
+            </entry>
+        </feed>
+        """);
+
+        // Act
+        List<FeedItem> items = FeedParser.Parse(document);
+
+        // Assert
+        Assert.Single(items);
+        Assert.Null(items[0].PublishedAt);
+    }
+
+    //Test when published is invalid but updated is valid
+    [Fact]
+    public void Parse_AtomEntryWithInvalidPublished_UsesUpdated()
+    {
+        // Arrange
+        XDocument document = XDocument.Parse("""
+        <feed xmlns="http://www.w3.org/2005/Atom">
+            <title>Example Feed</title>
+            <entry>
+                <title>Article With Invalid Date</title>
+                <link href="https://example.com/article" />
+                <published>not-a-date</published>
+                <updated>2024-06-10T14:30:00Z</updated>
+                <summary>An article with a malformed date.</summary>
+            </entry>
+        </feed>
+        """);
+
+        // Act
+        List<FeedItem> items = FeedParser.Parse(document);
+
+        // Assert
+        Assert.Single(items);
+        Assert.Equal(
+            DateTimeOffset.Parse("2024-06-10T14:30:00Z"),
+            items[0].PublishedAt);
+    }
+
+
 }

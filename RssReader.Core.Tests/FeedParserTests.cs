@@ -287,5 +287,93 @@ public class FeedParserTests
             items[0].PublishedAt);
     }
 
+    //For RSS items that are missing titles 
+
+    [Fact]
+    public void Parse_RssItemWithoutTitle_ReturnsEmptyTitle()
+    {
+        // Arrange
+        XDocument document = XDocument.Parse("""
+        <rss version="2.0">
+            <channel>
+                <title>Example Feed</title>
+                <item>
+                    <link>https://example.com/article</link>
+                    <description>An article without a title.</description>
+                </item>
+            </channel>
+        </rss>
+        """);
+
+        // Act
+        List<FeedItem> items = FeedParser.Parse(document);
+
+        // Assert
+        Assert.Single(items);
+        Assert.Equal("", items[0].Title);
+        Assert.Equal(
+            "https://example.com/article",
+            items[0].Link);
+    }
+
+    //Get Atom parser to select alternate links 
+
+    [Fact]
+    public void Parse_AtomEntryWithMultipleLinks_PrefersAlternateLink()
+    {
+        // Arrange
+        XDocument document = XDocument.Parse("""
+        <feed xmlns="http://www.w3.org/2005/Atom">
+            <title>Example Feed</title>
+            <entry>
+                <title>Example Article</title>
+                <link rel="self"
+                      href="https://example.com/api/article/123" />
+                <link rel="alternate"
+                      href="https://example.com/article/123" />
+                <summary>An example article.</summary>
+            </entry>
+        </feed>
+        """);
+
+        // Act
+        List<FeedItem> items = FeedParser.Parse(document);
+
+        // Assert
+        Assert.Single(items);
+        Assert.Equal(
+            "https://example.com/article/123",
+            items[0].Link);
+    }
+
+    //Skip Atom links that have empty href values 
+
+    [Fact]
+    public void Parse_AtomEntryWithEmptyAlternateLink_PrefersValidAlternateLink()
+    {
+        // Arrange
+        XDocument document = XDocument.Parse("""
+        <feed xmlns="http://www.w3.org/2005/Atom">
+            <title>Example Feed</title>
+            <entry>
+                <title>Example Article</title>
+                <link rel="alternate" href="" />
+                <link rel="alternate"
+                      href="https://example.com/article" />
+                <summary>An example article.</summary>
+            </entry>
+        </feed>
+        """);
+
+        // Act
+        List<FeedItem> items = FeedParser.Parse(document);
+
+        // Assert
+        Assert.Single(items);
+        Assert.Equal(
+            "https://example.com/article",
+            items[0].Link);
+    }
+
 
 }

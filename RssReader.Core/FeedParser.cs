@@ -98,14 +98,18 @@ public static class FeedParser
         return null;
     }
 
+    //Updated to continue if the first alternate link can't be used
     private static string GetAtomLink(XElement entry)
     {
         XElement? link = entry
             .Elements(Atom + "link")
             .FirstOrDefault(element =>
-                (string?)element.Attribute("rel") is null
-                or "alternate");
+                ((string?)element.Attribute("rel") is null
+                    or "alternate")
+                && !string.IsNullOrWhiteSpace(
+                    (string?)element.Attribute("href")));
 
         return (string?)link?.Attribute("href") ?? "";
     }
+
 }

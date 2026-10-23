@@ -41,6 +41,6 @@ public class FeedReader : IFeedReader
             LoadOptions.None,
             cancellationToken);
 
-        return FeedParser.Parse(document);
+        return FeedParser.Parse(document, feedUri);
     }
 }

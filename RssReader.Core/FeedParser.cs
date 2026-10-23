@@ -10,7 +10,7 @@ public static class FeedParser
     private static readonly XNamespace DublinCore =
     "http://purl.org/dc/elements/1.1/";
 
-    public static List<FeedItem> Parse(XDocument document)
+    public static List<FeedItem> Parse(XDocument document, Uri? baseUri = null)
     {
         XElement? root = document.Root;
 
@@ -55,7 +55,7 @@ public static class FeedParser
                 {
                     Title = (string?)element.Element(Atom + "title")
                         ?? "",
-                    Link = GetAtomLink(element),
+                    Link = GetAtomLink(element, baseUri),
                     Description =
                         (string?)element.Element(Atom + "summary")
                         ?? (string?)element.Element(Atom + "content")
@@ -98,8 +98,11 @@ public static class FeedParser
         return null;
     }
 
-    //Updated to continue if the first alternate link can't be used
-    private static string GetAtomLink(XElement entry)
+    //Updated to continue if the first alternate link can't be used and accept nullable Uri parameter and resolve relative links 
+
+    private static string GetAtomLink(
+        XElement entry,
+        Uri? baseUri)
     {
         XElement? link = entry
             .Elements(Atom + "link")
@@ -109,7 +112,27 @@ public static class FeedParser
                 && !string.IsNullOrWhiteSpace(
                     (string?)element.Attribute("href")));
 
-        return (string?)link?.Attribute("href") ?? "";
+        string href =
+            (string?)link?.Attribute("href") ?? "";
+
+        if (string.IsNullOrWhiteSpace(href))
+        {
+            return "";
+        }
+
+        if (Uri.TryCreate(href, UriKind.Absolute, out Uri? absoluteUri))
+        {
+            return absoluteUri.AbsoluteUri;
+        }
+
+        if (baseUri is not null
+            && Uri.TryCreate(baseUri, href, out Uri? resolvedUri))
+        {
+            return resolvedUri.AbsoluteUri;
+        }
+
+        return href;
     }
+
 
 }

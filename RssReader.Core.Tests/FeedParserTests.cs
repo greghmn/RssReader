@@ -375,5 +375,35 @@ public class FeedParserTests
             items[0].Link);
     }
 
+    //For handling relative Atom links 
+
+    [Fact]
+    public void Parse_AtomEntryWithRelativeLink_ResolvesAgainstFeedUrl()
+    {
+        // Arrange
+        XDocument document = XDocument.Parse("""
+        <feed xmlns="http://www.w3.org/2005/Atom">
+            <title>Example Feed</title>
+            <entry>
+                <title>Example Article</title>
+                <link rel="alternate" href="/articles/123" />
+                <summary>An example article.</summary>
+            </entry>
+        </feed>
+        """);
+
+        Uri feedUrl = new(
+            "https://example.com/feeds/tech.xml");
+
+        // Act
+        List<FeedItem> items = FeedParser.Parse(document, feedUrl);
+
+        // Assert
+        Assert.Single(items);
+        Assert.Equal(
+            "https://example.com/articles/123",
+            items[0].Link);
+    }
+
 
 }

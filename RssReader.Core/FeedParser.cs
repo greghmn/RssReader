@@ -100,9 +100,8 @@ public static class FeedParser
 
     //Updated to continue if the first alternate link can't be used and accept nullable Uri parameter and resolve relative links 
 
-    private static string GetAtomLink(
-        XElement entry,
-        Uri? baseUri)
+    //Also for dealing with xml:base to adjust to the actual URL needed
+    private static string GetAtomLink(XElement entry, Uri? baseUri)
     {
         XElement? link = entry
             .Elements(Atom + "link")
@@ -120,19 +119,69 @@ public static class FeedParser
             return "";
         }
 
-        if (Uri.TryCreate(href, UriKind.Absolute, out Uri? absoluteUri))
+        if (Uri.TryCreate(
+            href, UriKind.Absolute, out Uri? absoluteUri))
         {
             return absoluteUri.AbsoluteUri;
         }
 
-        if (baseUri is not null
-            && Uri.TryCreate(baseUri, href, out Uri? resolvedUri))
+        if (link is not null)
         {
-            return resolvedUri.AbsoluteUri;
+            Uri? effectiveBase = ResolveBaseUri(link, baseUri);
+
+            if (effectiveBase is not null
+                && Uri.TryCreate(
+                    effectiveBase,
+                    href,
+                    out Uri? resolvedUri))
+            {
+                return resolvedUri.AbsoluteUri;
+            }
         }
 
         return href;
     }
+
+    //Helper for the previous function 
+    private static Uri? ResolveBaseUri(
+        XElement element,
+        Uri? baseUri)
+    {
+        Uri? currentBase = baseUri;
+
+        foreach (XElement ancestor in element
+            .AncestorsAndSelf()
+            .Reverse())
+        {
+            string? xmlBase =
+                (string?)ancestor.Attribute(
+                    XNamespace.Xml + "base");
+
+            if (string.IsNullOrWhiteSpace(xmlBase))
+            {
+                continue;
+            }
+
+            if (currentBase is not null
+                && Uri.TryCreate(
+                    currentBase,
+                    xmlBase,
+                    out Uri? resolvedBase))
+            {
+                currentBase = resolvedBase;
+            }
+            else if (Uri.TryCreate(
+                xmlBase,
+                UriKind.Absolute,
+                out Uri? absoluteBase))
+            {
+                currentBase = absoluteBase;
+            }
+        }
+
+        return currentBase;
+    }
+
 
 
 }

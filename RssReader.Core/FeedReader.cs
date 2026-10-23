@@ -41,6 +41,8 @@ public class FeedReader : IFeedReader
             LoadOptions.None,
             cancellationToken);
 
+        Uri finalFeedUri = response.RequestMessage?.RequestUri ?? feedUri;
+
         return FeedParser.Parse(document, feedUri);
     }
 }

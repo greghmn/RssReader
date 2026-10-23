@@ -405,5 +405,96 @@ public class FeedParserTests
             items[0].Link);
     }
 
+    //For handling HTTP redirects to ensure it works with the final URL 
+
+    [Fact]
+    public void Parse_AtomEntryWithRelativeLink_UsesFinalFeedUrl()
+    {
+        // Arrange
+        XDocument document = XDocument.Parse("""
+        <feed xmlns="http://www.w3.org/2005/Atom">
+            <title>Example Feed</title>
+            <entry>
+                <title>Example Article</title>
+                <link rel="alternate" href="/articles/123" />
+            </entry>
+        </feed>
+        """);
+
+        Uri finalFeedUrl = new(
+            "https://cdn.example.com/feeds/tech.xml");
+
+        // Act
+        List<FeedItem> items =
+            FeedParser.Parse(document, finalFeedUrl);
+
+        // Assert
+        Assert.Single(items);
+        Assert.Equal(
+            "https://cdn.example.com/articles/123",
+            items[0].Link);
+    }
+
+    //For handling the Atom xml:base attribute properly 
+
+    [Fact]
+    public void Parse_AtomEntryWithXmlBase_ResolvesRelativeLink()
+    {
+        // Arrange
+        XDocument document = XDocument.Parse("""
+        <feed xmlns="http://www.w3.org/2005/Atom"
+              xml:base="https://example.com/content/">
+            <title>Example Feed</title>
+            <entry>
+                <title>Example Article</title>
+                <link rel="alternate" href="article-123" />
+            </entry>
+        </feed>
+        """);
+
+        Uri feedUrl = new(
+            "https://example.com/feeds/tech.xml");
+
+        // Act
+        List<FeedItem> items = FeedParser.Parse(document, feedUrl);
+
+        // Assert
+        Assert.Single(items);
+        Assert.Equal(
+            "https://example.com/content/article-123",
+            items[0].Link);
+    }
+    //For nested xml:base 
+
+    [Fact]
+    public void Parse_AtomEntryWithNestedXmlBase_ResolvesRelativeLink()
+    {
+        // Arrange
+        XDocument document = XDocument.Parse("""
+        <feed xmlns="http://www.w3.org/2005/Atom"
+              xml:base="https://example.com/content/">
+            <title>Example Feed</title>
+            <entry xml:base="articles/">
+                <title>Example Article</title>
+                <link rel="alternate"
+                      xml:base="2026/"
+                      href="article-123" />
+            </entry>
+        </feed>
+        """);
+
+        Uri feedUrl = new(
+            "https://example.com/feeds/tech.xml");
+
+        // Act
+        List<FeedItem> items = FeedParser.Parse(document, feedUrl);
+
+        // Assert
+        Assert.Single(items);
+        Assert.Equal(
+            "https://example.com/content/articles/2026/article-123",
+            items[0].Link);
+    }
+
 
 }

@@ -497,4 +497,61 @@ public class FeedParserTests
     }
 
 
+    [Fact]
+    public void Parse_AtomEntryWithContentButNoSummary_UsesContent()
+    {
+        // Arrange
+        XDocument document = XDocument.Parse("""
+        <feed xmlns="http://www.w3.org/2005/Atom">
+            <title>Example Feed</title>
+            <entry>
+                <title>Article With Content</title>
+                <link href="https://example.com/article" />
+                <content>Article body text.</content>
+            </entry>
+        </feed>
+        """);
+
+        // Act
+        List<FeedItem> items = FeedParser.Parse(document);
+
+        // Assert
+        Assert.Single(items);
+        Assert.Equal(
+            "Article body text.",
+            items[0].Description);
+    }
+
+
+    [Fact]
+    public void Parse_AtomEntryWithXhtmlContent_ExtractsText()
+    {
+        // Arrange
+        XDocument document = XDocument.Parse("""
+        <feed xmlns="http://www.w3.org/2005/Atom">
+            <title>Example Feed</title>
+            <entry>
+                <title>HTML Article</title>
+                <link href="https://example.com/article" />
+                <content type="xhtml">
+                    <div xmlns="http://www.w3.org/1999/xhtml">
+                        <p>First paragraph.</p>
+                        <p>Second paragraph.</p>
+                    </div>
+                </content>
+            </entry>
+        </feed>
+        """);
+
+        // Act
+        List<FeedItem> items = FeedParser.Parse(document);
+
+        // Assert
+        Assert.Single(items);
+        Assert.Equal(
+            "First paragraph.Second paragraph.",
+            items[0].Description);
+    }
+
+
 }

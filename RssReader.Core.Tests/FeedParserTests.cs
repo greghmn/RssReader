@@ -557,6 +557,31 @@ public class FeedParserTests
             items[0].Description);
     }
 
+    [Fact]
+
+    public void Parse_AtomEntryWithHtmlContent_ExtractsReadableText()
+    {
+        // Arrange
+        XDocument document = XDocument.Parse("""
+        <feed xmlns="http://www.w3.org/2005/Atom">
+            <title>Example Feed</title>
+            <entry>
+                <title>HTML Article</title>
+                <link href="https://example.com/article" />
+                <content type="html">&lt;p&gt;Hello &lt;strong&gt;world&lt;/strong&gt;.&lt;/p&gt;&lt;p&gt;Second paragraph.&lt;/p&gt;</content>
+            </entry>
+        </feed>
+        """);
+
+        // Act
+        List<FeedItem> items = FeedParser.Parse(document);
+
+        // Assert
+        Assert.Single(items);
+        Assert.Equal(
+            "Hello world.\nSecond paragraph.",
+            items[0].Description);
+    }
 
 
 }

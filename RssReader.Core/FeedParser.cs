@@ -290,6 +290,15 @@ public static class FeedParser
             return ExtractReadableText(content)
                 .Trim();
         }
+        
+        if (contentType == "html")
+        {
+            XElement htmlFragment = XElement.Parse(
+                $"<div xmlns=\"http://www.w3.org/1999/xhtml\">{content.Value}</div>");
+
+            return ExtractReadableText(htmlFragment)
+                .Trim();
+        }
 
         return content.Value;
     }

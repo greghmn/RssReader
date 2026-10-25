@@ -1,5 +1,7 @@
-﻿using System.Xml.Linq;
-using System.Globalization;
+﻿using System.Globalization;
+using System.Text;
+using System.Xml.Linq;
+using System.Linq;
 
 namespace RssReader.Core;
 
@@ -57,9 +59,8 @@ public static class FeedParser
                         ?? "",
                     Link = GetAtomLink(element, baseUri),
                     Description =
-                        (string?)element.Element(Atom + "summary")
-                        ?? (string?)element.Element(Atom + "content")
-                        ?? "",
+                    (string?)element.Element(Atom + "summary")
+                    ?? ExtractAtomContent(element),
                     PublishedAt = ParseDate(
                         (string?)element.Element(Atom + "published")
                         ?? "")
@@ -142,6 +143,97 @@ public static class FeedParser
         return href;
     }
 
+
+    private static string ExtractReadableText(XElement element)
+    {
+        XNamespace xhtml = "http://www.w3.org/1999/xhtml";
+
+        HashSet<string> blockElements =
+        [
+            "p", "div", "section", "article",
+        "blockquote", "li", "h1", "h2",
+        "h3", "h4", "h5", "h6", "br"
+        ];
+
+        StringBuilder text = new();
+
+        void AppendNode(XNode node)
+        {
+            if (node is XText textNode)
+            {
+                string value = textNode.Value;
+
+                // Normalize whitespace within each text node while preserving
+                // spaces around inline elements.
+                string normalized = string.Join(
+                    " ",
+                    value.Split(
+                        (char[]?)null,
+                        StringSplitOptions.RemoveEmptyEntries));
+
+                if (normalized.Length > 0)
+                {
+                    if (char.IsWhiteSpace(value[0]))
+                    {
+                        text.Append(' ');
+                    }
+
+                    text.Append(normalized);
+
+                    if (char.IsWhiteSpace(value[^1]))
+                    {
+                        text.Append(' ');
+                    }
+                }
+                else if (value.Length > 0)
+                {
+                    text.Append(' ');
+                }
+            }
+
+            else if (node is XElement child)
+            {
+                bool isBlock =
+                    child.Name.Namespace == xhtml
+                    && blockElements.Contains(child.Name.LocalName);
+
+                if (isBlock && text.Length > 0
+                    && text[^1] != '\n')
+                {
+                    text.Append('\n');
+                }
+
+                foreach (XNode childNode in child.Nodes())
+                {
+                    AppendNode(childNode);
+                }
+
+                if (isBlock && text.Length > 0
+                    && text[^1] != '\n')
+                {
+                    text.Append('\n');
+                }
+            }
+        }
+
+        foreach (XNode node in element.Nodes())
+        {
+            AppendNode(node);
+        }
+
+        string[] lines = text.ToString().Split('\n');
+
+        return string.Join(
+            "\n",
+            lines.Select(line =>
+                string.Join(
+                    " ",
+                    line.Split(
+                        (char[]?)null,
+                        StringSplitOptions.RemoveEmptyEntries))));
+    }
+
+
     //Helper for the previous function 
     private static Uri? ResolveBaseUri(
         XElement element,
@@ -180,6 +272,26 @@ public static class FeedParser
         }
 
         return currentBase;
+    }
+
+    private static string ExtractAtomContent(XElement entry)
+    {
+        XElement? content = entry.Element(Atom + "content");
+
+        if (content is null)
+        {
+            return "";
+        }
+
+        string? contentType = (string?)content.Attribute("type");
+
+        if (contentType == "xhtml")
+        {
+            return ExtractReadableText(content)
+                .Trim();
+        }
+
+        return content.Value;
     }
 
 

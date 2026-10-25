@@ -523,6 +523,7 @@ public class FeedParserTests
     }
 
 
+
     [Fact]
     public void Parse_AtomEntryWithXhtmlContent_ExtractsText()
     {
@@ -537,6 +538,9 @@ public class FeedParserTests
                     <div xmlns="http://www.w3.org/1999/xhtml">
                         <p>First paragraph.</p>
                         <p>Second paragraph.</p>
+                        <p>A third paragraph with
+                            <strong>emphasis</strong>.
+                        </p>
                     </div>
                 </content>
             </entry>
@@ -549,9 +553,10 @@ public class FeedParserTests
         // Assert
         Assert.Single(items);
         Assert.Equal(
-            "First paragraph.Second paragraph.",
+            "First paragraph.\nSecond paragraph.\nA third paragraph with emphasis.",
             items[0].Description);
     }
+
 
 
 }

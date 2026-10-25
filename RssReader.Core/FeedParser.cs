@@ -320,6 +320,17 @@ public static class FeedParser
 
         void AppendNode(HtmlNode current)
         {
+            if (current.NodeType == HtmlNodeType.Element
+                && (current.Name.Equals(
+                        "script",
+                        StringComparison.OrdinalIgnoreCase)
+                    || current.Name.Equals(
+                        "style",
+                        StringComparison.OrdinalIgnoreCase)))
+            {
+                return;
+            }
+
             if (current.NodeType == HtmlNodeType.Text)
             {
                 text.Append(

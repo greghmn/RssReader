@@ -608,6 +608,30 @@ public class FeedParserTests
             items[0].Description);
     }
 
+    [Fact]
+    public void Parse_AtomEntryWithHtmlContent_IgnoresScriptAndStyle()
+    {
+        // Arrange
+        XDocument document = XDocument.Parse("""
+        <feed xmlns="http://www.w3.org/2005/Atom">
+            <title>Example Feed</title>
+            <entry>
+                <title>Article</title>
+                <link href="https://example.com/article" />
+                <content type="html">&lt;p&gt;Readable text.&lt;/p&gt;&lt;script&gt;alert('hello');&lt;/script&gt;&lt;style&gt;p { color: red; }&lt;/style&gt;&lt;p&gt;More readable text.&lt;/p&gt;</content>
+            </entry>
+        </feed>
+        """);
+
+        // Act
+        List<FeedItem> items = FeedParser.Parse(document);
+
+        // Assert
+        Assert.Single(items);
+        Assert.Equal(
+            "Readable text.\nMore readable text.",
+            items[0].Description);
+    }
 
 
 }

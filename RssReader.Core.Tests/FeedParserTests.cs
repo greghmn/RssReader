@@ -633,5 +633,30 @@ public class FeedParserTests
             items[0].Description);
     }
 
+    [Fact]
+    public void Parse_AtomEntryWithHtmlContent_DecodesEntitiesAndNormalizesWhitespace()
+    {
+        // Arrange
+        XDocument document = XDocument.Parse("""
+        <feed xmlns="http://www.w3.org/2005/Atom">
+            <title>Example Feed</title>
+            <entry>
+                <title>Article</title>
+                <link href="https://example.com/article" />
+                <content type="html">&lt;p&gt;Fish &amp;amp; chips&amp;nbsp; are   delicious.&lt;/p&gt;&lt;p&gt;Tea &amp; coffee.&lt;/p&gt;</content>
+            </entry>
+        </feed>
+        """);
+
+        // Act
+        List<FeedItem> items = FeedParser.Parse(document);
+
+        // Assert
+        Assert.Single(items);
+        Assert.Equal(
+            "Fish & chips are delicious.\nTea & coffee.",
+            items[0].Description);
+    }
+
 
 }

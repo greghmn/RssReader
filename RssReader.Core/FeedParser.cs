@@ -2,6 +2,7 @@
 using System.Text;
 using System.Xml.Linq;
 using System.Linq;
+using HtmlAgilityPack;
 
 namespace RssReader.Core;
 
@@ -290,17 +291,76 @@ public static class FeedParser
             return ExtractReadableText(content)
                 .Trim();
         }
-        
+
+
         if (contentType == "html")
         {
-            XElement htmlFragment = XElement.Parse(
-                $"<div xmlns=\"http://www.w3.org/1999/xhtml\">{content.Value}</div>");
+            HtmlDocument htmlDocument = new();
 
-            return ExtractReadableText(htmlFragment)
-                .Trim();
+            htmlDocument.LoadHtml(content.Value);
+
+            return ExtractReadableHtmlText(
+                htmlDocument.DocumentNode).Trim();
         }
 
+
         return content.Value;
+    }
+
+    private static string ExtractReadableHtmlText(HtmlNode node)
+    {
+        HashSet<string> blockElements =
+        [
+            "p", "div", "section", "article",
+        "blockquote", "li", "h1", "h2",
+        "h3", "h4", "h5", "h6", "br"
+        ];
+
+        StringBuilder text = new();
+
+        void AppendNode(HtmlNode current)
+        {
+            if (current.NodeType == HtmlNodeType.Text)
+            {
+                text.Append(
+                    HtmlEntity.DeEntitize(current.InnerText));
+                return;
+            }
+
+            bool isBlock =
+                current.NodeType == HtmlNodeType.Element
+                && blockElements.Contains(current.Name);
+
+            if (isBlock && text.Length > 0
+                && text[^1] != '\n')
+            {
+                text.Append('\n');
+            }
+
+            foreach (HtmlNode child in current.ChildNodes)
+            {
+                AppendNode(child);
+            }
+
+            if (isBlock && text.Length > 0
+                && text[^1] != '\n')
+            {
+                text.Append('\n');
+            }
+        }
+
+        AppendNode(node);
+
+        string[] lines = text.ToString().Split('\n');
+
+        return string.Join(
+            "\n",
+            lines.Select(line =>
+                string.Join(
+                    " ",
+                    line.Split(
+                        (char[]?)null,
+                        StringSplitOptions.RemoveEmptyEntries))));
     }
 
 

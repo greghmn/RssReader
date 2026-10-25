@@ -583,5 +583,31 @@ public class FeedParserTests
             items[0].Description);
     }
 
+    [Fact]
+    public void Parse_AtomEntryWithMalformedHtmlContent_ExtractsReadableText()
+    {
+        // Arrange
+        XDocument document = XDocument.Parse("""
+        <feed xmlns="http://www.w3.org/2005/Atom">
+            <title>Example Feed</title>
+            <entry>
+                <title>Imperfect HTML</title>
+                <link href="https://example.com/article" />
+                <content type="html">&lt;p&gt;First paragraph.&lt;p&gt;Second paragraph.</content>
+            </entry>
+        </feed>
+        """);
+
+        // Act
+        List<FeedItem> items = FeedParser.Parse(document);
+
+        // Assert
+        Assert.Single(items);
+        Assert.Equal(
+            "First paragraph.\nSecond paragraph.",
+            items[0].Description);
+    }
+
+
 
 }

@@ -1,14 +1,23 @@
-﻿
-using System.Xml.Linq;
+﻿using System.Xml.Linq;
 
 namespace RssReader.Core;
 
 public class FeedReader : IFeedReader
 {
-    private static readonly HttpClient HttpClient = new()
+    private readonly HttpClient _httpClient;
+
+    public FeedReader()
+        : this(new HttpClient
+        {
+            Timeout = TimeSpan.FromSeconds(30)
+        })
     {
-        Timeout = TimeSpan.FromSeconds(30)
-    };
+    }
+
+    public FeedReader(HttpClient httpClient)
+    {
+        _httpClient = httpClient;
+    }
 
     public async Task<List<FeedItem>> ReadAsync(
         string feedUrl,
@@ -26,7 +35,7 @@ public class FeedReader : IFeedReader
                 nameof(feedUrl));
         }
         using HttpResponseMessage response =
-            await HttpClient.GetAsync(
+            await _httpClient.GetAsync(
                 feedUri,
                 HttpCompletionOption.ResponseHeadersRead,
                 cancellationToken);
@@ -43,6 +52,6 @@ public class FeedReader : IFeedReader
 
         Uri finalFeedUri = response.RequestMessage?.RequestUri ?? feedUri;
 
-        return FeedParser.Parse(document, feedUri);
+        return FeedParser.Parse(document, finalFeedUri);
     }
 }

@@ -7,7 +7,7 @@ namespace RssReader.Core.Tests;
 public class FeedReaderTests
 {
     [Fact]
-    public async Task ReadAsync_WhenServerRedirects_ResolvesRelativeLinksAgainstFinalUrl()
+    public async Task ReadAsync_WhenResponseHasFinalRequestUri_ResolvesRelativeLinksAgainstIt()
     {
         // Arrange
         const string xml = """

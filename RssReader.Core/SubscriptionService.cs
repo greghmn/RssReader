@@ -17,6 +17,16 @@ public class SubscriptionService
         return await _repository.GetAllAsync();
     }
 
+    public async Task<bool> IsSubscribedAsync(string url)
+    {
+        List<FeedSubscription> subscriptions =
+            await _repository.GetAllAsync();
+
+        return subscriptions.Any(subscription =>
+    UrlsMatch(subscription.Url, url));
+    }
+
+
     public async Task<bool> AddAsync(FeedSubscription subscription)
     {
         /*
@@ -41,10 +51,7 @@ public class SubscriptionService
             await _repository.GetAllAsync();
 
         bool alreadyExists = existingSubscriptions.Any(existing =>
-            string.Equals(
-                existing.Url.TrimEnd('/'),
-                subscription.Url.TrimEnd('/'),
-                StringComparison.OrdinalIgnoreCase));
+    UrlsMatch(existing.Url, subscription.Url));
 
         if (alreadyExists)
         {
@@ -62,10 +69,7 @@ public class SubscriptionService
 
         FeedSubscription? subscription = existingSubscriptions
             .FirstOrDefault(existing =>
-                string.Equals(
-                    existing.Url.TrimEnd('/'),
-                    url.TrimEnd('/'),
-                    StringComparison.OrdinalIgnoreCase));
+    UrlsMatch(existing.Url, url));
 
         if (subscription is null)
         {
@@ -74,4 +78,13 @@ public class SubscriptionService
 
         return await _repository.RemoveAsync(subscription.Url);
     }
+
+    private static bool UrlsMatch(string first, string second)
+    {
+        return string.Equals(
+            first.TrimEnd('/'),
+            second.TrimEnd('/'),
+            StringComparison.OrdinalIgnoreCase);
+    }
+
 }

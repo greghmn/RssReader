@@ -14,16 +14,11 @@ public class FeedService
         _feedReader = feedReader;
     }
 
+
     public async Task<List<FeedItem>> GetItemsAsync(string feedUrl)
     {
-        List<FeedSubscription> subscriptions =
-            await _subscriptionService.GetAllAsync();
-
-        bool isSubscribed = subscriptions.Any(subscription =>
-            string.Equals(
-                subscription.Url.TrimEnd('/'),
-                feedUrl.TrimEnd('/'),
-                StringComparison.OrdinalIgnoreCase));
+        bool isSubscribed =
+            await _subscriptionService.IsSubscribedAsync(feedUrl);
 
         if (!isSubscribed)
         {
@@ -33,4 +28,5 @@ public class FeedService
 
         return await _feedReader.ReadAsync(feedUrl);
     }
+
 }

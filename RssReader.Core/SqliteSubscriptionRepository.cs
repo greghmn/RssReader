@@ -110,4 +110,5 @@ public class SqliteSubscriptionRepository : ISubscriptionRepository
 
         return rowsAffected > 0;
     }
+
 }

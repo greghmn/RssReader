@@ -1,6 +1,7 @@
 ﻿
 using RssReader.Core;
 
+
 // Set up persistent storage.
 string appDataDirectory = Path.Combine(
     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -12,16 +13,28 @@ string databasePath = Path.Combine(
     appDataDirectory,
     "subscriptions.db");
 
+// Initialize subscription storage.
 var repository = new SqliteSubscriptionRepository(databasePath);
 await repository.InitializeAsync();
 
 var subscriptionService = new SubscriptionService(repository);
 
+// Initialize article read-state storage.
+var articleStateRepository =
+    new SqliteArticleStateRepository(databasePath);
+
+await articleStateRepository.InitializeAsync();
+
+var articleStateService =
+    new ArticleStateService(articleStateRepository);
+
+// Set up feed reading.
 IFeedReader feedReader = new FeedReader();
-//Finally, get the feed up and running.
+
 var feedService = new FeedService(
     subscriptionService,
     feedReader);
+
 
 // Run the console menu until the user quits.
 while (true)
@@ -140,9 +153,15 @@ while (true)
                 Console.WriteLine($"\nArticles from {selectedSubscription.Title}:\n");
 
 
+
                 foreach (FeedItem item in items)
                 {
-                    Console.WriteLine(item.Title);
+                    bool isRead = await articleStateService.IsReadAsync(
+                        selectedSubscription.Url, item);
+
+                    string status = isRead ? "[Read]" : "[Unread]";
+
+                    Console.WriteLine($"{status} {item.Title}");
                     Console.WriteLine(item.Link);
 
                     if (item.PublishedAt.HasValue)
@@ -153,6 +172,7 @@ while (true)
 
                     Console.WriteLine();
                 }
+
 
 
                 break;

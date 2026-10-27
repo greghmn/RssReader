@@ -701,5 +701,43 @@ public class FeedParserTests
         Assert.Equal("urn:example:article:123", items[0].Id);
     }
 
+    //dealing with missing ID 
+    
+    [Fact]
+    public void Parse_RssItemWithoutGuid_ReturnsEmptyId()
+    {
+        XDocument document = XDocument.Parse("""
+        <rss version="2.0">
+            <channel>
+                <item>
+                    <title>Article without GUID</title>
+                    <link>https://example.com/article</link>
+                </item>
+            </channel>
+        </rss>
+        """);
 
+        List<FeedItem> items = FeedParser.Parse(document);
+
+        Assert.Single(items);
+        Assert.Equal("", items[0].Id);
+    }
+
+    [Fact]
+    public void Parse_AtomEntryWithoutId_ReturnsEmptyId()
+    {
+        XDocument document = XDocument.Parse("""
+        <feed xmlns="http://www.w3.org/2005/Atom">
+            <entry>
+                <title>Article without ID</title>
+                <link href="https://example.com/article" />
+            </entry>
+        </feed>
+        """);
+
+        List<FeedItem> items = FeedParser.Parse(document);
+
+        Assert.Single(items);
+        Assert.Equal("", items[0].Id);
+    }
 }

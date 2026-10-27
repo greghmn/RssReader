@@ -659,4 +659,47 @@ public class FeedParserTests
     }
 
 
+    [Fact]
+    public void Parse_RssItemWithGuid_ExtractsId()
+    {
+        XDocument document = XDocument.Parse("""
+        <rss version="2.0">
+            <channel>
+                <title>Example Feed</title>
+                <item>
+                    <title>Example Article</title>
+                    <link>https://example.com/article</link>
+                    <guid>article-123</guid>
+                </item>
+            </channel>
+        </rss>
+        """);
+
+        List<FeedItem> items = FeedParser.Parse(document);
+
+        Assert.Single(items);
+        Assert.Equal("article-123", items[0].Id);
+    }
+
+    [Fact]
+    public void Parse_AtomEntryWithId_ExtractsId()
+    {
+        XDocument document = XDocument.Parse("""
+        <feed xmlns="http://www.w3.org/2005/Atom">
+            <title>Example Feed</title>
+            <entry>
+                <id>urn:example:article:123</id>
+                <title>Example Article</title>
+                <link href="https://example.com/article" />
+            </entry>
+        </feed>
+        """);
+
+        List<FeedItem> items = FeedParser.Parse(document);
+
+        Assert.Single(items);
+        Assert.Equal("urn:example:article:123", items[0].Id);
+    }
+
+
 }

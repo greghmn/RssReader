@@ -10,5 +10,8 @@ namespace RssReader.Core
         public string Link { get; init; } = "";
         public string Description { get; init; } = "";
         public DateTimeOffset? PublishedAt { get; init; }
+        //for identifying articles 
+        public string Id { get; init; } = "";
+        public string FeedUrl { get; init; } = "";
     }
 }

@@ -45,7 +45,8 @@ public static class FeedParser
                     Link = GetElementValue(element, "link"),
                     Description =
                         GetElementValue(element, "description"),
-                    PublishedAt = ParseDate(GetElementValue(element, "pubDate")) ?? ParseDate((string?)element.Element(DublinCore + "date") ?? "")
+                    PublishedAt = ParseDate(GetElementValue(element, "pubDate")) ?? ParseDate((string?)element.Element(DublinCore + "date") ?? ""),
+                    Id = GetElementValue(element, "guid")
                 })
                 .ToList();
         }
@@ -56,18 +57,11 @@ public static class FeedParser
                 .Elements(Atom + "entry")
                 .Select(element => new FeedItem
                 {
-                    Title = (string?)element.Element(Atom + "title")
-                        ?? "",
-                    Link = GetAtomLink(element, baseUri),
-                    Description =
-                    (string?)element.Element(Atom + "summary")
-                    ?? ExtractAtomContent(element),
-                    PublishedAt = ParseDate(
-                        (string?)element.Element(Atom + "published")
-                        ?? "")
-                    ?? ParseDate(
-                        (string?)element.Element(Atom + "updated")
-                          ?? "")
+                    Title = (string?)element.Element(Atom + "title") ?? "", 
+                    Link = GetAtomLink(element, baseUri), 
+                    Description = (string?)element.Element(Atom + "summary") ?? ExtractAtomContent(element),
+                    PublishedAt = ParseDate((string?)element.Element(Atom + "published") ?? "") ?? ParseDate((string?)element.Element(Atom + "updated") ?? ""), 
+                    Id = (string?)element.Element(Atom + "id") ?? ""
                 })
                 .ToList();
         }

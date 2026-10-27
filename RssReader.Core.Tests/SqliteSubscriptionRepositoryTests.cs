@@ -230,4 +230,35 @@ public class SqliteSubscriptionRepositoryTests
         }
     }
 
+    [Fact]
+    public async Task GetAllAsync_NewlyInitializedRepository_ReturnsEmptyList()
+    {
+        // Arrange
+        string databasePath = CreateDatabasePath();
+
+        try
+        {
+            var repository =
+                new SqliteSubscriptionRepository(databasePath);
+
+            await repository.InitializeAsync();
+
+            // Act
+            List<FeedSubscription> results =
+                await repository.GetAllAsync();
+
+            // Assert
+            Assert.Empty(results);
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+
+            if (File.Exists(databasePath))
+            {
+                File.Delete(databasePath);
+            }
+        }
+    }
+
 }

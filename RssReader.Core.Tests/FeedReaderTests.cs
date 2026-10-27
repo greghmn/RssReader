@@ -1,5 +1,7 @@
 ﻿
 using RssReader.Core;
+using System.Net;
+using System.Text;
 using Xunit;
 
 namespace RssReader.Core.Tests;
@@ -59,6 +61,83 @@ public class FeedReaderTests
                 RequestMessage = new HttpRequestMessage(
                     HttpMethod.Get,
                     "https://example.com/new/feed")
+            };
+
+            return Task.FromResult(response);
+        }
+    }
+
+    //for handling redirects 
+    [Fact]
+    public async Task ReadAsync_WhenFeedRedirects_PreservesOriginalFeedUrlAndResolvesRelativeArticleLink()
+    {
+        const string subscriptionUrl =
+            "https://example.com/subscribe";
+
+        const string finalFeedUrl =
+            "https://cdn.example.com/feeds/current.xml";
+
+        const string feedXml = """
+            <feed xmlns="http://www.w3.org/2005/Atom">
+                <title>Example Feed</title>
+                <entry>
+                    <id>article-123</id>
+                    <title>Example Article</title>
+                    <link href="articles/123" />
+                </entry>
+            </feed>
+            """;
+
+        using HttpClient httpClient = new(
+            new RedirectingHandler(
+                new Uri(finalFeedUrl),
+                feedXml));
+
+        FeedReader reader = new(httpClient);
+
+        List<FeedItem> items =
+            await reader.ReadAsync(subscriptionUrl);
+
+        FeedItem item = Assert.Single(items);
+
+        Assert.Equal(subscriptionUrl, item.FeedUrl);
+
+        Assert.Equal(
+            "https://cdn.example.com/feeds/articles/123",
+            item.Link);
+    }
+
+    //helper for the previous test
+
+    private sealed class RedirectingHandler : HttpMessageHandler
+    {
+        private readonly Uri _finalResponseUri;
+        private readonly string _content;
+
+        public RedirectingHandler(
+            Uri finalResponseUri,
+            string content)
+        {
+            _finalResponseUri = finalResponseUri;
+            _content = content;
+        }
+
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            HttpResponseMessage response = new(
+                HttpStatusCode.OK)
+            {
+                Content = new StringContent(
+                    _content,
+                    Encoding.UTF8,
+                    "application/atom+xml"),
+
+                // Simulate the URL after an HTTP redirect.
+                RequestMessage = new HttpRequestMessage(
+                    HttpMethod.Get,
+                    _finalResponseUri)
             };
 
             return Task.FromResult(response);

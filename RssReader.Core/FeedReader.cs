@@ -1,4 +1,5 @@
 ﻿using System.Xml.Linq;
+using System.Linq;
 
 namespace RssReader.Core;
 
@@ -45,6 +46,20 @@ public class FeedReader : IFeedReader
 
         Uri finalFeedUri = response.RequestMessage?.RequestUri ?? feedUri;
 
-        return FeedParser.Parse(document, finalFeedUri);
+        List<FeedItem> items = FeedParser.Parse(document, finalFeedUri);
+
+        //note: FeedItem's properties have init, not set; the immutabiliry removes any potential shared state issue, but it might be computationally costly to copy like so. We'll see/figure out a workaround if necessary.
+
+        return items
+    .Select(item => new FeedItem
+    {
+        Id = item.Id,
+        FeedUrl = feedUrl,
+        Title = item.Title,
+        Link = item.Link,
+        Description = item.Description,
+        PublishedAt = item.PublishedAt
+    })
+    .ToList();
     }
 }

@@ -19,16 +19,9 @@ public class FeedReader : IFeedReader
         _httpClient = httpClient;
     }
 
-    public async Task<List<FeedItem>> ReadAsync(
-        string feedUrl,
-        CancellationToken cancellationToken = default)
+    public async Task<List<FeedItem>> ReadAsync(string feedUrl, CancellationToken cancellationToken = default)
     {
-        if (!Uri.TryCreate(
-        feedUrl,
-        UriKind.Absolute,
-        out Uri? feedUri)
-    || (feedUri.Scheme != Uri.UriSchemeHttp
-        && feedUri.Scheme != Uri.UriSchemeHttps))
+        if (!Uri.TryCreate(feedUrl, UriKind.Absolute, out Uri? feedUri) || (feedUri.Scheme != Uri.UriSchemeHttp && feedUri.Scheme != Uri.UriSchemeHttps))
         {
             throw new ArgumentException(
                 "The feed URL must be an absolute HTTP or HTTPS URL.",

@@ -100,10 +100,10 @@ while (true)
                     items = await feedService.GetItemsAsync(
                         selectedSubscription.Url);
                 }
-                catch (HttpRequestException)
+                catch (HttpRequestException ex)
                 {
                     Console.WriteLine(
-                        "Could not retrieve the feed. Check the URL and your network connection.");
+                        $"Could not retrieve the feed. {ex.Message}");
                     break;
                 }
                 catch (OperationCanceledException)

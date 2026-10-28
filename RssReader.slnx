@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="RssReader.App/RssReader.App.csproj" Id="0825010e-4e13-4940-852d-3c54a0030e17" />
   <Project Path="RssReader.Console/RssReader.Console.csproj" />
   <Project Path="RssReader.Core.Tests/RssReader.Core.Tests.csproj" Id="39dffcdb-697e-4fee-9243-98e871397893" />
   <Project Path="RssReader.Core/RssReader.Core.csproj" />

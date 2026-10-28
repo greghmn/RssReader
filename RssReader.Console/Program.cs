@@ -154,14 +154,17 @@ while (true)
 
 
 
-                foreach (FeedItem item in items)
+
+                for (int i = 0; i < items.Count; i++)
                 {
+                    FeedItem item = items[i];
+
                     bool isRead = await articleStateService.IsReadAsync(
                         selectedSubscription.Url, item);
 
                     string status = isRead ? "[Read]" : "[Unread]";
 
-                    Console.WriteLine($"{status} {item.Title}");
+                    Console.WriteLine($"{i + 1}. {status} {item.Title}");
                     Console.WriteLine(item.Link);
 
                     if (item.PublishedAt.HasValue)
@@ -171,6 +174,58 @@ while (true)
                     }
 
                     Console.WriteLine();
+                }
+
+                Console.Write("Enter an article number to change its read state, or press Enter to return: ");
+                string? articleInput = Console.ReadLine();
+
+                if (string.IsNullOrWhiteSpace(articleInput))
+                {
+                    break;
+                }
+
+                if (!int.TryParse(articleInput, out int articleSelection) ||
+                    articleSelection < 1 ||
+                    articleSelection > items.Count)
+                {
+                    Console.WriteLine("Invalid article selection.");
+                    break;
+                }
+
+                FeedItem selectedItem = items[articleSelection - 1];
+
+                bool selectedItemIsRead = await articleStateService.IsReadAsync(
+                    selectedSubscription.Url, selectedItem);
+
+                Console.WriteLine(
+                    selectedItemIsRead
+                        ? "1. Mark as unread"
+                        : "1. Mark as read");
+                Console.WriteLine("2. Cancel");
+                Console.Write("Choose an option: ");
+
+                string? stateChoice = Console.ReadLine();
+
+                if (stateChoice == "1")
+                {
+                    if (selectedItemIsRead)
+                    {
+                        await articleStateService.MarkAsUnreadAsync(
+                            selectedSubscription.Url, selectedItem);
+
+                        Console.WriteLine("Article marked as unread.");
+                    }
+                    else
+                    {
+                        await articleStateService.MarkAsReadAsync(
+                            selectedSubscription.Url, selectedItem);
+
+                        Console.WriteLine("Article marked as read.");
+                    }
+                }
+                else if (stateChoice != "2")
+                {
+                    Console.WriteLine("Unrecognized option.");
                 }
 
 

@@ -16,30 +16,74 @@
     </Design.DataContext>
 
 
-<Grid RowDefinitions="Auto,*"
-      ColumnDefinitions="240,1,*">
-    <TextBlock Text="RSS Reader"
-               FontSize="24"
-               FontWeight="Bold"
-               Margin="16" />
+    <Grid RowDefinitions="Auto,*"
+          ColumnDefinitions="240,1,*">
+        <TextBlock Text="RSS Reader"
+                   FontSize="24"
+                   FontWeight="Bold"
+                   Margin="16" />
+
+<Grid Grid.Row="1"
+      Grid.Column="0"
+      RowDefinitions="Auto,*"
+      Margin="16">
 
     <TextBlock Text="Subscriptions"
-           FontSize="18"
-           FontWeight="SemiBold"
-           Margin="16"
-           Grid.Row="1"
-           Grid.Column="0" />
+               FontSize="18"
+               FontWeight="SemiBold" />
+
+    <ListBox Grid.Row="1"
+             ItemsSource="{Binding Subscriptions}"
+             SelectedItem="{Binding SelectedSubscription, Mode=TwoWay}">
+        <ListBox.ItemTemplate>
+            <DataTemplate>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="{Binding Title}"
+                               FontWeight="SemiBold" />
+
+                    <TextBlock Text="{Binding Url}"
+                               FontSize="11"
+                               Opacity="0.7"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </DataTemplate>
+        </ListBox.ItemTemplate>
+    </ListBox>
+</Grid>
     
+<StackPanel Grid.Row="1"
+            Grid.Column="2"
+            Spacing="8"
+            Margin="16">
+
     <TextBlock Text="Articles"
-           FontSize="18"
-           FontWeight="SemiBold"
-           Margin="16"
-           Grid.Row="1"
-           Grid.Column="2" />
+               FontSize="18"
+               FontWeight="SemiBold" />
+
+    <ListBox ItemsSource="{Binding Articles}">
+        <ListBox.ItemTemplate>
+            <DataTemplate>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="{Binding Title}"
+                               FontWeight="SemiBold"
+                               TextWrapping="Wrap" />
+
+                    <TextBlock Text="{Binding PublishedAt}"
+                               FontSize="11"
+                               Opacity="0.7" />
+
+                    <TextBlock Text="{Binding Description}"
+                               TextWrapping="Wrap"
+                               Opacity="0.85" />
+                </StackPanel>
+            </DataTemplate>
+        </ListBox.ItemTemplate>
+    </ListBox>
+</StackPanel>
     
-    <Border Grid.Row="1"
-        Grid.Column="1"
-        BorderBrush="#404040"
-        BorderThickness="0,0,1,0" />
+        <Border Grid.Row="1"
+            Grid.Column="1"
+            BorderBrush="#404040"
+            BorderThickness="0,0,1,0" />
 </Grid>
 </Window>

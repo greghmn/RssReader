@@ -3,17 +3,12 @@ using RssReader.Core;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using System;
+using RssReader.App.Results;
 
 namespace RssReader.App.ViewModels;
 
 public partial class MainViewModel : ViewModelBase
 {
-    [ObservableProperty]
-    public partial string Greeting { get; set; } = "Welcome to Avalonia!";
-
-    [ObservableProperty]
-    public partial bool IsAddSubscriptionDialogOpen { get; set; }
-
     [ObservableProperty]
     public partial FeedSubscription? SelectedSubscription { get; set; }
     
@@ -68,9 +63,9 @@ public partial class MainViewModel : ViewModelBase
         }
     }
 
-    public async Task<bool> AddSubscriptionAsync(
-    string url,
-    string title)
+    public async Task<AddSubscriptionResult> AddSubscriptionAsync(
+        string url,
+        string title)
     {
         var subscription = new FeedSubscription
         {
@@ -78,17 +73,31 @@ public partial class MainViewModel : ViewModelBase
             Title = string.IsNullOrWhiteSpace(title) ? url : title
         };
 
-        bool added = await _subscriptionService.AddAsync(subscription);
-
-        if (!added)
+        try
         {
-            return false;
+            bool added = await _subscriptionService.AddAsync(subscription);
+
+            if (!added)
+            {
+                return AddSubscriptionResult.AlreadyExists;
+            }
+
+            Subscriptions.Add(subscription);
+            SelectedSubscription = subscription;
+
+            return AddSubscriptionResult.Success;
         }
+        catch (ArgumentException)
+        {
+            return AddSubscriptionResult.InvalidUrl;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine(
+                $"Failed to add subscription {url}: {ex}");
 
-        Subscriptions.Add(subscription);
-        SelectedSubscription = subscription;
-
-        return true;
+            return AddSubscriptionResult.Failed;
+        }
     }
 
     public async Task LoadArticlesAsync(FeedSubscription subscription)

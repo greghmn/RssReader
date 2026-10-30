@@ -40,7 +40,7 @@ public class SubscriptionService
         subscription.Url,
         UriKind.Absolute,
         out Uri? feedUri)
-    || (feedUri.Scheme != Uri.UriSchemeHttp
+        || (feedUri.Scheme != Uri.UriSchemeHttp
         && feedUri.Scheme != Uri.UriSchemeHttps))
         {
             throw new ArgumentException(
@@ -51,7 +51,7 @@ public class SubscriptionService
             await _repository.GetAllAsync();
 
         bool alreadyExists = existingSubscriptions.Any(existing =>
-    UrlsMatch(existing.Url, subscription.Url));
+        UrlsMatch(existing.Url, subscription.Url));
 
         if (alreadyExists)
         {
@@ -69,7 +69,7 @@ public class SubscriptionService
 
         FeedSubscription? subscription = existingSubscriptions
             .FirstOrDefault(existing =>
-    UrlsMatch(existing.Url, url));
+        UrlsMatch(existing.Url, url));
 
         if (subscription is null)
         {

@@ -20,7 +20,10 @@ public partial class MainWindow : Window
             return;
         }
 
-        var dialog = new AddSubscriptionWindow();
+        var dialog = new AddSubscriptionWindow
+        {
+            SubmitAsync = viewModel.AddSubscriptionAsync
+        };
 
         bool result = await dialog.ShowDialog<bool>(this);
 

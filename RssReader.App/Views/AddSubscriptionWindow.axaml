@@ -1,7 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="RssReader.App.Views.AddSubscriptionWindow">
-    <Grid RowDefinitions="Auto,Auto,*"
+    <Grid RowDefinitions="Auto,Auto,Auto,*"
       Margin="20">
 
     <StackPanel Spacing="6">
@@ -16,13 +16,20 @@
         <TextBox x:Name="FeedTitleTextBox" PlaceholderText="My favorite feed" />
     </StackPanel>
 
-    <StackPanel Grid.Row="2"
+    <TextBlock x:Name="ErrorTextBlock"
+        Grid.Row="2"
+        TextWrapping="Wrap"
+        Foreground="Red"
+        IsVisible="False"
+        Margin="0,12,0,0" />
+
+    <StackPanel Grid.Row="3"
                 Orientation="Horizontal"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Bottom"
                 Spacing="8">
         <Button Content="Cancel" Click="CancelButton_Click"/>
-        <Button Content="Add subscription" Click="AddSubscriptionButton_Click"/>
+        <Button x:Name="AddSubscriptionButton" Content="Add subscription" Click="AddSubscriptionButton_Click"/>
     </StackPanel>
 
 </Grid>

@@ -25,14 +25,19 @@
 
 <Grid Grid.Row="1"
       Grid.Column="0"
-      RowDefinitions="Auto,*"
+      RowDefinitions="Auto,Auto,*"
       Margin="16">
 
     <TextBlock Text="Subscriptions"
                FontSize="18"
                FontWeight="SemiBold" />
 
-    <ListBox Grid.Row="1"
+    <Button Grid.Row="1"
+        Content="Add subscription"
+        HorizontalAlignment="Stretch"
+        Margin="0,8,0,8" Click="AddSubscriptionButton_Click"/>
+
+    <ListBox Grid.Row="2"
              ItemsSource="{Binding Subscriptions}"
              SelectedItem="{Binding SelectedSubscription, Mode=TwoWay}">
         <ListBox.ItemTemplate>
@@ -51,35 +56,100 @@
     </ListBox>
 </Grid>
     
-<StackPanel Grid.Row="1"
-            Grid.Column="2"
-            Spacing="8"
-            Margin="16">
+<Grid Grid.Row="1"
+      Grid.Column="2"
+      ColumnDefinitions="2*,3*"
+      Margin="16">
 
-    <TextBlock Text="Articles"
-               FontSize="18"
-               FontWeight="SemiBold" />
+    <!-- Article list -->
+    <Grid Grid.Column="0"
+          RowDefinitions="Auto,Auto,Auto,Auto,Auto,*"
+          Margin="0,0,12,0">
 
-    <ListBox ItemsSource="{Binding Articles}">
-        <ListBox.ItemTemplate>
-            <DataTemplate>
-                <StackPanel Spacing="4">
-                    <TextBlock Text="{Binding Title}"
-                               FontWeight="SemiBold"
-                               TextWrapping="Wrap" />
+        <TextBlock Text="Articles"
+                   FontSize="18"
+                   FontWeight="SemiBold" />
 
-                    <TextBlock Text="{Binding PublishedAt}"
-                               FontSize="11"
-                               Opacity="0.7" />
+        <TextBlock Grid.Row="1"
+                   Text="Select a feed to view its articles."
+                   IsVisible="{Binding HasNoSelectedSubscription}"
+                   Opacity="0.7"
+                   TextWrapping="Wrap" />
 
-                    <TextBlock Text="{Binding Description}"
-                               TextWrapping="Wrap"
-                               Opacity="0.85" />
-                </StackPanel>
-            </DataTemplate>
-        </ListBox.ItemTemplate>
-    </ListBox>
-</StackPanel>
+        <TextBlock Grid.Row="2"
+                   Text="This feed doesn't contain any articles yet."
+                   IsVisible="{Binding HasNoArticles}"
+                   Opacity="0.7"
+                   TextWrapping="Wrap" />
+
+        <TextBlock Grid.Row="3"
+                   Text="Loading articles..."
+                   IsVisible="{Binding IsLoadingArticles}"
+                   Opacity="0.7" />
+
+        <TextBlock Grid.Row="4"
+                   Text="{Binding ArticleLoadError}"
+                   IsVisible="{Binding ArticleLoadError}"
+                   Foreground="IndianRed"
+                   TextWrapping="Wrap" />
+
+        <ListBox Grid.Row="5"
+                 ItemsSource="{Binding Articles}"
+                 SelectedItem="{Binding SelectedArticle, Mode=TwoWay}">
+
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="{Binding Title}"
+                                   FontWeight="SemiBold"
+                                   TextWrapping="Wrap" />
+
+                        <TextBlock Text="{Binding PublishedAt}"
+                                   FontSize="11"
+                                   Opacity="0.7" />
+
+                        <TextBlock Text="{Binding Description}"
+                                   TextWrapping="Wrap"
+                                   Opacity="0.85" />
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </Grid>
+
+<!-- Reading pane -->
+<Border Grid.Column="1"
+        BorderBrush="#404040"
+        BorderThickness="1,0,0,0"
+        Padding="12,0,0,0">
+
+    <Grid>
+        <TextBlock Text="Select an article to start reading."
+                   IsVisible="{Binding HasNoSelectedArticle}"
+                   Opacity="0.7"
+                   TextWrapping="Wrap" />
+
+    <ScrollViewer IsVisible="{Binding HasSelectedArticle}">
+        <StackPanel Spacing="8">
+
+            <TextBlock Text="{Binding SelectedArticle.Title}"
+                       FontSize="22"
+                       FontWeight="Bold"
+                       TextWrapping="Wrap" />
+
+            <TextBlock Text="{Binding SelectedArticle.PublishedAt}"
+                       FontSize="12"
+                       Opacity="0.7" />
+
+            <TextBlock Text="{Binding SelectedArticle.Description}"
+                       TextWrapping="Wrap" />
+
+        </StackPanel>
+    </ScrollViewer> 
+    </Grid>
+</Border>
+
+</Grid>
     
         <Border Grid.Row="1"
             Grid.Column="1"

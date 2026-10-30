@@ -12,10 +12,34 @@ public partial class MainViewModel : ViewModelBase
     public partial string Greeting { get; set; } = "Welcome to Avalonia!";
 
     [ObservableProperty]
+    public partial bool IsAddSubscriptionDialogOpen { get; set; }
+
+    [ObservableProperty]
     public partial FeedSubscription? SelectedSubscription { get; set; }
     
     [ObservableProperty]
     public partial string? ArticleLoadError { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsLoadingArticles { get; set; }
+
+    [ObservableProperty]
+    public partial bool HasSelectedSubscription { get; set; }
+
+    [ObservableProperty]
+    public partial bool HasNoSelectedSubscription { get; set; } = true;
+
+    [ObservableProperty]
+    public partial bool HasNoArticles { get; set; }
+
+    [ObservableProperty]
+    public partial FeedItem? SelectedArticle { get; set; }
+
+    [ObservableProperty]
+    public partial bool HasSelectedArticle { get; set; }
+
+    [ObservableProperty]
+    public partial bool HasNoSelectedArticle { get; set; } = true;
 
     private readonly SubscriptionService _subscriptionService;
 
@@ -43,6 +67,30 @@ public partial class MainViewModel : ViewModelBase
             Subscriptions.Add(subscription);
         }
     }
+
+    public async Task<bool> AddSubscriptionAsync(
+    string url,
+    string title)
+    {
+        var subscription = new FeedSubscription
+        {
+            Url = url,
+            Title = string.IsNullOrWhiteSpace(title) ? url : title
+        };
+
+        bool added = await _subscriptionService.AddAsync(subscription);
+
+        if (!added)
+        {
+            return false;
+        }
+
+        Subscriptions.Add(subscription);
+        SelectedSubscription = subscription;
+
+        return true;
+    }
+
     public async Task LoadArticlesAsync(FeedSubscription subscription)
     {
         var articles = await _feedService.GetItemsAsync(subscription.Url);
@@ -54,9 +102,10 @@ public partial class MainViewModel : ViewModelBase
             Articles.Add(article);
         }
     }
-    partial void OnSelectedSubscriptionChanged(
-        FeedSubscription? value)
+    partial void OnSelectedSubscriptionChanged(FeedSubscription? value)
     {
+        HasSelectedSubscription = value is not null;
+        HasNoSelectedSubscription = value is null;
         if (value is not null)
         {
             _ = LoadArticlesSafelyAsync(value);
@@ -66,13 +115,16 @@ public partial class MainViewModel : ViewModelBase
             ++_articleLoadRequestId;
             Articles.Clear();
             ArticleLoadError = null;
+            IsLoadingArticles = false;
+            HasNoArticles = false;
         }
     }
-    private async Task LoadArticlesSafelyAsync(
-        FeedSubscription subscription)
+
+    private async Task LoadArticlesSafelyAsync(FeedSubscription subscription)
     {
         int requestId = ++_articleLoadRequestId;
-
+        IsLoadingArticles = true;
+        HasNoArticles = false;
         Articles.Clear();
         ArticleLoadError = null;
 
@@ -90,6 +142,8 @@ public partial class MainViewModel : ViewModelBase
             {
                 Articles.Add(article);
             }
+
+            HasNoArticles = Articles.Count == 0;
         }
         catch (Exception ex)
         {
@@ -104,5 +158,17 @@ public partial class MainViewModel : ViewModelBase
             ArticleLoadError =
                 "Unable to load articles. Check your connection and try again.";
         }
+        finally
+        {
+            if (requestId == _articleLoadRequestId)
+            {
+                IsLoadingArticles = false;
+            }
+        }
+    }
+    partial void OnSelectedArticleChanged(FeedItem? value)
+    {
+        HasSelectedArticle = value is not null;
+        HasNoSelectedArticle = value is null;
     }
 }

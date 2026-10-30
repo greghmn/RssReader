@@ -1,6 +1,8 @@
-﻿using Avalonia.Interactivity;
+﻿using Avalonia.Controls;
+using Avalonia.Interactivity;
 using RssReader.App.ViewModels;
-using Avalonia.Controls;
+using RssReader.Core;
+using System;
 
 namespace RssReader.App.Views;
 
@@ -35,5 +37,50 @@ public partial class MainWindow : Window
         await viewModel.AddSubscriptionAsync(
             dialog.FeedUrl,
             dialog.FeedTitle);
+    }
+
+    private async void RemoveSubscriptionButton_Click(
+    object? sender,
+    RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel viewModel)
+        {
+            return;
+        }
+
+        FeedSubscription? subscription =
+            viewModel.SelectedSubscription;
+
+        if (subscription is null)
+        {
+            return;
+        }
+
+        var dialog = new RemoveSubscriptionWindow(
+            subscription.Title);
+
+        bool confirmed = await dialog.ShowDialog<bool>(this);
+
+        if (!confirmed)
+        {
+            return;
+        }
+
+        try
+        {
+            bool removed =
+                await viewModel.RemoveSubscriptionAsync(subscription);
+
+            if (!removed)
+            {
+                Console.Error.WriteLine(
+                    $"Subscription not found during removal: {subscription.Url}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine(
+                $"Failed to remove subscription {subscription.Url}: {ex}");
+        }
     }
 }

@@ -1,0 +1,38 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="RssReader.App.Views.RemoveSubscriptionWindow"
+        Title="Remove Subscription"
+        Width="400"
+        Height="200"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False">
+
+    <Grid RowDefinitions="*,Auto"
+          Margin="20">
+
+        <StackPanel Spacing="10">
+            <TextBlock Text="Unsubscribe from this feed?"
+                       FontSize="18"
+                       FontWeight="Bold" />
+
+            <TextBlock x:Name="SubscriptionTitleTextBlock"
+                       TextWrapping="Wrap" />
+
+            <TextBlock Text="Your article history and downloaded content will be retained."
+                       TextWrapping="Wrap" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="1"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Spacing="8">
+
+            <Button Content="Cancel"
+                    Click="CancelButton_Click" />
+
+            <Button Content="Unsubscribe"
+                    Click="ConfirmButton_Click" />
+        </StackPanel>
+
+    </Grid>
+</Window>

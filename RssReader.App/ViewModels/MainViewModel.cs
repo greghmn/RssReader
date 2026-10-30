@@ -180,4 +180,25 @@ public partial class MainViewModel : ViewModelBase
         HasSelectedArticle = value is not null;
         HasNoSelectedArticle = value is null;
     }
+
+    public async Task<bool> RemoveSubscriptionAsync(
+    FeedSubscription subscription)
+    {
+        bool removed = await _subscriptionService.RemoveAsync(
+            subscription.Url);
+
+        if (!removed)
+        {
+            return false;
+        }
+
+        if (SelectedSubscription == subscription)
+        {
+            SelectedSubscription = null;
+        }
+
+        Subscriptions.Remove(subscription);
+
+        return true;
+    }
 }

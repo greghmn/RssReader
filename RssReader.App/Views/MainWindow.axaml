@@ -107,25 +107,45 @@
 
             <ListBox.ItemTemplate>
                 <DataTemplate>
-                    <StackPanel Spacing="4">
-<TextBlock Text="{Binding Item.Title}"
-           FontWeight="Bold"
-           TextWrapping="Wrap"
-           IsVisible="{Binding IsUnread}" />
+<Grid ColumnDefinitions="Auto,*"
+      RowDefinitions="Auto,Auto,Auto">
 
-<TextBlock Text="{Binding Item.Title}"
-           FontWeight="Normal"
-           TextWrapping="Wrap"
-           IsVisible="{Binding IsRead}" />
+    <!-- Unread indicator -->
+    <TextBlock Grid.Column="0"
+               Text="●"
+               Foreground="DodgerBlue"
+               IsVisible="{Binding IsUnread}"
+               VerticalAlignment="Center"
+               Margin="0,0,6,0" />
 
-<TextBlock Text="{Binding Item.PublishedAt}"
-           FontSize="11"
-           Opacity="0.7" />
+    <!-- Article title -->
+    <TextBlock Grid.Column="1"
+               Text="{Binding Item.Title}"
+               FontWeight="Bold"
+               TextWrapping="Wrap"
+               IsVisible="{Binding IsUnread}" />
 
-<TextBlock Text="{Binding Item.Description}"
-           TextWrapping="Wrap"
-           Opacity="0.85" />
-                    </StackPanel>
+    <TextBlock Grid.Column="1"
+               Text="{Binding Item.Title}"
+               FontWeight="Normal"
+               TextWrapping="Wrap"
+               IsVisible="{Binding IsRead}" />
+
+    <!-- Publication date -->
+    <TextBlock Grid.Row="1"
+               Grid.ColumnSpan="2"
+               Text="{Binding Item.PublishedAt}"
+               FontSize="11"
+               Opacity="0.7" />
+
+    <!-- Description -->
+    <TextBlock Grid.Row="2"
+               Grid.ColumnSpan="2"
+               Text="{Binding Item.Description}"
+               TextWrapping="Wrap"
+               Opacity="0.85" />
+
+</Grid>
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>

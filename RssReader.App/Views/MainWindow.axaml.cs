@@ -8,79 +8,126 @@ namespace RssReader.App.Views;
 
 public partial class MainWindow : Window
 {
-    public MainWindow()
-    {
-        InitializeComponent();
-    }
+	public MainWindow()
+	{
+		InitializeComponent();
+	}
 
-    private async void AddSubscriptionButton_Click(
-    object? sender,
-    RoutedEventArgs e)
-    {
-        if (DataContext is not MainViewModel viewModel)
-        {
-            return;
-        }
+	private async void AddSubscriptionButton_Click(
+	object? sender,
+	RoutedEventArgs e)
+	{
+		if (DataContext is not MainViewModel viewModel)
+		{
+			return;
+		}
 
-        var dialog = new AddSubscriptionWindow
-        {
-            SubmitAsync = viewModel.AddSubscriptionAsync
-        };
+		var dialog = new AddSubscriptionWindow
+		{
+			SubmitAsync = viewModel.AddSubscriptionAsync
+		};
 
-        bool result = await dialog.ShowDialog<bool>(this);
+		bool result = await dialog.ShowDialog<bool>(this);
 
-        if (!result)
-        {
-            return;
-        }
+		if (!result)
+		{
+			return;
+		}
 
-        await viewModel.AddSubscriptionAsync(
-            dialog.FeedUrl,
-            dialog.FeedTitle);
-    }
+		await viewModel.AddSubscriptionAsync(
+				dialog.FeedUrl,
+				dialog.FeedTitle);
+	}
 
-    private async void RemoveSubscriptionButton_Click(
-    object? sender,
-    RoutedEventArgs e)
-    {
-        if (DataContext is not MainViewModel viewModel)
-        {
-            return;
-        }
+	private async void RemoveSubscriptionButton_Click(
+	object? sender,
+	RoutedEventArgs e)
+	{
+		if (DataContext is not MainViewModel viewModel)
+		{
+			return;
+		}
 
-        SubscriptionViewModel? subscription =
-            viewModel.SelectedSubscription;
+		SubscriptionViewModel? subscription =
+				viewModel.SelectedSubscription;
 
-        if (subscription is null)
-        {
-            return;
-        }
+		if (subscription is null)
+		{
+			return;
+		}
 
-        var dialog = new RemoveSubscriptionWindow(
-            subscription.Item.Title);
+		var dialog = new RemoveSubscriptionWindow(
+				subscription.Item.Title);
 
-        bool confirmed = await dialog.ShowDialog<bool>(this);
+		bool confirmed = await dialog.ShowDialog<bool>(this);
 
-        if (!confirmed)
-        {
-            return;
-        }
+		if (!confirmed)
+		{
+			return;
+		}
 
-        try
-        {
-            bool removed =
-                await viewModel.RemoveSubscriptionAsync(subscription);
+		try
+		{
+			bool removed =
+					await viewModel.RemoveSubscriptionAsync(subscription);
 
-            if (!removed)
-            {
-                Console.Error.WriteLine(
-                    $"Subscription not found during removal: {subscription.Item.Url}");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine(
-                $"Failed to remove subscription {subscription.Item.Url}: {ex}");
-        }
-    }
+			if (!removed)
+			{
+				Console.Error.WriteLine(
+						$"Subscription not found during removal: {subscription.Item.Url}");
+			}
+		}
+		catch (Exception ex)
+		{
+			Console.Error.WriteLine(
+					$"Failed to remove subscription {subscription.Item.Url}: {ex}");
+		}
+	}
+	private async void OpenArticleLinkButton_Click(
+	object? sender,
+	RoutedEventArgs e)
+	{
+		if (DataContext is not MainViewModel viewModel)
+			return;
+
+		ArticleViewModel? article = viewModel.SelectedArticle;
+
+		if (article is null)
+			return;
+
+		if (!Uri.TryCreate(
+						article.Item.Link,
+						UriKind.Absolute,
+						out Uri? uri))
+		{
+			return;
+		}
+
+		if (uri.Scheme != Uri.UriSchemeHttp &&
+				uri.Scheme != Uri.UriSchemeHttps)
+		{
+			return;
+		}
+
+		try
+		{
+			var launcher = TopLevel.GetTopLevel(this)?.Launcher;
+
+			if (launcher is null)
+				return;
+
+			bool launched = await launcher.LaunchUriAsync(uri);
+
+			if (!launched)
+			{
+				Console.Error.WriteLine(
+						$"Unable to open article URL: {uri}");
+			}
+		}
+		catch (Exception ex)
+		{
+			Console.Error.WriteLine(
+					$"Failed to open article URL: {ex}");
+		}
+	}
 }

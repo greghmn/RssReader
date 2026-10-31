@@ -9,82 +9,82 @@
         Icon="/Assets/avalonia-logo.ico"
         Title="RssReader.App">
 
-    <Design.DataContext>
-        <!-- This only sets the DataContext for the previewer in an IDE,
-             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
-        <vm:MainViewModel />
-    </Design.DataContext>
+  <Design.DataContext>
+    <!-- This only sets the DataContext for the previewer in an IDE,
+    to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+    <vm:MainViewModel />
+  </Design.DataContext>
 
 
-    <Grid RowDefinitions="Auto,*"
-          ColumnDefinitions="240,1,*">
-        <TextBlock Text="RSS Reader"
-                   FontSize="24"
-                   FontWeight="Bold"
-                   Margin="16" />
+  <Grid RowDefinitions="Auto,*"
+        ColumnDefinitions="240,1,*">
+    <TextBlock Text="RSS Reader"
+               FontSize="24"
+               FontWeight="Bold"
+               Margin="16" />
 
-<Grid Grid.Row="1"
-      Grid.Column="0"
-      RowDefinitions="Auto,Auto,Auto,*"
-      Margin="16">
+    <Grid Grid.Row="1"
+          Grid.Column="0"
+          RowDefinitions="Auto,Auto,Auto,*"
+          Margin="16">
 
-    <TextBlock Text="Subscriptions"
-               FontSize="18"
-               FontWeight="SemiBold" />
+      <TextBlock Text="Subscriptions"
+                 FontSize="18"
+                 FontWeight="SemiBold" />
 
-    <Button Grid.Row="1"
-        Content="Add subscription"
-        HorizontalAlignment="Stretch"
-        Margin="0,8,0,8" Click="AddSubscriptionButton_Click"/>
+      <Button Grid.Row="1"
+              Content="Add subscription"
+              HorizontalAlignment="Stretch"
+              Margin="0,8,0,8" Click="AddSubscriptionButton_Click"/>
 
-    <Button Grid.Row="2"
-        x:Name="RemoveSubscriptionButton"
-        Content="Remove subscription"
-        HorizontalAlignment="Stretch"
-        Margin="0,0,0,8"
-        IsEnabled="{Binding HasSelectedSubscription}"
-        Click="RemoveSubscriptionButton_Click" />
+      <Button Grid.Row="2"
+              x:Name="RemoveSubscriptionButton"
+              Content="Remove subscription"
+              HorizontalAlignment="Stretch"
+              Margin="0,0,0,8"
+              IsEnabled="{Binding HasSelectedSubscription}"
+              Click="RemoveSubscriptionButton_Click" />
 
-    <ListBox Grid.Row="3"
-             ItemsSource="{Binding Subscriptions}"
-             SelectedItem="{Binding SelectedSubscription, Mode=TwoWay}">
+      <ListBox Grid.Row="3"
+               ItemsSource="{Binding Subscriptions}"
+               SelectedItem="{Binding SelectedSubscription, Mode=TwoWay}">
         <ListBox.ItemTemplate>
-            <DataTemplate>
-<StackPanel Spacing="4">
-    <Grid ColumnDefinitions="*,Auto">
-        <TextBlock Text="{Binding Item.Title}"
-                   FontWeight="SemiBold"
-                   VerticalAlignment="Center" />
+          <DataTemplate>
+            <StackPanel Spacing="4">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="{Binding Item.Title}"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center" />
 
-        <TextBlock Grid.Column="1"
-                   Text="{Binding UnreadCount}"
-                   IsVisible="{Binding HasUnreadCount}"
-                   FontSize="11"
-                   FontWeight="Bold"
-                   Foreground="DodgerBlue"
-                   VerticalAlignment="Center"
-                   Margin="8,0,0,0" />
+                <TextBlock Grid.Column="1"
+                           Text="{Binding UnreadCount}"
+                           IsVisible="{Binding HasUnreadCount}"
+                           FontSize="11"
+                           FontWeight="Bold"
+                           Foreground="DodgerBlue"
+                           VerticalAlignment="Center"
+                           Margin="8,0,0,0" />
+              </Grid>
+
+              <TextBlock Text="{Binding Item.Url}"
+                         FontSize="11"
+                         Opacity="0.7"
+                         TextWrapping="Wrap" />
+            </StackPanel>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
     </Grid>
 
-    <TextBlock Text="{Binding Item.Url}"
-               FontSize="11"
-               Opacity="0.7"
-               TextWrapping="Wrap" />
-</StackPanel>
-            </DataTemplate>
-        </ListBox.ItemTemplate>
-    </ListBox>
-</Grid>
-    
-<Grid Grid.Row="1"
-      Grid.Column="2"
-      ColumnDefinitions="2*,3*"
-      Margin="16">
+    <Grid Grid.Row="1"
+          Grid.Column="2"
+          ColumnDefinitions="2*,3*"
+          Margin="16">
 
-    <!-- Article list -->
-    <Grid Grid.Column="0"
-          RowDefinitions="Auto,Auto,Auto,Auto,Auto,*"
-          Margin="0,0,12,0">
+      <!-- Article list -->
+      <Grid Grid.Column="0"
+            RowDefinitions="Auto,Auto,Auto,Auto,Auto,*"
+            Margin="0,0,12,0">
 
         <TextBlock Text="Articles"
                    FontSize="18"
@@ -117,95 +117,97 @@
                  ItemsSource="{Binding Articles}"
                  SelectedItem="{Binding SelectedArticle, Mode=TwoWay}">
 
-            <ListBox.ItemTemplate>
-                <DataTemplate>
-<Grid ColumnDefinitions="Auto,*"
-      RowDefinitions="Auto,Auto,Auto">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <Grid ColumnDefinitions="Auto,*"
+                    RowDefinitions="Auto,Auto,Auto">
 
-    <!-- Unread indicator -->
-    <TextBlock Grid.Column="0"
-               Text="●"
-               Foreground="DodgerBlue"
-               IsVisible="{Binding IsUnread}"
-               VerticalAlignment="Center"
-               Margin="0,0,6,0" />
+                <!-- Unread indicator -->
+                <TextBlock Grid.Column="0"
+                           Text="●"
+                           Foreground="DodgerBlue"
+                           IsVisible="{Binding IsUnread}"
+                           VerticalAlignment="Center"
+                           Margin="0,0,6,0" />
 
-    <!-- Article title -->
-    <TextBlock Grid.Column="1"
-               Text="{Binding Item.Title}"
-               FontWeight="Bold"
-               TextWrapping="Wrap"
-               IsVisible="{Binding IsUnread}" />
+                <!-- Article title -->
+                <TextBlock Grid.Column="1"
+                           Text="{Binding Item.Title}"
+                           FontWeight="Bold"
+                           TextWrapping="Wrap"
+                           IsVisible="{Binding IsUnread}" />
 
-    <TextBlock Grid.Column="1"
-               Text="{Binding Item.Title}"
-               FontWeight="Normal"
-               TextWrapping="Wrap"
-               IsVisible="{Binding IsRead}" />
+                <TextBlock Grid.Column="1"
+                           Text="{Binding Item.Title}"
+                           FontWeight="Normal"
+                           TextWrapping="Wrap"
+                           IsVisible="{Binding IsRead}" />
 
-    <!-- Publication date -->
-    <TextBlock Grid.Row="1"
-               Grid.ColumnSpan="2"
-               Text="{Binding Item.PublishedAt}"
-               FontSize="11"
-               Opacity="0.7" />
+                <!-- Publication date -->
+                <TextBlock Grid.Row="1"
+                           Grid.ColumnSpan="2"
+                           Text="{Binding Item.PublishedAt}"
+                           FontSize="11"
+                           Opacity="0.7" />
 
-    <!-- Description -->
-    <TextBlock Grid.Row="2"
-               Grid.ColumnSpan="2"
-               Text="{Binding Item.Description}"
-               TextWrapping="Wrap"
-               Opacity="0.85" />
+                <!-- Description -->
+                <TextBlock Grid.Row="2"
+                           Grid.ColumnSpan="2"
+                           Text="{Binding Item.Description}"
+                           TextWrapping="Wrap"
+                           Opacity="0.85" />
 
-</Grid>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
         </ListBox>
+      </Grid>
+
+      <!-- Reading pane -->
+      <Border Grid.Column="1"
+              BorderBrush="#404040"
+              BorderThickness="1,0,0,0"
+              Padding="12,0,0,0">
+
+        <Grid>
+          <TextBlock Text="Select an article to start reading."
+                     IsVisible="{Binding HasNoSelectedArticle}"
+                     Opacity="0.7"
+                     TextWrapping="Wrap" />
+
+          <ScrollViewer IsVisible="{Binding HasSelectedArticle}">
+            <StackPanel Spacing="8">
+
+              <TextBlock Text="{Binding SelectedArticle.Item.Title}"
+                         FontSize="22"
+                         FontWeight="Bold"
+                         TextWrapping="Wrap" />
+
+              <TextBlock Text="{Binding SelectedArticle.Item.PublishedAt}"
+                         FontSize="12"
+                         Opacity="0.7" />
+              <Button Content="Open original article ↗"
+                      HorizontalAlignment="Left"
+                      Click="OpenArticleLinkButton_Click" />
+              <TextBlock Text="{Binding SelectedArticle.Item.Description}"
+                         TextWrapping="Wrap" />
+              <Button Content="Mark as read"
+                      Command="{Binding MarkSelectedArticleAsReadCommand}"
+                      IsVisible="{Binding CanMarkSelectedArticleAsRead}" />
+
+              <Button Content="Mark as unread"
+                      Command="{Binding MarkSelectedArticleAsUnreadCommand}"
+                      IsVisible="{Binding CanMarkSelectedArticleAsUnread}" />
+            </StackPanel>
+          </ScrollViewer>
+        </Grid>
+      </Border>
+
     </Grid>
 
-<!-- Reading pane -->
-<Border Grid.Column="1"
-        BorderBrush="#404040"
-        BorderThickness="1,0,0,0"
-        Padding="12,0,0,0">
-
-    <Grid>
-        <TextBlock Text="Select an article to start reading."
-                   IsVisible="{Binding HasNoSelectedArticle}"
-                   Opacity="0.7"
-                   TextWrapping="Wrap" />
-
-    <ScrollViewer IsVisible="{Binding HasSelectedArticle}">
-        <StackPanel Spacing="8">
-
-<TextBlock Text="{Binding SelectedArticle.Item.Title}"
-           FontSize="22"
-           FontWeight="Bold"
-           TextWrapping="Wrap" />
-
-<TextBlock Text="{Binding SelectedArticle.Item.PublishedAt}"
-           FontSize="12"
-           Opacity="0.7" />
-
-<TextBlock Text="{Binding SelectedArticle.Item.Description}"
-           TextWrapping="Wrap" />
-<Button Content="Mark as read"
-        Command="{Binding MarkSelectedArticleAsReadCommand}"
-        IsVisible="{Binding CanMarkSelectedArticleAsRead}" />
-
-<Button Content="Mark as unread"
-        Command="{Binding MarkSelectedArticleAsUnreadCommand}"
-        IsVisible="{Binding CanMarkSelectedArticleAsUnread}" />
-        </StackPanel>
-    </ScrollViewer> 
-    </Grid>
-</Border>
-
-</Grid>
-    
-        <Border Grid.Row="1"
+    <Border Grid.Row="1"
             Grid.Column="1"
             BorderBrush="#404040"
             BorderThickness="0,0,1,0" />
-</Grid>
+  </Grid>
 </Window>

@@ -188,6 +188,7 @@
                          Opacity="0.7" />
               <Button Content="Open original article ↗"
                       HorizontalAlignment="Left"
+                      IsVisible="{Binding SelectedArticle.CanOpenArticleLink}"
                       Click="OpenArticleLinkButton_Click" />
               <TextBlock Text="{Binding SelectedArticle.Item.Description}"
                          TextWrapping="Wrap" />

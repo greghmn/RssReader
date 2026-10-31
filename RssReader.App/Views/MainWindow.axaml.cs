@@ -48,7 +48,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        FeedSubscription? subscription =
+        SubscriptionViewModel? subscription =
             viewModel.SelectedSubscription;
 
         if (subscription is null)
@@ -57,7 +57,7 @@ public partial class MainWindow : Window
         }
 
         var dialog = new RemoveSubscriptionWindow(
-            subscription.Title);
+            subscription.Item.Title);
 
         bool confirmed = await dialog.ShowDialog<bool>(this);
 
@@ -74,13 +74,13 @@ public partial class MainWindow : Window
             if (!removed)
             {
                 Console.Error.WriteLine(
-                    $"Subscription not found during removal: {subscription.Url}");
+                    $"Subscription not found during removal: {subscription.Item.Url}");
             }
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine(
-                $"Failed to remove subscription {subscription.Url}: {ex}");
+                $"Failed to remove subscription {subscription.Item.Url}: {ex}");
         }
     }
 }

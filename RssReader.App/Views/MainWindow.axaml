@@ -50,15 +50,27 @@
              SelectedItem="{Binding SelectedSubscription, Mode=TwoWay}">
         <ListBox.ItemTemplate>
             <DataTemplate>
-                <StackPanel Spacing="4">
-                    <TextBlock Text="{Binding Title}"
-                               FontWeight="SemiBold" />
+<StackPanel Spacing="4">
+    <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="{Binding Item.Title}"
+                   FontWeight="SemiBold"
+                   VerticalAlignment="Center" />
 
-                    <TextBlock Text="{Binding Url}"
-                               FontSize="11"
-                               Opacity="0.7"
-                               TextWrapping="Wrap" />
-                </StackPanel>
+        <TextBlock Grid.Column="1"
+                   Text="{Binding UnreadCount}"
+                   IsVisible="{Binding HasUnreadCount}"
+                   FontSize="11"
+                   FontWeight="Bold"
+                   Foreground="DodgerBlue"
+                   VerticalAlignment="Center"
+                   Margin="8,0,0,0" />
+    </Grid>
+
+    <TextBlock Text="{Binding Item.Url}"
+               FontSize="11"
+               Opacity="0.7"
+               TextWrapping="Wrap" />
+</StackPanel>
             </DataTemplate>
         </ListBox.ItemTemplate>
     </ListBox>

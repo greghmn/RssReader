@@ -1,18 +1,19 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using RssReader.Core;
-using System.Collections.ObjectModel;
-using System.Threading.Tasks;
-using System;
-using RssReader.App.Results;
 using CommunityToolkit.Mvvm.Input;
+using RssReader.App.Results;
+using RssReader.Core;
+using System;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace RssReader.App.ViewModels;
 
 public partial class MainViewModel : ViewModelBase
 {
     [ObservableProperty]
-    public partial FeedSubscription? SelectedSubscription { get; set; }
-    
+    public partial SubscriptionViewModel? SelectedSubscription { get; set; }
+
     [ObservableProperty]
     public partial string? ArticleLoadError { get; set; }
 
@@ -45,7 +46,7 @@ public partial class MainViewModel : ViewModelBase
 
     private int _articleLoadRequestId;
 
-    public ObservableCollection<FeedSubscription> Subscriptions { get; } = new();
+    public ObservableCollection<SubscriptionViewModel> Subscriptions { get; } = new();
 
     public ObservableCollection<ArticleViewModel> Articles { get; } = new();
 
@@ -75,7 +76,7 @@ public partial class MainViewModel : ViewModelBase
 
         foreach (var subscription in subscriptions)
         {
-            Subscriptions.Add(subscription);
+            Subscriptions.Add(new SubscriptionViewModel(subscription));
         }
     }
 
@@ -98,8 +99,10 @@ public partial class MainViewModel : ViewModelBase
                 return AddSubscriptionResult.AlreadyExists;
             }
 
-            Subscriptions.Add(subscription);
-            SelectedSubscription = subscription;
+            var subscriptionViewModel = new SubscriptionViewModel(subscription);
+
+            Subscriptions.Add(subscriptionViewModel);
+            SelectedSubscription = subscriptionViewModel;
 
             return AddSubscriptionResult.Success;
         }
@@ -117,13 +120,14 @@ public partial class MainViewModel : ViewModelBase
     }
 
 
-    partial void OnSelectedSubscriptionChanged(FeedSubscription? value)
+    partial void OnSelectedSubscriptionChanged(SubscriptionViewModel? value)
     {
         HasSelectedSubscription = value is not null;
         HasNoSelectedSubscription = value is null;
+
         if (value is not null)
         {
-            _ = LoadArticlesSafelyAsync(value);
+            _ = LoadArticlesSafelyAsync(value.Item);
         }
         else
         {
@@ -134,7 +138,6 @@ public partial class MainViewModel : ViewModelBase
             HasNoArticles = false;
         }
     }
-
     private async Task LoadArticlesSafelyAsync(FeedSubscription subscription)
     {
         int requestId = ++_articleLoadRequestId;
@@ -153,6 +156,8 @@ public partial class MainViewModel : ViewModelBase
                 return;
             }
 
+            int unreadCount = 0;
+
             foreach (var article in articles)
             {
                 bool isRead = await _articleStateService.IsReadAsync(
@@ -164,7 +169,21 @@ public partial class MainViewModel : ViewModelBase
                     return;
                 }
 
+                if (!isRead)
+                {
+                    unreadCount++;
+                }
+
                 Articles.Add(new ArticleViewModel(article, isRead));
+            }
+
+            SubscriptionViewModel? subscriptionViewModel =
+                Subscriptions.FirstOrDefault(
+                    s => s.Item.Url == subscription.Url);
+
+            if (subscriptionViewModel is not null)
+            {
+                subscriptionViewModel.UnreadCount = unreadCount;
             }
 
             HasNoArticles = Articles.Count == 0;
@@ -198,10 +217,10 @@ public partial class MainViewModel : ViewModelBase
     }
 
     public async Task<bool> RemoveSubscriptionAsync(
-    FeedSubscription subscription)
+    SubscriptionViewModel subscription)
     {
         bool removed = await _subscriptionService.RemoveAsync(
-            subscription.Url);
+            subscription.Item.Url);
 
         if (!removed)
         {
@@ -232,7 +251,7 @@ public partial class MainViewModel : ViewModelBase
     private async Task SetSelectedArticleReadStateAsync(bool isRead)
     {
         ArticleViewModel? article = SelectedArticle;
-        FeedSubscription? subscription = SelectedSubscription;
+        SubscriptionViewModel? subscription = SelectedSubscription;
 
         if (article is null || subscription is null)
             return;
@@ -242,18 +261,25 @@ public partial class MainViewModel : ViewModelBase
             if (isRead)
             {
                 await _articleStateService.MarkAsReadAsync(
-                    subscription.Url,
+                    subscription.Item.Url,
                     article.Item);
             }
             else
             {
                 await _articleStateService.MarkAsUnreadAsync(
-                    subscription.Url,
+                    subscription.Item.Url,
                     article.Item);
             }
 
+            bool wasRead = article.IsRead;
+
             article.IsRead = isRead;
             RefreshSelectedArticleReadState();
+
+            if (subscription.UnreadCount.HasValue && wasRead != isRead)
+            {
+                subscription.UnreadCount += isRead ? -1 : 1;
+            }
         }
         catch (Exception ex)
         {

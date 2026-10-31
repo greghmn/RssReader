@@ -10,9 +10,16 @@ public partial class ArticleViewModel : ViewModelBase
     [ObservableProperty]
     public partial bool IsRead { get; set; }
 
+    public bool IsUnread => !IsRead;
+
     public ArticleViewModel(FeedItem item, bool isRead)
     {
         Item = item;
         IsRead = isRead;
+    }
+
+    partial void OnIsReadChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsUnread));
     }
 }

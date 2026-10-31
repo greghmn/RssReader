@@ -108,9 +108,15 @@
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <StackPanel Spacing="4">
-                        <TextBlock Text="{Binding Item.Title}"
-           FontWeight="SemiBold"
-           TextWrapping="Wrap" />
+<TextBlock Text="{Binding Item.Title}"
+           FontWeight="Bold"
+           TextWrapping="Wrap"
+           IsVisible="{Binding IsUnread}" />
+
+<TextBlock Text="{Binding Item.Title}"
+           FontWeight="Normal"
+           TextWrapping="Wrap"
+           IsVisible="{Binding IsRead}" />
 
 <TextBlock Text="{Binding Item.PublishedAt}"
            FontSize="11"

@@ -164,4 +164,47 @@ public class SqliteArticleStateRepositoryTests
             }
         }
     }
+
+    [Fact]
+    public async Task RemovingSubscription_DoesNotDeleteArticleReadState()
+    {
+        // Arrange
+        using var database = new TemporaryDatabase();
+
+        var subscriptionRepository =
+            new SqliteSubscriptionRepository(database.Path);
+
+        await subscriptionRepository.InitializeAsync();
+
+        var articleStateRepository =
+            await CreateRepositoryAsync(database.Path);
+
+        var subscriptionService =
+            new SubscriptionService(subscriptionRepository);
+
+        const string feedUrl = "https://example.com/feed.xml";
+        const string articleId = "article-123";
+
+        await subscriptionService.AddAsync(new FeedSubscription
+        {
+            Url = feedUrl,
+            Title = "Example Feed"
+        });
+
+        await articleStateRepository.MarkAsReadAsync(
+            feedUrl,
+            articleId);
+
+        // Act
+        bool removed = await subscriptionService.RemoveAsync(feedUrl);
+
+        // Assert
+        Assert.True(removed);
+
+        Assert.Empty(await subscriptionService.GetAllAsync());
+
+        Assert.True(await articleStateRepository.IsReadAsync(
+            feedUrl,
+            articleId));
+    }
 }

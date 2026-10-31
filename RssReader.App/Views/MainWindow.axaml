@@ -108,17 +108,17 @@
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <StackPanel Spacing="4">
-                        <TextBlock Text="{Binding Title}"
-                                   FontWeight="SemiBold"
-                                   TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding Item.Title}"
+           FontWeight="SemiBold"
+           TextWrapping="Wrap" />
 
-                        <TextBlock Text="{Binding PublishedAt}"
-                                   FontSize="11"
-                                   Opacity="0.7" />
+<TextBlock Text="{Binding Item.PublishedAt}"
+           FontSize="11"
+           Opacity="0.7" />
 
-                        <TextBlock Text="{Binding Description}"
-                                   TextWrapping="Wrap"
-                                   Opacity="0.85" />
+<TextBlock Text="{Binding Item.Description}"
+           TextWrapping="Wrap"
+           Opacity="0.85" />
                     </StackPanel>
                 </DataTemplate>
             </ListBox.ItemTemplate>
@@ -140,18 +140,24 @@
     <ScrollViewer IsVisible="{Binding HasSelectedArticle}">
         <StackPanel Spacing="8">
 
-            <TextBlock Text="{Binding SelectedArticle.Title}"
-                       FontSize="22"
-                       FontWeight="Bold"
-                       TextWrapping="Wrap" />
+<TextBlock Text="{Binding SelectedArticle.Item.Title}"
+           FontSize="22"
+           FontWeight="Bold"
+           TextWrapping="Wrap" />
 
-            <TextBlock Text="{Binding SelectedArticle.PublishedAt}"
-                       FontSize="12"
-                       Opacity="0.7" />
+<TextBlock Text="{Binding SelectedArticle.Item.PublishedAt}"
+           FontSize="12"
+           Opacity="0.7" />
 
-            <TextBlock Text="{Binding SelectedArticle.Description}"
-                       TextWrapping="Wrap" />
+<TextBlock Text="{Binding SelectedArticle.Item.Description}"
+           TextWrapping="Wrap" />
+<Button Content="Mark as read"
+        Command="{Binding MarkSelectedArticleAsReadCommand}"
+        IsVisible="{Binding CanMarkSelectedArticleAsRead}" />
 
+<Button Content="Mark as unread"
+        Command="{Binding MarkSelectedArticleAsUnreadCommand}"
+        IsVisible="{Binding CanMarkSelectedArticleAsUnread}" />
         </StackPanel>
     </ScrollViewer> 
     </Grid>

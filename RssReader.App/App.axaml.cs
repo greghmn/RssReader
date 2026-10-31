@@ -41,20 +41,24 @@ public partial class App : Application
     {
         try
         {
-            var subscriptionRepository =
-                new SqliteSubscriptionRepository(databasePath);
+            var subscriptionRepository = new SqliteSubscriptionRepository(databasePath);
 
             await subscriptionRepository.InitializeAsync();
 
             var subscriptionService =
                 new SubscriptionService(subscriptionRepository);
+            
+            var articleStateRepository = new SqliteArticleStateRepository(databasePath);
+
+            await articleStateRepository.InitializeAsync();
+
+            var articleStateService = new ArticleStateService(articleStateRepository);
+            
             IFeedReader feedReader = new FeedReader();
 
-            var feedService = new FeedService(
-                subscriptionService,
-                feedReader);
+            var feedService = new FeedService(subscriptionService, feedReader);
 
-            var mainViewModel = new MainViewModel(subscriptionService, feedService);
+            var mainViewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
 
             await mainViewModel.LoadSubscriptionsAsync();
 
@@ -65,8 +69,7 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine(
-                $"Application startup failed: {ex}");
+            Console.Error.WriteLine($"Application startup failed: {ex}");
 
             desktop.Shutdown(-1);
         }

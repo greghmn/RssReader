@@ -86,9 +86,18 @@
             RowDefinitions="Auto,Auto,Auto,Auto,Auto,*"
             Margin="0,0,12,0">
 
-        <TextBlock Text="Articles"
-                   FontSize="18"
-                   FontWeight="SemiBold" />
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Text="Articles"
+                     FontSize="18"
+                     FontWeight="SemiBold"
+                     VerticalAlignment="Center" />
+
+          <Button Grid.Column="1"
+                  Content="↻ Refresh"
+                  Command="{Binding RefreshSelectedFeedCommand}"
+                  IsEnabled="{Binding HasSelectedSubscription}"
+                  Margin="8,0,0,0" />
+        </Grid>
 
         <TextBlock Grid.Row="1"
                    Text="Select a feed to view its articles."

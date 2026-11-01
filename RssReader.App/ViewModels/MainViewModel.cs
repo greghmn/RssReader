@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using RssReader.App.Results;
 using RssReader.Core;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -11,280 +12,321 @@ namespace RssReader.App.ViewModels;
 
 public partial class MainViewModel : ViewModelBase
 {
-    [ObservableProperty]
-    public partial SubscriptionViewModel? SelectedSubscription { get; set; }
+	[ObservableProperty]
+	public partial SubscriptionViewModel? SelectedSubscription { get; set; }
 
-    [ObservableProperty]
-    public partial string? ArticleLoadError { get; set; }
+	[ObservableProperty]
+	public partial string? ArticleLoadError { get; set; }
 
-    [ObservableProperty]
-    public partial bool IsLoadingArticles { get; set; }
+	[ObservableProperty]
+	public partial bool IsLoadingArticles { get; set; }
 
-    [ObservableProperty]
-    public partial bool HasSelectedSubscription { get; set; }
+	[ObservableProperty]
+	public partial bool HasSelectedSubscription { get; set; }
 
-    [ObservableProperty]
-    public partial bool HasNoSelectedSubscription { get; set; } = true;
+	[ObservableProperty]
+	public partial bool HasNoSelectedSubscription { get; set; } = true;
 
-    [ObservableProperty]
-    public partial bool HasNoArticles { get; set; }
+	[ObservableProperty]
+	public partial bool HasNoArticles { get; set; }
 
-    [ObservableProperty]
-    public partial ArticleViewModel? SelectedArticle { get; set; }
+	[ObservableProperty]
+	public partial ArticleViewModel? SelectedArticle { get; set; }
 
-    [ObservableProperty]
-    public partial bool HasSelectedArticle { get; set; }
+	[ObservableProperty]
+	public partial bool HasSelectedArticle { get; set; }
 
-    [ObservableProperty]
-    public partial bool HasNoSelectedArticle { get; set; } = true;
+	[ObservableProperty]
+	public partial bool HasNoSelectedArticle { get; set; } = true;
 
-    private readonly SubscriptionService _subscriptionService;
+	private readonly SubscriptionService _subscriptionService;
 
-    private readonly FeedService _feedService;
+	private readonly FeedService _feedService;
 
-    private readonly ArticleStateService _articleStateService;
+	private readonly ArticleStateService _articleStateService;
 
-    private int _articleLoadRequestId;
+	private int _articleLoadRequestId;
 
-    public ObservableCollection<SubscriptionViewModel> Subscriptions { get; } = new();
+	public ObservableCollection<SubscriptionViewModel> Subscriptions { get; } = new();
 
-    public ObservableCollection<ArticleViewModel> Articles { get; } = new();
+	public ObservableCollection<ArticleViewModel> Articles { get; } = new();
 
-    public bool CanMarkSelectedArticleAsRead =>
-    SelectedArticle is not null && !SelectedArticle.IsRead;
+	public bool CanMarkSelectedArticleAsRead =>
+	SelectedArticle is not null && !SelectedArticle.IsRead;
 
-    public bool CanMarkSelectedArticleAsUnread =>
-        SelectedArticle is not null && SelectedArticle.IsRead;
+	public bool CanMarkSelectedArticleAsUnread =>
+			SelectedArticle is not null && SelectedArticle.IsRead;
 
-    private void RefreshSelectedArticleReadState()
-    {
-        OnPropertyChanged(nameof(CanMarkSelectedArticleAsRead));
-        OnPropertyChanged(nameof(CanMarkSelectedArticleAsUnread));
-    }
+	private void RefreshSelectedArticleReadState()
+	{
+		OnPropertyChanged(nameof(CanMarkSelectedArticleAsRead));
+		OnPropertyChanged(nameof(CanMarkSelectedArticleAsUnread));
+	}
 
-    public MainViewModel(SubscriptionService subscriptionService, FeedService feedService, ArticleStateService articleStateService)
-    {
-        _subscriptionService = subscriptionService;
-        _feedService = feedService;
-        _articleStateService = articleStateService;
-    }
-    public async Task LoadSubscriptionsAsync()
-    {
-        var subscriptions = await _subscriptionService.GetAllAsync();
+	public MainViewModel(SubscriptionService subscriptionService, FeedService feedService, ArticleStateService articleStateService)
+	{
+		_subscriptionService = subscriptionService;
+		_feedService = feedService;
+		_articleStateService = articleStateService;
+	}
+	public async Task LoadSubscriptionsAsync()
+	{
+		var subscriptions = await _subscriptionService.GetAllAsync();
 
-        Subscriptions.Clear();
+		Subscriptions.Clear();
 
-        foreach (var subscription in subscriptions)
-        {
-            Subscriptions.Add(new SubscriptionViewModel(subscription));
-        }
-    }
+		foreach (var subscription in subscriptions)
+		{
+			Subscriptions.Add(new SubscriptionViewModel(subscription));
+		}
+	}
 
-    public async Task<AddSubscriptionResult> AddSubscriptionAsync(
-        string url,
-        string title)
-    {
-        var subscription = new FeedSubscription
-        {
-            Url = url,
-            Title = string.IsNullOrWhiteSpace(title) ? url : title
-        };
+	public async Task<AddSubscriptionResult> AddSubscriptionAsync(
+			string url,
+			string title)
+	{
+		var subscription = new FeedSubscription
+		{
+			Url = url,
+			Title = string.IsNullOrWhiteSpace(title) ? url : title
+		};
 
-        try
-        {
-            bool added = await _subscriptionService.AddAsync(subscription);
+		try
+		{
+			bool added = await _subscriptionService.AddAsync(subscription);
 
-            if (!added)
-            {
-                return AddSubscriptionResult.AlreadyExists;
-            }
+			if (!added)
+			{
+				return AddSubscriptionResult.AlreadyExists;
+			}
 
-            var subscriptionViewModel = new SubscriptionViewModel(subscription);
+			var subscriptionViewModel = new SubscriptionViewModel(subscription);
 
-            Subscriptions.Add(subscriptionViewModel);
-            SelectedSubscription = subscriptionViewModel;
+			Subscriptions.Add(subscriptionViewModel);
+			SelectedSubscription = subscriptionViewModel;
 
-            return AddSubscriptionResult.Success;
-        }
-        catch (ArgumentException)
-        {
-            return AddSubscriptionResult.InvalidUrl;
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine(
-                $"Failed to add subscription {url}: {ex}");
+			return AddSubscriptionResult.Success;
+		}
+		catch (ArgumentException)
+		{
+			return AddSubscriptionResult.InvalidUrl;
+		}
+		catch (Exception ex)
+		{
+			Console.Error.WriteLine(
+					$"Failed to add subscription {url}: {ex}");
 
-            return AddSubscriptionResult.Failed;
-        }
-    }
+			return AddSubscriptionResult.Failed;
+		}
+	}
 
 
-    partial void OnSelectedSubscriptionChanged(SubscriptionViewModel? value)
-    {
-        HasSelectedSubscription = value is not null;
-        HasNoSelectedSubscription = value is null;
+	partial void OnSelectedSubscriptionChanged(SubscriptionViewModel? value)
+	{
+		HasSelectedSubscription = value is not null;
+		HasNoSelectedSubscription = value is null;
 
-        if (value is not null)
-        {
-            _ = LoadArticlesSafelyAsync(value.Item);
-        }
-        else
-        {
-            ++_articleLoadRequestId;
-            Articles.Clear();
-            ArticleLoadError = null;
-            IsLoadingArticles = false;
-            HasNoArticles = false;
-        }
-    }
-    private async Task LoadArticlesSafelyAsync(FeedSubscription subscription)
-    {
-        int requestId = ++_articleLoadRequestId;
-        IsLoadingArticles = true;
-        HasNoArticles = false;
-        Articles.Clear();
-        ArticleLoadError = null;
+		if (value is not null)
+		{
+			_ = LoadArticlesSafelyAsync(value.Item);
+		}
+		else
+		{
+			++_articleLoadRequestId;
+			Articles.Clear();
+			ArticleLoadError = null;
+			IsLoadingArticles = false;
+			HasNoArticles = false;
+		}
+	}
 
-        try
-        {
-            var articles = await _feedService.GetItemsAsync(
-                subscription.Url);
+	private async Task LoadArticlesSafelyAsync(FeedSubscription subscription)
+	{
+		int requestId = ++_articleLoadRequestId;
+		bool hasExistingArticles = Articles.Count > 0;
+		string? selectedArticleId = SelectedArticle?.Item.Id;
+		string? selectedArticleLink = SelectedArticle?.Item.Link;
 
-            if (requestId != _articleLoadRequestId)
-            {
-                return;
-            }
+		IsLoadingArticles = true;
 
-            int unreadCount = 0;
+		if (!hasExistingArticles)
+		{
+			HasNoArticles = false;
+		}
 
-            foreach (var article in articles)
-            {
-                bool isRead = await _articleStateService.IsReadAsync(
-                    subscription.Url,
-                    article);
+		ArticleLoadError = null;
 
-                if (requestId != _articleLoadRequestId)
-                {
-                    return;
-                }
+		try
+		{
+			var articles = await _feedService.GetItemsAsync(
+							subscription.Url);
 
-                if (!isRead)
-                {
-                    unreadCount++;
-                }
+			if (requestId != _articleLoadRequestId)
+			{
+				return;
+			}
 
-                Articles.Add(new ArticleViewModel(article, isRead));
-            }
+			var loadedArticles = new List<ArticleViewModel>();
+			int unreadCount = 0;
 
-            SubscriptionViewModel? subscriptionViewModel =
-                Subscriptions.FirstOrDefault(
-                    s => s.Item.Url == subscription.Url);
+			foreach (var article in articles)
+			{
+				bool isRead = await _articleStateService.IsReadAsync(
+								subscription.Url,
+								article);
 
-            if (subscriptionViewModel is not null)
-            {
-                subscriptionViewModel.UnreadCount = unreadCount;
-            }
+				if (requestId != _articleLoadRequestId)
+				{
+					return;
+				}
 
-            HasNoArticles = Articles.Count == 0;
-        }
-        catch (Exception ex)
-        {
-            if (requestId != _articleLoadRequestId)
-            {
-                return;
-            }
+				if (!isRead)
+				{
+					unreadCount++;
+				}
 
-            Console.Error.WriteLine(
-                $"Failed to load articles from {subscription.Url}: {ex}");
+				loadedArticles.Add(new ArticleViewModel(article, isRead));
+			}
 
-            ArticleLoadError =
-                "Unable to load articles. Check your connection and try again.";
-        }
-        finally
-        {
-            if (requestId == _articleLoadRequestId)
-            {
-                IsLoadingArticles = false;
-            }
-        }
-    }
-    partial void OnSelectedArticleChanged(ArticleViewModel? value)
-    {
-        HasSelectedArticle = value is not null;
-        HasNoSelectedArticle = value is null;
-        RefreshSelectedArticleReadState();
-    }
+			if (requestId != _articleLoadRequestId)
+			{
+				return;
+			}
 
-    public async Task<bool> RemoveSubscriptionAsync(
-    SubscriptionViewModel subscription)
-    {
-        bool removed = await _subscriptionService.RemoveAsync(
-            subscription.Item.Url);
+			Articles.Clear();
 
-        if (!removed)
-        {
-            return false;
-        }
+			foreach (var article in loadedArticles)
+			{
+				Articles.Add(article);
+			}
 
-        if (SelectedSubscription == subscription)
-        {
-            SelectedSubscription = null;
-        }
+			SelectedArticle = loadedArticles.FirstOrDefault(
+				article =>
+								!string.IsNullOrEmpty(selectedArticleId)
+								&& article.Item.Id == selectedArticleId
+								|| !string.IsNullOrEmpty(selectedArticleLink)
+								&& article.Item.Link == selectedArticleLink);
 
-        Subscriptions.Remove(subscription);
+			SubscriptionViewModel? subscriptionViewModel =
+							Subscriptions.FirstOrDefault(
+											s => s.Item.Url == subscription.Url);
 
-        return true;
-    }
-    [RelayCommand]
-    private Task MarkSelectedArticleAsReadAsync()
-    {
-        return SetSelectedArticleReadStateAsync(true);
-    }
+			if (subscriptionViewModel is not null)
+			{
+				subscriptionViewModel.UnreadCount = unreadCount;
+			}
 
-    [RelayCommand]
-    private Task MarkSelectedArticleAsUnreadAsync()
-    {
-        return SetSelectedArticleReadStateAsync(false);
-    }
+			HasNoArticles = Articles.Count == 0;
+		}
+		catch (Exception ex)
+		{
+			if (requestId != _articleLoadRequestId)
+			{
+				return;
+			}
 
-    private async Task SetSelectedArticleReadStateAsync(bool isRead)
-    {
-        ArticleViewModel? article = SelectedArticle;
-        SubscriptionViewModel? subscription = SelectedSubscription;
+			Console.Error.WriteLine(
+							$"Failed to load articles from {subscription.Url}: {ex}");
 
-        if (article is null || subscription is null)
-            return;
+			ArticleLoadError =
+							"Unable to load articles. Check your connection and try again.";
+		}
+		finally
+		{
+			if (requestId == _articleLoadRequestId)
+			{
+				IsLoadingArticles = false;
+			}
+		}
+	}
 
-        try
-        {
-            if (isRead)
-            {
-                await _articleStateService.MarkAsReadAsync(
-                    subscription.Item.Url,
-                    article.Item);
-            }
-            else
-            {
-                await _articleStateService.MarkAsUnreadAsync(
-                    subscription.Item.Url,
-                    article.Item);
-            }
+	partial void OnSelectedArticleChanged(ArticleViewModel? value)
+	{
+		HasSelectedArticle = value is not null;
+		HasNoSelectedArticle = value is null;
+		RefreshSelectedArticleReadState();
+	}
 
-            bool wasRead = article.IsRead;
+	public async Task<bool> RemoveSubscriptionAsync(
+	SubscriptionViewModel subscription)
+	{
+		bool removed = await _subscriptionService.RemoveAsync(
+				subscription.Item.Url);
 
-            article.IsRead = isRead;
-            RefreshSelectedArticleReadState();
+		if (!removed)
+		{
+			return false;
+		}
 
-            if (subscription.UnreadCount.HasValue && wasRead != isRead)
-            {
-                subscription.UnreadCount += isRead ? -1 : 1;
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine(
-                $"Failed to update article read state: {ex}");
-        }
-    }
+		if (SelectedSubscription == subscription)
+		{
+			SelectedSubscription = null;
+		}
+
+		Subscriptions.Remove(subscription);
+
+		return true;
+	}
+	[RelayCommand]
+	private Task MarkSelectedArticleAsReadAsync()
+	{
+		return SetSelectedArticleReadStateAsync(true);
+	}
+
+	[RelayCommand]
+	private Task MarkSelectedArticleAsUnreadAsync()
+	{
+		return SetSelectedArticleReadStateAsync(false);
+	}
+
+	[RelayCommand]
+	private Task RefreshSelectedFeedAsync()
+	{
+		if (SelectedSubscription is null)
+		{
+			return Task.CompletedTask;
+		}
+
+		return LoadArticlesSafelyAsync(SelectedSubscription.Item);
+	}
+
+	private async Task SetSelectedArticleReadStateAsync(bool isRead)
+	{
+		ArticleViewModel? article = SelectedArticle;
+		SubscriptionViewModel? subscription = SelectedSubscription;
+
+		if (article is null || subscription is null)
+			return;
+
+		try
+		{
+			if (isRead)
+			{
+				await _articleStateService.MarkAsReadAsync(
+						subscription.Item.Url,
+						article.Item);
+			}
+			else
+			{
+				await _articleStateService.MarkAsUnreadAsync(
+						subscription.Item.Url,
+						article.Item);
+			}
+
+			bool wasRead = article.IsRead;
+
+			article.IsRead = isRead;
+			RefreshSelectedArticleReadState();
+
+			if (subscription.UnreadCount.HasValue && wasRead != isRead)
+			{
+				subscription.UnreadCount += isRead ? -1 : 1;
+			}
+		}
+		catch (Exception ex)
+		{
+			Console.Error.WriteLine(
+					$"Failed to update article read state: {ex}");
+		}
+	}
 }

@@ -6,10 +6,10 @@ namespace RssReader.Core.Tests;
 
 public class FeedParserTests
 {
-    [Fact]
-    public void Parse_RssFeed_ReturnsItems()
-    {
-        XDocument document = XDocument.Parse("""
+	[Fact]
+	public void Parse_RssFeed_ReturnsItems()
+	{
+		XDocument document = XDocument.Parse("""
             <rss version="2.0">
               <channel>
                 <title>Example Feed</title>
@@ -22,20 +22,20 @@ public class FeedParserTests
             </rss>
             """);
 
-        List<FeedItem> items = FeedParser.Parse(document);
+		List<FeedItem> items = FeedParser.Parse(document);
 
-        Assert.Single(items);
-        Assert.Equal("First article", items[0].Title);
-        Assert.Equal(
-            "https://example.com/first", items[0].Link);
-        Assert.Equal(
-            "An example article.", items[0].Description);
-    }
+		Assert.Single(items);
+		Assert.Equal("First article", items[0].Title);
+		Assert.Equal(
+				"https://example.com/first", items[0].Link);
+		Assert.Equal(
+				"An example article.", items[0].Description);
+	}
 
-    [Fact]
-    public void Parse_AtomFeed_ReturnsItems()
-    {
-        XDocument document = XDocument.Parse("""
+	[Fact]
+	public void Parse_AtomFeed_ReturnsItems()
+	{
+		XDocument document = XDocument.Parse("""
             <feed xmlns="http://www.w3.org/2005/Atom">
               <title>Example Feed</title>
               <entry>
@@ -46,30 +46,30 @@ public class FeedParserTests
             </feed>
             """);
 
-        List<FeedItem> items = FeedParser.Parse(document);
+		List<FeedItem> items = FeedParser.Parse(document);
 
-        Assert.Single(items);
-        Assert.Equal("Atom article", items[0].Title);
-        Assert.Equal(
-            "https://example.com/atom-article", items[0].Link);
-        Assert.Equal(
-            "An Atom example.", items[0].Description);
-    }
+		Assert.Single(items);
+		Assert.Equal("Atom article", items[0].Title);
+		Assert.Equal(
+				"https://example.com/atom-article", items[0].Link);
+		Assert.Equal(
+				"An Atom example.", items[0].Description);
+	}
 
-    [Fact]
-    public void Parse_UnsupportedDocument_Throws()
-    {
-        XDocument document = XDocument.Parse(
-            "<html><body>Not a feed</body></html>");
+	[Fact]
+	public void Parse_UnsupportedDocument_Throws()
+	{
+		XDocument document = XDocument.Parse(
+				"<html><body>Not a feed</body></html>");
 
-        Assert.Throws<InvalidDataException>(
-            () => FeedParser.Parse(document));
-    }
+		Assert.Throws<InvalidDataException>(
+				() => FeedParser.Parse(document));
+	}
 
-    [Fact]
-    public void Parse_RssItemWithoutDescription_UsesEmptyString()
-    {
-        XDocument document = XDocument.Parse("""
+	[Fact]
+	public void Parse_RssItemWithoutDescription_UsesEmptyString()
+	{
+		XDocument document = XDocument.Parse("""
         <rss version="2.0">
           <channel>
             <item>
@@ -80,16 +80,16 @@ public class FeedParserTests
         </rss>
         """);
 
-        List<FeedItem> items = FeedParser.Parse(document);
+		List<FeedItem> items = FeedParser.Parse(document);
 
-        Assert.Single(items);
-        Assert.Equal("", items[0].Description);
-    }
+		Assert.Single(items);
+		Assert.Equal("", items[0].Description);
+	}
 
-    [Fact]
-    public void Parse_AtomEntryWithSelfAndAlternateLinks_PrefersAlternate()
-    {
-        XDocument document = XDocument.Parse("""
+	[Fact]
+	public void Parse_AtomEntryWithSelfAndAlternateLinks_PrefersAlternate()
+	{
+		XDocument document = XDocument.Parse("""
         <feed xmlns="http://www.w3.org/2005/Atom">
           <title>Example Feed</title>
           <entry>
@@ -101,18 +101,18 @@ public class FeedParserTests
         </feed>
         """);
 
-        List<FeedItem> items = FeedParser.Parse(document);
+		List<FeedItem> items = FeedParser.Parse(document);
 
-        Assert.Single(items);
-        Assert.Equal(
-            "https://example.com/article",
-            items[0].Link);
-    }
+		Assert.Single(items);
+		Assert.Equal(
+				"https://example.com/article",
+				items[0].Link);
+	}
 
-    [Fact]
-    public void Parse_EmptyRssFeed_ReturnsEmptyList()
-    {
-        XDocument document = XDocument.Parse("""
+	[Fact]
+	public void Parse_EmptyRssFeed_ReturnsEmptyList()
+	{
+		XDocument document = XDocument.Parse("""
         <rss version="2.0">
           <channel>
             <title>Empty Feed</title>
@@ -120,16 +120,16 @@ public class FeedParserTests
         </rss>
         """);
 
-        List<FeedItem> items = FeedParser.Parse(document);
+		List<FeedItem> items = FeedParser.Parse(document);
 
-        Assert.Empty(items);
-    }
+		Assert.Empty(items);
+	}
 
-    [Fact]
-    public void Parse_RssItemWithPubDate_ParsesPublishedAt()
-    {
-        // Arrange
-        XDocument document = XDocument.Parse("""
+	[Fact]
+	public void Parse_RssItemWithPubDate_ParsesPublishedAt()
+	{
+		// Arrange
+		XDocument document = XDocument.Parse("""
         <rss version="2.0">
             <channel>
                 <title>Example Feed</title>
@@ -143,21 +143,21 @@ public class FeedParserTests
         </rss>
         """);
 
-        // Act
-        List<FeedItem> items = FeedParser.Parse(document);
+		// Act
+		List<FeedItem> items = FeedParser.Parse(document);
 
-        // Assert
-        Assert.Single(items);
-        Assert.Equal(
-            DateTimeOffset.Parse("Wed, 21 Oct 2015 07:28:00 GMT"),
-            items[0].PublishedAt);
-    }
+		// Assert
+		Assert.Single(items);
+		Assert.Equal(
+				DateTimeOffset.Parse("Wed, 21 Oct 2015 07:28:00 GMT"),
+				items[0].PublishedAt);
+	}
 
-    [Fact]
-    public void Parse_AtomEntryWithPublishedAndUpdated_PrefersPublished()
-    {
-        // Arrange
-        XDocument document = XDocument.Parse("""
+	[Fact]
+	public void Parse_AtomEntryWithPublishedAndUpdated_PrefersPublished()
+	{
+		// Arrange
+		XDocument document = XDocument.Parse("""
         <feed xmlns="http://www.w3.org/2005/Atom">
             <title>Example Feed</title>
             <entry>
@@ -170,21 +170,21 @@ public class FeedParserTests
         </feed>
         """);
 
-        // Act
-        List<FeedItem> items = FeedParser.Parse(document);
+		// Act
+		List<FeedItem> items = FeedParser.Parse(document);
 
-        // Assert
-        Assert.Single(items);
-        Assert.Equal(
-            DateTimeOffset.Parse("2020-01-15T10:00:00Z"),
-            items[0].PublishedAt);
-    }
+		// Assert
+		Assert.Single(items);
+		Assert.Equal(
+				DateTimeOffset.Parse("2020-01-15T10:00:00Z"),
+				items[0].PublishedAt);
+	}
 
-    [Fact]
-    public void Parse_AtomEntryWithoutPublished_UsesUpdated()
-    {
-        // Arrange
-        XDocument document = XDocument.Parse("""
+	[Fact]
+	public void Parse_AtomEntryWithoutPublished_UsesUpdated()
+	{
+		// Arrange
+		XDocument document = XDocument.Parse("""
         <feed xmlns="http://www.w3.org/2005/Atom">
             <title>Example Feed</title>
             <entry>
@@ -196,22 +196,22 @@ public class FeedParserTests
         </feed>
         """);
 
-        // Act
-        List<FeedItem> items = FeedParser.Parse(document);
+		// Act
+		List<FeedItem> items = FeedParser.Parse(document);
 
-        // Assert
-        Assert.Single(items);
-        Assert.Equal(
-            DateTimeOffset.Parse("2024-06-10T14:30:00Z"),
-            items[0].PublishedAt);
-    }
+		// Assert
+		Assert.Single(items);
+		Assert.Equal(
+				DateTimeOffset.Parse("2024-06-10T14:30:00Z"),
+				items[0].PublishedAt);
+	}
 
-    //Test when no data is provided
-    [Fact]
-    public void Parse_AtomEntryWithoutDates_ReturnsNullPublishedAt()
-    {
-        // Arrange
-        XDocument document = XDocument.Parse("""
+	//Test when no data is provided
+	[Fact]
+	public void Parse_AtomEntryWithoutDates_ReturnsNullPublishedAt()
+	{
+		// Arrange
+		XDocument document = XDocument.Parse("""
         <feed xmlns="http://www.w3.org/2005/Atom">
             <title>Example Feed</title>
             <entry>
@@ -222,20 +222,20 @@ public class FeedParserTests
         </feed>
         """);
 
-        // Act
-        List<FeedItem> items = FeedParser.Parse(document);
+		// Act
+		List<FeedItem> items = FeedParser.Parse(document);
 
-        // Assert
-        Assert.Single(items);
-        Assert.Null(items[0].PublishedAt);
-    }
+		// Assert
+		Assert.Single(items);
+		Assert.Null(items[0].PublishedAt);
+	}
 
-    //Test when published is invalid but updated is valid
-    [Fact]
-    public void Parse_AtomEntryWithInvalidPublished_UsesUpdated()
-    {
-        // Arrange
-        XDocument document = XDocument.Parse("""
+	//Test when published is invalid but updated is valid
+	[Fact]
+	public void Parse_AtomEntryWithInvalidPublished_UsesUpdated()
+	{
+		// Arrange
+		XDocument document = XDocument.Parse("""
         <feed xmlns="http://www.w3.org/2005/Atom">
             <title>Example Feed</title>
             <entry>
@@ -248,22 +248,22 @@ public class FeedParserTests
         </feed>
         """);
 
-        // Act
-        List<FeedItem> items = FeedParser.Parse(document);
+		// Act
+		List<FeedItem> items = FeedParser.Parse(document);
 
-        // Assert
-        Assert.Single(items);
-        Assert.Equal(
-            DateTimeOffset.Parse("2024-06-10T14:30:00Z"),
-            items[0].PublishedAt);
-    }
+		// Assert
+		Assert.Single(items);
+		Assert.Equal(
+				DateTimeOffset.Parse("2024-06-10T14:30:00Z"),
+				items[0].PublishedAt);
+	}
 
-    //Harden the feed parsing
-    [Fact]
-    public void Parse_RssItemWithDublinCoreDate_ParsesPublishedAt()
-    {
-        // Arrange
-        XDocument document = XDocument.Parse("""
+	//Harden the feed parsing
+	[Fact]
+	public void Parse_RssItemWithDublinCoreDate_ParsesPublishedAt()
+	{
+		// Arrange
+		XDocument document = XDocument.Parse("""
         <rss version="2.0"
              xmlns:dc="http://purl.org/dc/elements/1.1/">
             <channel>
@@ -277,23 +277,23 @@ public class FeedParserTests
         </rss>
         """);
 
-        // Act
-        List<FeedItem> items = FeedParser.Parse(document);
+		// Act
+		List<FeedItem> items = FeedParser.Parse(document);
 
-        // Assert
-        Assert.Single(items);
-        Assert.Equal(
-            DateTimeOffset.Parse("2024-06-10T14:30:00Z"),
-            items[0].PublishedAt);
-    }
+		// Assert
+		Assert.Single(items);
+		Assert.Equal(
+				DateTimeOffset.Parse("2024-06-10T14:30:00Z"),
+				items[0].PublishedAt);
+	}
 
-    //For RSS items that are missing titles 
+	//For RSS items that are missing titles 
 
-    [Fact]
-    public void Parse_RssItemWithoutTitle_ReturnsEmptyTitle()
-    {
-        // Arrange
-        XDocument document = XDocument.Parse("""
+	[Fact]
+	public void Parse_RssItemWithoutTitle_ReturnsEmptyTitle()
+	{
+		// Arrange
+		XDocument document = XDocument.Parse("""
         <rss version="2.0">
             <channel>
                 <title>Example Feed</title>
@@ -305,24 +305,24 @@ public class FeedParserTests
         </rss>
         """);
 
-        // Act
-        List<FeedItem> items = FeedParser.Parse(document);
+		// Act
+		List<FeedItem> items = FeedParser.Parse(document);
 
-        // Assert
-        Assert.Single(items);
-        Assert.Equal("", items[0].Title);
-        Assert.Equal(
-            "https://example.com/article",
-            items[0].Link);
-    }
+		// Assert
+		Assert.Single(items);
+		Assert.Equal("", items[0].Title);
+		Assert.Equal(
+				"https://example.com/article",
+				items[0].Link);
+	}
 
-    //Get Atom parser to select alternate links 
+	//Get Atom parser to select alternate links 
 
-    [Fact]
-    public void Parse_AtomEntryWithMultipleLinks_PrefersAlternateLink()
-    {
-        // Arrange
-        XDocument document = XDocument.Parse("""
+	[Fact]
+	public void Parse_AtomEntryWithMultipleLinks_PrefersAlternateLink()
+	{
+		// Arrange
+		XDocument document = XDocument.Parse("""
         <feed xmlns="http://www.w3.org/2005/Atom">
             <title>Example Feed</title>
             <entry>
@@ -336,23 +336,23 @@ public class FeedParserTests
         </feed>
         """);
 
-        // Act
-        List<FeedItem> items = FeedParser.Parse(document);
+		// Act
+		List<FeedItem> items = FeedParser.Parse(document);
 
-        // Assert
-        Assert.Single(items);
-        Assert.Equal(
-            "https://example.com/article/123",
-            items[0].Link);
-    }
+		// Assert
+		Assert.Single(items);
+		Assert.Equal(
+				"https://example.com/article/123",
+				items[0].Link);
+	}
 
-    //Skip Atom links that have empty href values 
+	//Skip Atom links that have empty href values 
 
-    [Fact]
-    public void Parse_AtomEntryWithEmptyAlternateLink_PrefersValidAlternateLink()
-    {
-        // Arrange
-        XDocument document = XDocument.Parse("""
+	[Fact]
+	public void Parse_AtomEntryWithEmptyAlternateLink_PrefersValidAlternateLink()
+	{
+		// Arrange
+		XDocument document = XDocument.Parse("""
         <feed xmlns="http://www.w3.org/2005/Atom">
             <title>Example Feed</title>
             <entry>
@@ -365,23 +365,23 @@ public class FeedParserTests
         </feed>
         """);
 
-        // Act
-        List<FeedItem> items = FeedParser.Parse(document);
+		// Act
+		List<FeedItem> items = FeedParser.Parse(document);
 
-        // Assert
-        Assert.Single(items);
-        Assert.Equal(
-            "https://example.com/article",
-            items[0].Link);
-    }
+		// Assert
+		Assert.Single(items);
+		Assert.Equal(
+				"https://example.com/article",
+				items[0].Link);
+	}
 
-    //For handling relative Atom links 
+	//For handling relative Atom links 
 
-    [Fact]
-    public void Parse_AtomEntryWithRelativeLink_ResolvesAgainstFeedUrl()
-    {
-        // Arrange
-        XDocument document = XDocument.Parse("""
+	[Fact]
+	public void Parse_AtomEntryWithRelativeLink_ResolvesAgainstFeedUrl()
+	{
+		// Arrange
+		XDocument document = XDocument.Parse("""
         <feed xmlns="http://www.w3.org/2005/Atom">
             <title>Example Feed</title>
             <entry>
@@ -392,26 +392,26 @@ public class FeedParserTests
         </feed>
         """);
 
-        Uri feedUrl = new(
-            "https://example.com/feeds/tech.xml");
+		Uri feedUrl = new(
+				"https://example.com/feeds/tech.xml");
 
-        // Act
-        List<FeedItem> items = FeedParser.Parse(document, feedUrl);
+		// Act
+		List<FeedItem> items = FeedParser.Parse(document, feedUrl);
 
-        // Assert
-        Assert.Single(items);
-        Assert.Equal(
-            "https://example.com/articles/123",
-            items[0].Link);
-    }
+		// Assert
+		Assert.Single(items);
+		Assert.Equal(
+				"https://example.com/articles/123",
+				items[0].Link);
+	}
 
-    //For handling HTTP redirects to ensure it works with the final URL 
+	//For handling HTTP redirects to ensure it works with the final URL 
 
-    [Fact]
-    public void Parse_AtomEntryWithRelativeLink_UsesFinalFeedUrl()
-    {
-        // Arrange
-        XDocument document = XDocument.Parse("""
+	[Fact]
+	public void Parse_AtomEntryWithRelativeLink_UsesFinalFeedUrl()
+	{
+		// Arrange
+		XDocument document = XDocument.Parse("""
         <feed xmlns="http://www.w3.org/2005/Atom">
             <title>Example Feed</title>
             <entry>
@@ -421,27 +421,27 @@ public class FeedParserTests
         </feed>
         """);
 
-        Uri finalFeedUrl = new(
-            "https://cdn.example.com/feeds/tech.xml");
+		Uri finalFeedUrl = new(
+				"https://cdn.example.com/feeds/tech.xml");
 
-        // Act
-        List<FeedItem> items =
-            FeedParser.Parse(document, finalFeedUrl);
+		// Act
+		List<FeedItem> items =
+				FeedParser.Parse(document, finalFeedUrl);
 
-        // Assert
-        Assert.Single(items);
-        Assert.Equal(
-            "https://cdn.example.com/articles/123",
-            items[0].Link);
-    }
+		// Assert
+		Assert.Single(items);
+		Assert.Equal(
+				"https://cdn.example.com/articles/123",
+				items[0].Link);
+	}
 
-    //For handling the Atom xml:base attribute properly 
+	//For handling the Atom xml:base attribute properly 
 
-    [Fact]
-    public void Parse_AtomEntryWithXmlBase_ResolvesRelativeLink()
-    {
-        // Arrange
-        XDocument document = XDocument.Parse("""
+	[Fact]
+	public void Parse_AtomEntryWithXmlBase_ResolvesRelativeLink()
+	{
+		// Arrange
+		XDocument document = XDocument.Parse("""
         <feed xmlns="http://www.w3.org/2005/Atom"
               xml:base="https://example.com/content/">
             <title>Example Feed</title>
@@ -452,25 +452,25 @@ public class FeedParserTests
         </feed>
         """);
 
-        Uri feedUrl = new(
-            "https://example.com/feeds/tech.xml");
+		Uri feedUrl = new(
+				"https://example.com/feeds/tech.xml");
 
-        // Act
-        List<FeedItem> items = FeedParser.Parse(document, feedUrl);
+		// Act
+		List<FeedItem> items = FeedParser.Parse(document, feedUrl);
 
-        // Assert
-        Assert.Single(items);
-        Assert.Equal(
-            "https://example.com/content/article-123",
-            items[0].Link);
-    }
-    //For nested xml:base 
+		// Assert
+		Assert.Single(items);
+		Assert.Equal(
+				"https://example.com/content/article-123",
+				items[0].Link);
+	}
+	//For nested xml:base 
 
-    [Fact]
-    public void Parse_AtomEntryWithNestedXmlBase_ResolvesRelativeLink()
-    {
-        // Arrange
-        XDocument document = XDocument.Parse("""
+	[Fact]
+	public void Parse_AtomEntryWithNestedXmlBase_ResolvesRelativeLink()
+	{
+		// Arrange
+		XDocument document = XDocument.Parse("""
         <feed xmlns="http://www.w3.org/2005/Atom"
               xml:base="https://example.com/content/">
             <title>Example Feed</title>
@@ -483,25 +483,25 @@ public class FeedParserTests
         </feed>
         """);
 
-        Uri feedUrl = new(
-            "https://example.com/feeds/tech.xml");
+		Uri feedUrl = new(
+				"https://example.com/feeds/tech.xml");
 
-        // Act
-        List<FeedItem> items = FeedParser.Parse(document, feedUrl);
+		// Act
+		List<FeedItem> items = FeedParser.Parse(document, feedUrl);
 
-        // Assert
-        Assert.Single(items);
-        Assert.Equal(
-            "https://example.com/content/articles/2026/article-123",
-            items[0].Link);
-    }
+		// Assert
+		Assert.Single(items);
+		Assert.Equal(
+				"https://example.com/content/articles/2026/article-123",
+				items[0].Link);
+	}
 
 
-    [Fact]
-    public void Parse_AtomEntryWithContentButNoSummary_UsesContent()
-    {
-        // Arrange
-        XDocument document = XDocument.Parse("""
+	[Fact]
+	public void Parse_AtomEntryWithContentButNoSummary_UsesContent()
+	{
+		// Arrange
+		XDocument document = XDocument.Parse("""
         <feed xmlns="http://www.w3.org/2005/Atom">
             <title>Example Feed</title>
             <entry>
@@ -512,23 +512,23 @@ public class FeedParserTests
         </feed>
         """);
 
-        // Act
-        List<FeedItem> items = FeedParser.Parse(document);
+		// Act
+		List<FeedItem> items = FeedParser.Parse(document);
 
-        // Assert
-        Assert.Single(items);
-        Assert.Equal(
-            "Article body text.",
-            items[0].Description);
-    }
+		// Assert
+		Assert.Single(items);
+		Assert.Equal(
+				"Article body text.",
+				items[0].Description);
+	}
 
 
 
-    [Fact]
-    public void Parse_AtomEntryWithXhtmlContent_ExtractsText()
-    {
-        // Arrange
-        XDocument document = XDocument.Parse("""
+	[Fact]
+	public void Parse_AtomEntryWithXhtmlContent_ExtractsText()
+	{
+		// Arrange
+		XDocument document = XDocument.Parse("""
         <feed xmlns="http://www.w3.org/2005/Atom">
             <title>Example Feed</title>
             <entry>
@@ -547,22 +547,22 @@ public class FeedParserTests
         </feed>
         """);
 
-        // Act
-        List<FeedItem> items = FeedParser.Parse(document);
+		// Act
+		List<FeedItem> items = FeedParser.Parse(document);
 
-        // Assert
-        Assert.Single(items);
-        Assert.Equal(
-            "First paragraph.\nSecond paragraph.\nA third paragraph with emphasis.",
-            items[0].Description);
-    }
+		// Assert
+		Assert.Single(items);
+		Assert.Equal(
+				"First paragraph.\nSecond paragraph.\nA third paragraph with emphasis.",
+				items[0].Description);
+	}
 
-    [Fact]
+	[Fact]
 
-    public void Parse_AtomEntryWithHtmlContent_ExtractsReadableText()
-    {
-        // Arrange
-        XDocument document = XDocument.Parse("""
+	public void Parse_AtomEntryWithHtmlContent_ExtractsReadableText()
+	{
+		// Arrange
+		XDocument document = XDocument.Parse("""
         <feed xmlns="http://www.w3.org/2005/Atom">
             <title>Example Feed</title>
             <entry>
@@ -573,21 +573,21 @@ public class FeedParserTests
         </feed>
         """);
 
-        // Act
-        List<FeedItem> items = FeedParser.Parse(document);
+		// Act
+		List<FeedItem> items = FeedParser.Parse(document);
 
-        // Assert
-        Assert.Single(items);
-        Assert.Equal(
-            "Hello world.\nSecond paragraph.",
-            items[0].Description);
-    }
+		// Assert
+		Assert.Single(items);
+		Assert.Equal(
+				"Hello world.\nSecond paragraph.",
+				items[0].Description);
+	}
 
-    [Fact]
-    public void Parse_AtomEntryWithMalformedHtmlContent_ExtractsReadableText()
-    {
-        // Arrange
-        XDocument document = XDocument.Parse("""
+	[Fact]
+	public void Parse_AtomEntryWithMalformedHtmlContent_ExtractsReadableText()
+	{
+		// Arrange
+		XDocument document = XDocument.Parse("""
         <feed xmlns="http://www.w3.org/2005/Atom">
             <title>Example Feed</title>
             <entry>
@@ -598,21 +598,21 @@ public class FeedParserTests
         </feed>
         """);
 
-        // Act
-        List<FeedItem> items = FeedParser.Parse(document);
+		// Act
+		List<FeedItem> items = FeedParser.Parse(document);
 
-        // Assert
-        Assert.Single(items);
-        Assert.Equal(
-            "First paragraph.\nSecond paragraph.",
-            items[0].Description);
-    }
+		// Assert
+		Assert.Single(items);
+		Assert.Equal(
+				"First paragraph.\nSecond paragraph.",
+				items[0].Description);
+	}
 
-    [Fact]
-    public void Parse_AtomEntryWithHtmlContent_IgnoresScriptAndStyle()
-    {
-        // Arrange
-        XDocument document = XDocument.Parse("""
+	[Fact]
+	public void Parse_AtomEntryWithHtmlContent_IgnoresScriptAndStyle()
+	{
+		// Arrange
+		XDocument document = XDocument.Parse("""
         <feed xmlns="http://www.w3.org/2005/Atom">
             <title>Example Feed</title>
             <entry>
@@ -623,21 +623,21 @@ public class FeedParserTests
         </feed>
         """);
 
-        // Act
-        List<FeedItem> items = FeedParser.Parse(document);
+		// Act
+		List<FeedItem> items = FeedParser.Parse(document);
 
-        // Assert
-        Assert.Single(items);
-        Assert.Equal(
-            "Readable text.\nMore readable text.",
-            items[0].Description);
-    }
+		// Assert
+		Assert.Single(items);
+		Assert.Equal(
+				"Readable text.\nMore readable text.",
+				items[0].Description);
+	}
 
-    [Fact]
-    public void Parse_AtomEntryWithHtmlContent_DecodesEntitiesAndNormalizesWhitespace()
-    {
-        // Arrange
-        XDocument document = XDocument.Parse("""
+	[Fact]
+	public void Parse_AtomEntryWithHtmlContent_DecodesEntitiesAndNormalizesWhitespace()
+	{
+		// Arrange
+		XDocument document = XDocument.Parse("""
         <feed xmlns="http://www.w3.org/2005/Atom">
             <title>Example Feed</title>
             <entry>
@@ -648,21 +648,21 @@ public class FeedParserTests
         </feed>
         """);
 
-        // Act
-        List<FeedItem> items = FeedParser.Parse(document);
+		// Act
+		List<FeedItem> items = FeedParser.Parse(document);
 
-        // Assert
-        Assert.Single(items);
-        Assert.Equal(
-            "Fish & chips are delicious.\nTea & coffee.",
-            items[0].Description);
-    }
+		// Assert
+		Assert.Single(items);
+		Assert.Equal(
+				"Fish & chips are delicious.\nTea & coffee.",
+				items[0].Description);
+	}
 
 
-    [Fact]
-    public void Parse_RssItemWithGuid_ExtractsId()
-    {
-        XDocument document = XDocument.Parse("""
+	[Fact]
+	public void Parse_RssItemWithGuid_ExtractsId()
+	{
+		XDocument document = XDocument.Parse("""
         <rss version="2.0">
             <channel>
                 <title>Example Feed</title>
@@ -675,16 +675,16 @@ public class FeedParserTests
         </rss>
         """);
 
-        List<FeedItem> items = FeedParser.Parse(document);
+		List<FeedItem> items = FeedParser.Parse(document);
 
-        Assert.Single(items);
-        Assert.Equal("article-123", items[0].Id);
-    }
+		Assert.Single(items);
+		Assert.Equal("article-123", items[0].Id);
+	}
 
-    [Fact]
-    public void Parse_AtomEntryWithId_ExtractsId()
-    {
-        XDocument document = XDocument.Parse("""
+	[Fact]
+	public void Parse_AtomEntryWithId_ExtractsId()
+	{
+		XDocument document = XDocument.Parse("""
         <feed xmlns="http://www.w3.org/2005/Atom">
             <title>Example Feed</title>
             <entry>
@@ -695,18 +695,18 @@ public class FeedParserTests
         </feed>
         """);
 
-        List<FeedItem> items = FeedParser.Parse(document);
+		List<FeedItem> items = FeedParser.Parse(document);
 
-        Assert.Single(items);
-        Assert.Equal("urn:example:article:123", items[0].Id);
-    }
+		Assert.Single(items);
+		Assert.Equal("urn:example:article:123", items[0].Id);
+	}
 
-    //dealing with missing ID 
-    
-    [Fact]
-    public void Parse_RssItemWithoutGuid_ReturnsEmptyId()
-    {
-        XDocument document = XDocument.Parse("""
+	//dealing with missing ID 
+
+	[Fact]
+	public void Parse_RssItemWithoutGuid_ReturnsEmptyId()
+	{
+		XDocument document = XDocument.Parse("""
         <rss version="2.0">
             <channel>
                 <item>
@@ -717,16 +717,16 @@ public class FeedParserTests
         </rss>
         """);
 
-        List<FeedItem> items = FeedParser.Parse(document);
+		List<FeedItem> items = FeedParser.Parse(document);
 
-        Assert.Single(items);
-        Assert.Equal("", items[0].Id);
-    }
+		Assert.Single(items);
+		Assert.Equal("", items[0].Id);
+	}
 
-    [Fact]
-    public void Parse_AtomEntryWithoutId_ReturnsEmptyId()
-    {
-        XDocument document = XDocument.Parse("""
+	[Fact]
+	public void Parse_AtomEntryWithoutId_ReturnsEmptyId()
+	{
+		XDocument document = XDocument.Parse("""
         <feed xmlns="http://www.w3.org/2005/Atom">
             <entry>
                 <title>Article without ID</title>
@@ -735,9 +735,163 @@ public class FeedParserTests
         </feed>
         """);
 
-        List<FeedItem> items = FeedParser.Parse(document);
+		List<FeedItem> items = FeedParser.Parse(document);
 
-        Assert.Single(items);
-        Assert.Equal("", items[0].Id);
-    }
+		Assert.Single(items);
+		Assert.Equal("", items[0].Id);
+	}
+
+	//for testing how HTML in RSS description is handled
+	[Fact]
+	public void Parse_RssDescriptionWithHtml_ExtractsReadableText()
+	{
+		XDocument document = XDocument.Parse(
+				"""
+        <rss version="2.0">
+            <channel>
+                <title>Test Feed</title>
+                <item>
+                    <title>Test Article</title>
+                    <description><![CDATA[
+                        <p>Hello <strong>world</strong>!</p>
+                        <p>This is a second paragraph.</p>
+                        <script>alert('test');</script>
+                        <style>body { display: none; }</style>
+                    ]]></description>
+                    <guid>article-1</guid>
+                </item>
+            </channel>
+        </rss>
+        """);
+
+		List<FeedItem> items = FeedParser.Parse(document);
+
+		FeedItem item = Assert.Single(items);
+
+		Assert.Equal(
+				"Hello world!\nThis is a second paragraph.",
+				item.Description);
+	}
+
+	//same but for HTML in Atom 
+	//also this is test #67 officially
+
+	[Fact]
+	public void Parse_AtomHtmlSummary_ExtractsReadableText()
+	{
+		XDocument document = XDocument.Parse(
+				"""
+        <feed xmlns="http://www.w3.org/2005/Atom">
+            <title>Test Feed</title>
+            <entry>
+                <title>Test Article</title>
+                <id>article-1</id>
+                <summary type="html"><![CDATA[
+                    <p>Hello <strong>world</strong>!</p>
+                    <p>This is a second paragraph.</p>
+                    <script>alert('test');</script>
+                    <style>body { display: none; }</style>
+                ]]></summary>
+            </entry>
+        </feed>
+        """);
+
+		List<FeedItem> items = FeedParser.Parse(document);
+
+		FeedItem item = Assert.Single(items);
+
+		Assert.Equal(
+				"Hello world!\nThis is a second paragraph.",
+				item.Description);
+	}
+
+	//Atom again, but for XHTML
+
+	[Fact]
+	public void Parse_AtomXhtmlSummary_ExtractsReadableText()
+	{
+		XDocument document = XDocument.Parse(
+				"""
+        <feed xmlns="http://www.w3.org/2005/Atom"
+              xmlns:xhtml="http://www.w3.org/1999/xhtml">
+            <title>Test Feed</title>
+            <entry>
+                <title>Test Article</title>
+                <id>article-1</id>
+                <summary type="xhtml">
+                    <xhtml:div>
+                        <xhtml:p>Hello <xhtml:strong>world</xhtml:strong>!</xhtml:p>
+                        <xhtml:p>This is a second paragraph.</xhtml:p>
+                    </xhtml:div>
+                </summary>
+            </entry>
+        </feed>
+        """);
+
+		List<FeedItem> items = FeedParser.Parse(document);
+
+		FeedItem item = Assert.Single(items);
+
+		Assert.Equal(
+				"Hello world!\nThis is a second paragraph.",
+				item.Description);
+	}
+
+	//Atom with plaintext 
+	//Test #69, nice! 
+
+	[Fact]
+	public void Parse_AtomPlainTextSummary_PreservesText()
+	{
+		XDocument document = XDocument.Parse(
+				"""
+        <feed xmlns="http://www.w3.org/2005/Atom">
+            <title>Test Feed</title>
+            <entry>
+                <title>Test Article</title>
+                <id>article-1</id>
+                <summary type="text">
+                    This is plain text with &lt;angle brackets&gt;
+                    and &amp; an entity.
+                </summary>
+            </entry>
+        </feed>
+        """);
+
+		List<FeedItem> items = FeedParser.Parse(document);
+
+		FeedItem item = Assert.Single(items);
+
+		Assert.Contains("<angle brackets>", item.Description);
+		Assert.Contains("& an entity.", item.Description);
+	}
+
+	//fall back to Atom's content if it lacks a summary 
+
+	[Fact]
+	public void Parse_AtomEntryWithoutSummary_UsesReadableContent()
+	{
+		XDocument document = XDocument.Parse(
+				"""
+        <feed xmlns="http://www.w3.org/2005/Atom">
+            <title>Test Feed</title>
+            <entry>
+                <title>Test Article</title>
+                <id>article-1</id>
+                <content type="html"><![CDATA[
+                    <p>Content without a summary.</p>
+                    <p>Another paragraph with <strong>emphasis</strong>.</p>
+                ]]></content>
+            </entry>
+        </feed>
+        """);
+
+		List<FeedItem> items = FeedParser.Parse(document);
+
+		FeedItem item = Assert.Single(items);
+
+		Assert.Equal(
+				"Content without a summary.\nAnother paragraph with emphasis.",
+				item.Description);
+	}
 }

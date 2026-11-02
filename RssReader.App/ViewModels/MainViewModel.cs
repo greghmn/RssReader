@@ -60,11 +60,21 @@ public partial class MainViewModel : ViewModelBase
 
 	public ObservableCollection<ArticleViewModel> Articles { get; } = new();
 
-	public bool CanMarkSelectedArticleAsRead =>
-	SelectedArticle is not null && !SelectedArticle.IsRead;
+	public bool CanMarkSelectedArticleAsRead => SelectedArticle is not null && !SelectedArticle.IsRead;
 
-	public bool CanMarkSelectedArticleAsUnread =>
-			SelectedArticle is not null && SelectedArticle.IsRead;
+	public bool CanMarkSelectedArticleAsUnread => SelectedArticle is not null && SelectedArticle.IsRead;
+
+	public bool CanRemoveSubscription => HasSelectedSubscription && !IsRemovingSubscription;
+
+	partial void OnHasSelectedSubscriptionChanged(bool value)
+	{
+		OnPropertyChanged(nameof(CanRemoveSubscription));
+	}
+
+	partial void OnIsRemovingSubscriptionChanged(bool value)
+	{
+		OnPropertyChanged(nameof(CanRemoveSubscription));
+	}
 
 	private void RefreshSelectedArticleReadState()
 	{
@@ -264,6 +274,8 @@ public partial class MainViewModel : ViewModelBase
 		RefreshSelectedArticleReadState();
 	}
 
+	//failed removal sim is in the following, for future reference 
+
 	public async Task<bool> RemoveSubscriptionAsync(
 			SubscriptionViewModel subscription)
 	{
@@ -283,7 +295,7 @@ public partial class MainViewModel : ViewModelBase
 			 * For simulating a failed removal; comment out when not needed *
 			 ***************************************************************/
 
-			// throw new InvalidOperationException("Simulated database failure");
+			 //throw new InvalidOperationException("Simulated database failure");
 
 			bool removed = await _subscriptionService.RemoveAsync(
 					subscription.Item.Url);

@@ -197,4 +197,30 @@ public class MainViewModelTests
 		Assert.Empty(repository.Subscriptions);
 		Assert.False(viewModel.IsRemovingSubscription);
 	}
+
+	[Fact]
+	public async Task RemoveSubscriptionAsync_WhenSuccessful_ClearsPreviousError()
+	{
+		var (viewModel, repository) = CreateViewModel();
+
+		FeedSubscription subscription = CreateSubscription();
+
+		repository.Subscriptions.Add(subscription);
+
+		var subscriptionViewModel =
+				new SubscriptionViewModel(subscription);
+
+		viewModel.Subscriptions.Add(subscriptionViewModel);
+
+		// Simulate an error from a previous operation.
+		viewModel.SubscriptionOperationError = "Previous error.";
+
+		bool result = await viewModel.RemoveSubscriptionAsync(
+				subscriptionViewModel);
+
+		Assert.True(result);
+		Assert.Null(viewModel.SubscriptionOperationError);
+		Assert.Empty(viewModel.Subscriptions);
+		Assert.Empty(repository.Subscriptions);
+	}
 }

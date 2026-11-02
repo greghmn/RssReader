@@ -275,8 +275,16 @@ public partial class MainViewModel : ViewModelBase
 		IsRemovingSubscription = true;
 		SubscriptionOperationError = null;
 
+
 		try
 		{
+
+			 /***************************************************************
+			 * For simulating a failed removal; comment out when not needed *
+			 ***************************************************************/
+
+			// throw new InvalidOperationException("Simulated database failure");
+
 			bool removed = await _subscriptionService.RemoveAsync(
 					subscription.Item.Url);
 

@@ -57,22 +57,7 @@ public partial class MainWindow : Window
 			return;
 		}
 
-		try
-		{
-			bool removed =
-					await viewModel.RemoveSubscriptionAsync(subscription);
-
-			if (!removed)
-			{
-				Console.Error.WriteLine(
-						$"Subscription not found during removal: {subscription.Item.Url}");
-			}
-		}
-		catch (Exception ex)
-		{
-			Console.Error.WriteLine(
-					$"Failed to remove subscription {subscription.Item.Url}: {ex}");
-		}
+		await viewModel.RemoveSubscriptionAsync(subscription);
 	}
 	private async void OpenArticleLinkButton_Click(
 	object? sender,

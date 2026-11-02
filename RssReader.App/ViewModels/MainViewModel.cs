@@ -42,6 +42,12 @@ public partial class MainViewModel : ViewModelBase
 	[ObservableProperty]
 	public partial bool IsRefreshingArticles { get; set; }
 
+	[ObservableProperty]
+	public partial bool IsRemovingSubscription { get; set; }
+
+	[ObservableProperty]
+	public partial string? SubscriptionOperationError { get; set; }
+
 	private readonly SubscriptionService _subscriptionService;
 
 	private readonly FeedService _feedService;
@@ -84,9 +90,7 @@ public partial class MainViewModel : ViewModelBase
 		}
 	}
 
-	public async Task<AddSubscriptionResult> AddSubscriptionAsync(
-			string url,
-			string title)
+	public async Task<AddSubscriptionResult> AddSubscriptionAsync(string url, string title)
 	{
 		var subscription = new FeedSubscription
 		{
@@ -261,24 +265,52 @@ public partial class MainViewModel : ViewModelBase
 	}
 
 	public async Task<bool> RemoveSubscriptionAsync(
-	SubscriptionViewModel subscription)
+			SubscriptionViewModel subscription)
 	{
-		bool removed = await _subscriptionService.RemoveAsync(
-				subscription.Item.Url);
-
-		if (!removed)
+		if (IsRemovingSubscription)
 		{
 			return false;
 		}
 
-		if (SelectedSubscription == subscription)
+		IsRemovingSubscription = true;
+		SubscriptionOperationError = null;
+
+		try
 		{
-			SelectedSubscription = null;
+			bool removed = await _subscriptionService.RemoveAsync(
+					subscription.Item.Url);
+
+			if (!removed)
+			{
+				SubscriptionOperationError =
+						"The subscription could not be found.";
+
+				return false;
+			}
+
+			if (SelectedSubscription == subscription)
+			{
+				SelectedSubscription = null;
+			}
+
+			Subscriptions.Remove(subscription);
+
+			return true;
 		}
+		catch (Exception ex)
+		{
+			Console.Error.WriteLine(
+					$"Failed to remove subscription {subscription.Item.Url}: {ex}");
 
-		Subscriptions.Remove(subscription);
+			SubscriptionOperationError =
+					"Unable to remove the subscription. Please try again.";
 
-		return true;
+			return false;
+		}
+		finally
+		{
+			IsRemovingSubscription = false;
+		}
 	}
 	[RelayCommand]
 	private Task MarkSelectedArticleAsReadAsync()

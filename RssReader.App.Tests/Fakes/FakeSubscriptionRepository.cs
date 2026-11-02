@@ -1,0 +1,77 @@
+﻿using RssReader.Core;
+
+namespace RssReader.App.Tests.Fakes;
+
+public class FakeSubscriptionRepository : ISubscriptionRepository
+{
+	public List<FeedSubscription> Subscriptions { get; } = new();
+
+	public bool RemoveResult { get; set; } = true;
+
+	public Exception? GetAllException { get; set; }
+
+	public Exception? RemoveException { get; set; }
+
+	public TaskCompletionSource<bool>? RemoveStarted { get; set; }
+
+	public TaskCompletionSource<bool>? AllowRemove { get; set; }
+
+	public TaskCompletionSource<bool>? RemoveCompletion { get; set; }
+
+	public Task<List<FeedSubscription>> GetAllAsync()
+	{
+		if (GetAllException is not null)
+		{
+			throw GetAllException;
+		}
+
+		return Task.FromResult(Subscriptions.ToList());
+	}
+
+	public Task AddAsync(FeedSubscription subscription)
+	{
+		Subscriptions.Add(subscription);
+
+		return Task.CompletedTask;
+	}
+
+	public async Task<bool> RemoveAsync(string url)
+	{
+		if (RemoveException is not null)
+		{
+			throw RemoveException;
+		}
+
+		RemoveStarted?.TrySetResult(true);
+
+		if (AllowRemove is not null)
+		{
+			await AllowRemove.Task;
+		}
+
+		if (RemoveCompletion is not null)
+		{
+			return await RemoveCompletion.Task;
+		}
+
+		if (!RemoveResult)
+		{
+			return false;
+		}
+
+		FeedSubscription? subscription = Subscriptions.FirstOrDefault(
+				s => string.Equals(
+						s.Url.TrimEnd('/'),
+						url.TrimEnd('/'),
+						StringComparison.OrdinalIgnoreCase));
+
+		if (subscription is null)
+		{
+			return false;
+		}
+
+		Subscriptions.Remove(subscription);
+
+		return true;
+	}
+}

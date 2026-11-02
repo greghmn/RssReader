@@ -83,9 +83,10 @@
 
       <!-- Article list -->
       <Grid Grid.Column="0"
-            RowDefinitions="Auto,Auto,Auto,Auto,Auto,*"
+            RowDefinitions="Auto,Auto,Auto,*"
             Margin="0,0,12,0">
 
+        <!-- Header -->
         <Grid ColumnDefinitions="*,Auto">
           <TextBlock Text="Articles"
                      FontSize="18"
@@ -99,32 +100,42 @@
                   Margin="8,0,0,0" />
         </Grid>
 
-        <TextBlock Grid.Row="1"
-                   Text="Select a feed to view its articles."
-                   IsVisible="{Binding HasNoSelectedSubscription}"
-                   Opacity="0.7"
-                   TextWrapping="Wrap" />
+        <!-- Current retrieval status -->
+        <Grid Grid.Row="1"
+              MinHeight="24">
+          <TextBlock Text="Select a feed to view its articles."
+                     IsVisible="{Binding HasNoSelectedSubscription}"
+                     Opacity="0.7"
+                     TextWrapping="Wrap" />
 
+          <TextBlock Text="This feed doesn't contain any articles yet."
+                     IsVisible="{Binding HasNoArticles}"
+                     Opacity="0.7"
+                     TextWrapping="Wrap" />
+
+          <TextBlock Text="Loading articles..."
+                     IsVisible="{Binding IsLoadingArticles}"
+                     Opacity="0.7" />
+
+          <TextBlock Text="Refreshing articles..."
+                     IsVisible="{Binding IsRefreshingArticles}"
+                     Opacity="0.7" />
+
+          <TextBlock Text="{Binding ArticleLoadError}"
+                     IsVisible="{Binding ArticleLoadError}"
+                     Foreground="IndianRed"
+                     TextWrapping="Wrap" />
+        </Grid>
+
+        <!-- Last successful retrieval: placeholder for now -->
         <TextBlock Grid.Row="2"
-                   Text="This feed doesn't contain any articles yet."
-                   IsVisible="{Binding HasNoArticles}"
-                   Opacity="0.7"
-                   TextWrapping="Wrap" />
-
-        <TextBlock Grid.Row="3"
-                   Text="Loading articles..."
-                   IsVisible="{Binding IsLoadingArticles}"
+                   MinHeight="20"
                    Opacity="0.7" />
 
-        <TextBlock Grid.Row="4"
-                   Text="{Binding ArticleLoadError}"
-                   IsVisible="{Binding ArticleLoadError}"
-                   Foreground="IndianRed"
-                   TextWrapping="Wrap" />
-
-        <ListBox Grid.Row="5"
+        <ListBox Grid.Row="3"
                  ItemsSource="{Binding Articles}"
                  SelectedItem="{Binding SelectedArticle, Mode=TwoWay}">
+
 
           <ListBox.ItemTemplate>
             <DataTemplate>

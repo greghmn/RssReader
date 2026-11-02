@@ -39,6 +39,9 @@ public partial class MainViewModel : ViewModelBase
 	[ObservableProperty]
 	public partial bool HasNoSelectedArticle { get; set; } = true;
 
+	[ObservableProperty]
+	public partial bool IsRefreshingArticles { get; set; }
+
 	private readonly SubscriptionService _subscriptionService;
 
 	private readonly FeedService _feedService;
@@ -137,20 +140,29 @@ public partial class MainViewModel : ViewModelBase
 			ArticleLoadError = null;
 			IsLoadingArticles = false;
 			HasNoArticles = false;
+			IsRefreshingArticles = false;
 		}
 	}
 
-	private async Task LoadArticlesSafelyAsync(FeedSubscription subscription)
+	private async Task LoadArticlesSafelyAsync(FeedSubscription subscription, bool isRefresh = false)
 	{
 		int requestId = ++_articleLoadRequestId;
-		bool hasExistingArticles = Articles.Count > 0;
-		string? selectedArticleId = SelectedArticle?.Item.Id;
-		string? selectedArticleLink = SelectedArticle?.Item.Link;
 
-		IsLoadingArticles = true;
+		string? selectedArticleId = isRefresh
+						? SelectedArticle?.Item.Id
+						: null;
 
-		if (!hasExistingArticles)
+		string? selectedArticleLink = isRefresh
+						? SelectedArticle?.Item.Link
+						: null;
+
+		IsLoadingArticles = !isRefresh;
+		IsRefreshingArticles = isRefresh;
+
+		if (!isRefresh)
 		{
+			Articles.Clear();
+			SelectedArticle = null;
 			HasNoArticles = false;
 		}
 
@@ -236,6 +248,7 @@ public partial class MainViewModel : ViewModelBase
 			if (requestId == _articleLoadRequestId)
 			{
 				IsLoadingArticles = false;
+				IsRefreshingArticles = false;
 			}
 		}
 	}
@@ -287,7 +300,9 @@ public partial class MainViewModel : ViewModelBase
 			return Task.CompletedTask;
 		}
 
-		return LoadArticlesSafelyAsync(SelectedSubscription.Item);
+		return LoadArticlesSafelyAsync(
+				SelectedSubscription.Item,
+				isRefresh: true);
 	}
 
 	private async Task SetSelectedArticleReadStateAsync(bool isRead)

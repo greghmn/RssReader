@@ -28,15 +28,6 @@ public partial class MainWindow : Window
 		};
 
 		bool result = await dialog.ShowDialog<bool>(this);
-
-		if (!result)
-		{
-			return;
-		}
-
-		await viewModel.AddSubscriptionAsync(
-				dialog.FeedUrl,
-				dialog.FeedTitle);
 	}
 
 	private async void RemoveSubscriptionButton_Click(

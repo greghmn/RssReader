@@ -48,6 +48,9 @@ public partial class MainViewModel : ViewModelBase
 	[ObservableProperty]
 	public partial string? SubscriptionOperationError { get; set; }
 
+	[ObservableProperty]
+	public partial string? ArticleStateError { get; set; }
+
 	private readonly SubscriptionService _subscriptionService;
 
 	private readonly FeedService _feedService;
@@ -365,6 +368,8 @@ public partial class MainViewModel : ViewModelBase
 		if (article is null || subscription is null)
 			return;
 
+		ArticleStateError = null;
+
 		try
 		{
 			if (isRead)
@@ -394,6 +399,9 @@ public partial class MainViewModel : ViewModelBase
 		{
 			Console.Error.WriteLine(
 					$"Failed to update article read state: {ex}");
+
+			ArticleStateError =
+					"Unable to update the article's read status. Please try again.";
 		}
 	}
 }

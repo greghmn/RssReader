@@ -45,6 +45,138 @@ public class MainViewModelTests
 		};
 	}
 
+	private static async Task<(
+		MainViewModel ViewModel,
+		FakeArticleStateRepository ArticleStateRepository,
+		FeedItem Article)>
+		CreateArticleStateViewModel(bool initiallyRead = false)
+	{
+		var subscriptionRepository =
+				new FakeSubscriptionRepository();
+
+		var subscription = CreateSubscription();
+
+		subscriptionRepository.Subscriptions.Add(subscription);
+
+		var article = new FeedItem
+		{
+			Title = "Example Article",
+			Link = "https://example.com/article",
+			Description = "An example article."
+		};
+
+		var feedReader = new FakeFeedReader
+		{
+			Items = new List<FeedItem> { article }
+		};
+
+		var articleStateRepository =
+				new FakeArticleStateRepository();
+
+		if (initiallyRead)
+		{
+			await articleStateRepository.MarkAsReadAsync(
+					subscription.Url,
+					ArticleIdentity.GetId(article));
+		}
+
+		var subscriptionService =
+				new SubscriptionService(subscriptionRepository);
+
+		var feedService = new FeedService(
+				subscriptionService,
+				feedReader);
+
+		var articleStateService =
+				new ArticleStateService(articleStateRepository);
+
+		var viewModel = new MainViewModel(
+				subscriptionService,
+				feedService,
+				articleStateService);
+
+		var subscriptionViewModel =
+				new SubscriptionViewModel(subscription);
+
+		viewModel.Subscriptions.Add(subscriptionViewModel);
+		viewModel.SelectedSubscription = subscriptionViewModel;
+
+		await viewModel.RefreshSelectedFeedCommand.ExecuteAsync(null);
+
+		viewModel.SelectedArticle = viewModel.Articles.Single();
+
+		return (viewModel, articleStateRepository, article);
+	}
+
+	[Fact]
+	public async Task MarkAsRead_WhenRepositoryThrows_PreservesUnreadState()
+	{
+		var (viewModel, repository, _) =
+				await CreateArticleStateViewModel();
+
+		repository.MarkAsReadException =
+				new InvalidOperationException("Simulated database failure");
+
+		await viewModel.MarkSelectedArticleAsReadCommand.ExecuteAsync(null);
+
+		Assert.False(viewModel.SelectedArticle!.IsRead);
+		Assert.Equal(1, viewModel.SelectedSubscription!.UnreadCount);
+
+		Assert.Equal(
+				"Unable to update the article's read status. Please try again.",
+				viewModel.ArticleStateError);
+	}
+
+	[Fact]
+	public async Task MarkAsUnread_WhenRepositoryThrows_PreservesReadState()
+	{
+		var (viewModel, repository, _) =
+				await CreateArticleStateViewModel(initiallyRead: true);
+
+		repository.MarkAsUnreadException =
+				new InvalidOperationException("Simulated database failure");
+
+		await viewModel.MarkSelectedArticleAsUnreadCommand.ExecuteAsync(null);
+
+		Assert.True(viewModel.SelectedArticle!.IsRead);
+		Assert.Equal(0, viewModel.SelectedSubscription!.UnreadCount);
+
+		Assert.Equal(
+				"Unable to update the article's read status. Please try again.",
+				viewModel.ArticleStateError);
+	}
+
+	[Fact]
+	public async Task MarkAsRead_WhenRetrySucceeds_ClearsPreviousError()
+	{
+		var (viewModel, repository, article) =
+				await CreateArticleStateViewModel();
+
+		repository.MarkAsReadException =
+				new InvalidOperationException("Simulated database failure");
+
+		// First attempt fails.
+		await viewModel.MarkSelectedArticleAsReadCommand.ExecuteAsync(null);
+
+		Assert.NotNull(viewModel.ArticleStateError);
+		Assert.False(viewModel.SelectedArticle!.IsRead);
+
+		// Remove the simulated failure.
+		repository.MarkAsReadException = null;
+
+		// Second attempt succeeds.
+		await viewModel.MarkSelectedArticleAsReadCommand.ExecuteAsync(null);
+
+		Assert.True(viewModel.SelectedArticle!.IsRead);
+		Assert.Equal(0, viewModel.SelectedSubscription!.UnreadCount);
+		Assert.Null(viewModel.ArticleStateError);
+
+		Assert.True(
+				await repository.IsReadAsync(
+						"https://example.com/feed.xml",
+						ArticleIdentity.GetId(article)));
+	}
+
 	[Fact]
 	public async Task RemoveSubscriptionAsync_WhenSuccessful_RemovesSubscription()
 	{

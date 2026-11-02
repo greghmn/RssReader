@@ -221,6 +221,10 @@
               <TextBlock Text="{Binding SelectedArticle.PublishedDateText}"
                          FontSize="12"
                          Opacity="0.7" />
+              <TextBlock Text="{Binding ArticleStateError}"
+                         IsVisible="{Binding ArticleStateError}"
+                         Foreground="IndianRed"
+                         TextWrapping="Wrap" />
               <Button Content="Open original article ↗"
                       HorizontalAlignment="Left"
                       IsVisible="{Binding SelectedArticle.CanOpenArticleLink}"

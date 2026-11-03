@@ -57,7 +57,8 @@ public class FeedReader : IFeedReader
         FeedUrl = feedUrl,
         Title = item.Title,
         Link = item.Link,
-        Description = item.Description,
+        Summary = item.Summary,
+        Content = item.Content,
         PublishedAt = item.PublishedAt
     })
     .ToList();

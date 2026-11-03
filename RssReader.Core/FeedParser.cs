@@ -11,6 +11,9 @@ public static class FeedParser
 			"http://www.w3.org/2005/Atom";
 	private static readonly XNamespace DublinCore =
 	"http://purl.org/dc/elements/1.1/";
+	//RSS Content Module 
+	private static readonly XNamespace Content =
+		"http://purl.org/rss/1.0/modules/content/";
 
 	public static List<FeedItem> Parse(XDocument document, Uri? baseUri = null)
 	{
@@ -42,10 +45,14 @@ public static class FeedParser
 					{
 						Title = GetElementValue(element, "title"),
 						Link = GetElementValue(element, "link"),
-						Description =
-							FeedContentExtractor.ExtractReadableHtmlText(
-							GetElementValue(element, "description")),
-						PublishedAt = ParseDate(GetElementValue(element, "pubDate")) ?? ParseDate((string?)element.Element(DublinCore + "date") ?? ""),
+						Summary =
+									FeedContentExtractor.ExtractReadableHtmlText(
+											GetElementValue(element, "description")),
+						Content =
+									FeedContentExtractor.ExtractReadableHtmlText(
+											(string?)element.Element(Content + "encoded") ?? ""),
+						PublishedAt = ParseDate(GetElementValue(element, "pubDate"))
+									?? ParseDate((string?)element.Element(DublinCore + "date") ?? ""),
 						Id = GetElementValue(element, "guid")
 					})
 					.ToList();
@@ -59,11 +66,9 @@ public static class FeedParser
 					{
 						Title = (string?)element.Element(Atom + "title") ?? "",
 						Link = GetAtomLink(element, baseUri),
-						Description =
-							ExtractAtomTextConstruct(element.Element(Atom + "summary"))
-							is string summary && summary.Length > 0
-								? summary
-								: ExtractAtomContent(element),
+						Summary = ExtractAtomTextConstruct(
+									element.Element(Atom + "summary")),
+						Content = ExtractAtomContent(element),
 						PublishedAt = ParseDate((string?)element.Element(Atom + "published") ?? "") ?? ParseDate((string?)element.Element(Atom + "updated") ?? ""),
 						Id = (string?)element.Element(Atom + "id") ?? ""
 					})

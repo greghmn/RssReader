@@ -42,13 +42,13 @@ public class FeedServiceTests
             {
                 Title = "First Article",
                 Link = "https://example.com/article-1",
-                Description = "The first article."
+                Summary = "The first article."
             },
             new()
             {
                 Title = "Second Article",
                 Link = "https://example.com/article-2",
-                Description = "The second article."
+                Summary = "The second article."
             }
         };
 

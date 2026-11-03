@@ -29,7 +29,7 @@ public class FeedParserTests
 		Assert.Equal(
 				"https://example.com/first", items[0].Link);
 		Assert.Equal(
-				"An example article.", items[0].Description);
+				"An example article.", items[0].Summary);
 	}
 
 	[Fact]
@@ -53,7 +53,7 @@ public class FeedParserTests
 		Assert.Equal(
 				"https://example.com/atom-article", items[0].Link);
 		Assert.Equal(
-				"An Atom example.", items[0].Description);
+				"An Atom example.", items[0].Summary);
 	}
 
 	[Fact]
@@ -83,7 +83,7 @@ public class FeedParserTests
 		List<FeedItem> items = FeedParser.Parse(document);
 
 		Assert.Single(items);
-		Assert.Equal("", items[0].Description);
+		Assert.Equal("", items[0].Summary);
 	}
 
 	[Fact]
@@ -498,7 +498,7 @@ public class FeedParserTests
 
 
 	[Fact]
-	public void Parse_AtomEntryWithContentButNoSummary_UsesContent()
+	public void Parse_AtomEntryWithContentButNoSummary_ExtractsContent()
 	{
 		// Arrange
 		XDocument document = XDocument.Parse("""
@@ -519,7 +519,7 @@ public class FeedParserTests
 		Assert.Single(items);
 		Assert.Equal(
 				"Article body text.",
-				items[0].Description);
+				items[0].Content);
 	}
 
 
@@ -554,7 +554,7 @@ public class FeedParserTests
 		Assert.Single(items);
 		Assert.Equal(
 				"First paragraph.\nSecond paragraph.\nA third paragraph with emphasis.",
-				items[0].Description);
+				items[0].Content);
 	}
 
 	[Fact]
@@ -580,7 +580,7 @@ public class FeedParserTests
 		Assert.Single(items);
 		Assert.Equal(
 				"Hello world.\nSecond paragraph.",
-				items[0].Description);
+				items[0].Content);
 	}
 
 	[Fact]
@@ -605,7 +605,7 @@ public class FeedParserTests
 		Assert.Single(items);
 		Assert.Equal(
 				"First paragraph.\nSecond paragraph.",
-				items[0].Description);
+				items[0].Content);
 	}
 
 	[Fact]
@@ -630,7 +630,7 @@ public class FeedParserTests
 		Assert.Single(items);
 		Assert.Equal(
 				"Readable text.\nMore readable text.",
-				items[0].Description);
+				items[0].Content);
 	}
 
 	[Fact]
@@ -655,7 +655,7 @@ public class FeedParserTests
 		Assert.Single(items);
 		Assert.Equal(
 				"Fish & chips are delicious.\nTea & coffee.",
-				items[0].Description);
+				items[0].Content);
 	}
 
 
@@ -770,7 +770,7 @@ public class FeedParserTests
 
 		Assert.Equal(
 				"Hello world!\nThis is a second paragraph.",
-				item.Description);
+				item.Summary);
 	}
 
 	//same but for HTML in Atom 
@@ -802,7 +802,7 @@ public class FeedParserTests
 
 		Assert.Equal(
 				"Hello world!\nThis is a second paragraph.",
-				item.Description);
+				item.Summary);
 	}
 
 	//Atom again, but for XHTML
@@ -834,7 +834,7 @@ public class FeedParserTests
 
 		Assert.Equal(
 				"Hello world!\nThis is a second paragraph.",
-				item.Description);
+				item.Summary);
 	}
 
 	//Atom with plaintext 
@@ -862,14 +862,13 @@ public class FeedParserTests
 
 		FeedItem item = Assert.Single(items);
 
-		Assert.Contains("<angle brackets>", item.Description);
-		Assert.Contains("& an entity.", item.Description);
+		Assert.Contains("<angle brackets>", item.Summary);
+		Assert.Contains("& an entity.", item.Summary);
 	}
 
-	//fall back to Atom's content if it lacks a summary 
-
+	// Atom content should be extracted independently of summary.
 	[Fact]
-	public void Parse_AtomEntryWithoutSummary_UsesReadableContent()
+	public void Parse_AtomEntryWithoutSummary_ExtractsContent()
 	{
 		XDocument document = XDocument.Parse(
 				"""
@@ -892,6 +891,53 @@ public class FeedParserTests
 
 		Assert.Equal(
 				"Content without a summary.\nAnother paragraph with emphasis.",
-				item.Description);
+				item.Content);
+	}
+
+	[Fact]
+	public void Parse_RssItemWithContentEncoded_ExtractsContent()
+	{
+		XDocument document = XDocument.Parse("""
+        <rss version="2.0"
+             xmlns:content="http://purl.org/rss/1.0/modules/content/">
+            <channel>
+                <title>Example Feed</title>
+                <item>
+                    <title>Example Article</title>
+                    <description>A short summary.</description>
+                    <content:encoded><![CDATA[
+                        <p>The full article body.</p>
+                        <p>A second paragraph.</p>
+                    ]]></content:encoded>
+                </item>
+            </channel>
+        </rss>
+        """);
+
+		FeedItem item = Assert.Single(FeedParser.Parse(document));
+
+		Assert.Equal("A short summary.", item.Summary);
+		Assert.Equal(
+				"The full article body.\nA second paragraph.",
+				item.Content);
+	}
+
+	[Fact]
+	public void Parse_AtomEntryWithoutContent_UsesEmptyContent()
+	{
+		XDocument document = XDocument.Parse("""
+        <feed xmlns="http://www.w3.org/2005/Atom">
+            <title>Example Feed</title>
+            <entry>
+                <title>Example Article</title>
+                <summary>A short summary.</summary>
+            </entry>
+        </feed>
+        """);
+
+		FeedItem item = Assert.Single(FeedParser.Parse(document));
+
+		Assert.Equal("A short summary.", item.Summary);
+		Assert.Equal("", item.Content);
 	}
 }

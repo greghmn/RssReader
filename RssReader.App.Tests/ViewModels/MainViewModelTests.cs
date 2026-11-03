@@ -58,7 +58,7 @@ public class MainViewModelTests
 		{
 			Title = "Example Article",
 			Link = "https://example.com/article",
-			Description = "An example article."
+			Summary = "An example article."
 		};
 
 		var feedReader = new FakeFeedReader
@@ -386,7 +386,7 @@ public class MainViewModelTests
 		{
 			Title = "New Example Article",
 			Link = "https://example.com/new-article",
-			Description = "A newly published article."
+			Summary = "A newly published article."
 		};
 
 		feedReader.Items = new()
@@ -426,7 +426,7 @@ public class MainViewModelTests
 		{
 			Title = "Replacement Article",
 			Link = "https://example.com/replacement",
-			Description = "Another article."
+			Summary = "Another article."
 		};
 
 		feedReader.Items = new()

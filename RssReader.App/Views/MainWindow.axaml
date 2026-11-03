@@ -173,7 +173,7 @@
           <ListBox.ItemTemplate>
             <DataTemplate>
               <Grid ColumnDefinitions="Auto,*"
-                    RowDefinitions="Auto,Auto,Auto">
+                    RowDefinitions="Auto,Auto">
 
                 <!-- Unread indicator -->
                 <TextBlock Grid.Column="0"
@@ -202,14 +202,6 @@
                            Text="{Binding PublishedDateText}"
                            FontSize="11"
                            Opacity="0.7" />
-
-                <!-- Description -->
-                <TextBlock Grid.Row="2"
-                           Grid.ColumnSpan="2"
-                           Text="{Binding Item.Description}"
-                           TextWrapping="Wrap"
-                           Opacity="0.85" />
-
               </Grid>
             </DataTemplate>
           </ListBox.ItemTemplate>
@@ -260,7 +252,7 @@
                       HorizontalAlignment="Left"
                       IsVisible="{Binding SelectedArticle.CanOpenArticleLink}"
                       Click="OpenArticleLinkButton_Click" />
-              <TextBlock Text="{Binding SelectedArticle.Item.Description}"
+              <TextBlock Text="{Binding SelectedArticle.Item.Content}"
                          TextWrapping="Wrap" />
               <Button Content="Mark as read"
                       Command="{Binding MarkSelectedArticleAsReadCommand}"

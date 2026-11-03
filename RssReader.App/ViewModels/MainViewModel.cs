@@ -51,6 +51,9 @@ public partial class MainViewModel : ViewModelBase
 	[ObservableProperty]
 	public partial string? ArticleStateError { get; set; }
 
+	[ObservableProperty]
+	public partial bool HasEmptyFeed { get; set; }
+
 	private readonly SubscriptionService _subscriptionService;
 
 	private readonly FeedService _feedService;
@@ -69,14 +72,37 @@ public partial class MainViewModel : ViewModelBase
 
 	public bool CanRemoveSubscription => HasSelectedSubscription && !IsRemovingSubscription;
 
+	public bool HasArticlesAwaitingSelection => HasSelectedSubscription && HasNoSelectedArticle && !HasNoArticles && !IsLoadingArticles && ArticleLoadError is null;
+
 	partial void OnHasSelectedSubscriptionChanged(bool value)
 	{
 		OnPropertyChanged(nameof(CanRemoveSubscription));
+		OnPropertyChanged(nameof(HasArticlesAwaitingSelection));
 	}
 
 	partial void OnIsRemovingSubscriptionChanged(bool value)
 	{
 		OnPropertyChanged(nameof(CanRemoveSubscription));
+	}
+
+	partial void OnHasNoSelectedArticleChanged(bool value)
+	{
+		OnPropertyChanged(nameof(HasArticlesAwaitingSelection));
+	}
+
+	partial void OnHasNoArticlesChanged(bool value)
+	{
+		OnPropertyChanged(nameof(HasArticlesAwaitingSelection));
+	}
+
+	partial void OnIsLoadingArticlesChanged(bool value)
+	{
+		OnPropertyChanged(nameof(HasArticlesAwaitingSelection));
+	}
+
+	partial void OnArticleLoadErrorChanged(string? value)
+	{
+		OnPropertyChanged(nameof(HasArticlesAwaitingSelection));
 	}
 
 	private void RefreshSelectedArticleReadState()

@@ -45,14 +45,10 @@ public class MainViewModelTests
 		};
 	}
 
-	private static async Task<(
-		MainViewModel ViewModel,
-		FakeArticleStateRepository ArticleStateRepository,
-		FeedItem Article)>
+	private static async Task<(MainViewModel ViewModel, FakeArticleStateRepository ArticleStateRepository, FakeFeedReader feedReader, FeedItem Article)>
 		CreateArticleStateViewModel(bool initiallyRead = false)
 	{
-		var subscriptionRepository =
-				new FakeSubscriptionRepository();
+		var subscriptionRepository = new FakeSubscriptionRepository();
 
 		var subscription = CreateSubscription();
 
@@ -70,33 +66,22 @@ public class MainViewModelTests
 			Items = new List<FeedItem> { article }
 		};
 
-		var articleStateRepository =
-				new FakeArticleStateRepository();
+		var articleStateRepository = new FakeArticleStateRepository();
 
 		if (initiallyRead)
 		{
-			await articleStateRepository.MarkAsReadAsync(
-					subscription.Url,
-					ArticleIdentity.GetId(article));
+			await articleStateRepository.MarkAsReadAsync(subscription.Url, ArticleIdentity.GetId(article));
 		}
 
-		var subscriptionService =
-				new SubscriptionService(subscriptionRepository);
+		var subscriptionService = new SubscriptionService(subscriptionRepository);
 
-		var feedService = new FeedService(
-				subscriptionService,
-				feedReader);
+		var feedService = new FeedService(subscriptionService, feedReader);
 
-		var articleStateService =
-				new ArticleStateService(articleStateRepository);
+		var articleStateService = new ArticleStateService(articleStateRepository);
 
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService);
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
 
-		var subscriptionViewModel =
-				new SubscriptionViewModel(subscription);
+		var subscriptionViewModel = new SubscriptionViewModel(subscription);
 
 		viewModel.Subscriptions.Add(subscriptionViewModel);
 		viewModel.SelectedSubscription = subscriptionViewModel;
@@ -105,13 +90,13 @@ public class MainViewModelTests
 
 		viewModel.SelectedArticle = viewModel.Articles.Single();
 
-		return (viewModel, articleStateRepository, article);
+		return (viewModel, articleStateRepository, feedReader, article);
 	}
 
 	[Fact]
 	public async Task MarkAsRead_WhenRepositoryThrows_PreservesUnreadState()
 	{
-		var (viewModel, repository, _) =
+		var (viewModel, repository, _, _) =
 				await CreateArticleStateViewModel();
 
 		repository.MarkAsReadException =
@@ -130,7 +115,7 @@ public class MainViewModelTests
 	[Fact]
 	public async Task MarkAsUnread_WhenRepositoryThrows_PreservesReadState()
 	{
-		var (viewModel, repository, _) =
+		var (viewModel, repository, _, _) =
 				await CreateArticleStateViewModel(initiallyRead: true);
 
 		repository.MarkAsUnreadException =
@@ -149,7 +134,7 @@ public class MainViewModelTests
 	[Fact]
 	public async Task MarkAsRead_WhenRetrySucceeds_ClearsPreviousError()
 	{
-		var (viewModel, repository, article) =
+		var (viewModel, repository, feedReader, article) =
 				await CreateArticleStateViewModel();
 
 		repository.MarkAsReadException =
@@ -354,5 +339,177 @@ public class MainViewModelTests
 		Assert.Null(viewModel.SubscriptionOperationError);
 		Assert.Empty(viewModel.Subscriptions);
 		Assert.Empty(repository.Subscriptions);
+	}
+
+	[Fact]
+	public async Task RefreshSelectedFeed_WhenReaderThrows_PreservesExistingArticles()
+	{
+		var (viewModel, _, feedReader, _) =
+				await CreateArticleStateViewModel();
+
+		ArticleViewModel originalArticle = viewModel.Articles.Single();
+
+		ArticleViewModel? originalSelection = viewModel.SelectedArticle;
+
+		feedReader.ReadException =
+				new InvalidOperationException("Simulated network failure");
+
+		await viewModel.RefreshSelectedFeedCommand.ExecuteAsync(null);
+
+		Assert.Single(viewModel.Articles);
+
+		Assert.Same(
+				originalArticle,
+				viewModel.Articles.Single());
+
+		Assert.Same(
+				originalSelection,
+				viewModel.SelectedArticle);
+
+		Assert.Equal(
+				"Unable to load articles. Check your connection and try again.",
+				viewModel.ArticleLoadError);
+
+		Assert.False(viewModel.IsRefreshingArticles);
+		Assert.False(viewModel.IsLoadingArticles);
+	}
+
+	[Fact]
+	public async Task RefreshSelectedFeed_WhenSuccessful_UpdatesArticlesAndPreservesSelection()
+	{
+		var (viewModel, _, feedReader, _) =
+				await CreateArticleStateViewModel();
+
+		ArticleViewModel originalArticle = viewModel.SelectedArticle!;
+
+		var newArticle = new FeedItem
+		{
+			Title = "New Example Article",
+			Link = "https://example.com/new-article",
+			Description = "A newly published article."
+		};
+
+		feedReader.Items = new()
+		{
+				originalArticle.Item,
+				newArticle
+		};
+
+		viewModel.ArticleLoadError = "Previous refresh error.";
+
+		await viewModel.RefreshSelectedFeedCommand.ExecuteAsync(null);
+
+		Assert.Equal(2, viewModel.Articles.Count);
+
+		Assert.Equal(
+				"New Example Article",
+				viewModel.Articles[1].Item.Title);
+
+		Assert.NotSame(originalArticle, viewModel.Articles[0]);
+
+		Assert.Equal(
+				originalArticle.Item.Link,
+				viewModel.SelectedArticle!.Item.Link);
+
+		Assert.Null(viewModel.ArticleLoadError);
+		Assert.False(viewModel.IsRefreshingArticles);
+		Assert.False(viewModel.IsLoadingArticles);
+	}
+
+	[Fact]
+	public async Task RefreshSelectedFeed_WhenSelectedArticleDisappears_ClearsSelection()
+	{
+		var (viewModel, _, feedReader, _) =
+				await CreateArticleStateViewModel();
+
+		var replacementArticle = new FeedItem
+		{
+			Title = "Replacement Article",
+			Link = "https://example.com/replacement",
+			Description = "Another article."
+		};
+
+		feedReader.Items = new()
+		{
+				replacementArticle
+		};
+
+		await viewModel.RefreshSelectedFeedCommand.ExecuteAsync(null);
+
+		Assert.Single(viewModel.Articles);
+
+		Assert.Equal(
+				"Replacement Article",
+				viewModel.Articles[0].Item.Title);
+
+		Assert.Null(viewModel.SelectedArticle);
+		Assert.False(viewModel.HasSelectedArticle);
+		Assert.True(viewModel.HasNoSelectedArticle);
+		Assert.False(viewModel.IsRefreshingArticles);
+	}
+
+	[Fact]
+	public async Task RefreshSelectedFeed_WhenFeedIsEmpty_ShowsEmptyState()
+	{
+		var (viewModel, _, feedReader, _) =
+				await CreateArticleStateViewModel();
+
+		feedReader.Items = new();
+
+		await viewModel.RefreshSelectedFeedCommand.ExecuteAsync(null);
+
+		Assert.Empty(viewModel.Articles);
+		Assert.True(viewModel.HasNoArticles);
+
+		Assert.Null(viewModel.SelectedArticle);
+		Assert.False(viewModel.HasSelectedArticle);
+		Assert.True(viewModel.HasNoSelectedArticle);
+
+		Assert.Null(viewModel.ArticleLoadError);
+
+		Assert.False(viewModel.IsLoadingArticles);
+		Assert.False(viewModel.IsRefreshingArticles);
+		Assert.False(viewModel.HasArticlesAwaitingSelection);
+	}
+
+	[Fact]
+	public async Task HasArticlesAwaitingSelection_ReflectsCurrentViewModelState()
+	{
+		var (viewModel, _, _, _) =
+				await CreateArticleStateViewModel();
+
+		// A selected article means no selection prompt is needed.
+		Assert.False(viewModel.HasArticlesAwaitingSelection);
+
+		// Deselecting the article should show the prompt.
+		viewModel.SelectedArticle = null;
+		Assert.True(viewModel.HasArticlesAwaitingSelection);
+
+		// Deselecting the subscription should hide the prompt again.
+		viewModel.SelectedSubscription = null;
+		Assert.False(viewModel.HasArticlesAwaitingSelection);
+	}
+
+	[Fact]
+	public async Task HasArticlesAwaitingSelection_IsFalseWhileLoading()
+	{
+		var (viewModel, _, _, _) =
+				await CreateArticleStateViewModel();
+
+		viewModel.IsLoadingArticles = true;
+
+		Assert.False(viewModel.HasArticlesAwaitingSelection);
+	}
+
+	[Fact]
+	public async Task HasArticlesAwaitingSelection_IsFalseWhenRetrievalFails()
+	{
+		var (viewModel, _, _, _) =
+				await CreateArticleStateViewModel();
+
+		viewModel.SelectedArticle = null;
+		viewModel.ArticleLoadError = "Unable to load articles.";
+
+		Assert.False(viewModel.HasArticlesAwaitingSelection);
 	}
 }

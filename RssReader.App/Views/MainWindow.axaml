@@ -205,8 +205,21 @@
               Padding="12,0,0,0">
 
         <Grid>
+          <!-- No subscription selected -->
+          <TextBlock Text="Select a subscription to view its articles."
+                     IsVisible="{Binding HasNoSelectedSubscription}"
+                     Opacity="0.7"
+                     TextWrapping="Wrap" />
+
+          <!-- Subscription selected, but no article selected -->
           <TextBlock Text="Select an article to start reading."
-                     IsVisible="{Binding HasNoSelectedArticle}"
+                     IsVisible="{Binding HasArticlesAwaitingSelection}"
+                     Opacity="0.7"
+                     TextWrapping="Wrap" />
+
+          <!-- Feed successfully retrieved, but contains no articles -->
+          <TextBlock Text="No articles found. This feed was retrieved successfully, but it didn't contain any articles."
+                     IsVisible="{Binding HasNoArticles}"
                      Opacity="0.7"
                      TextWrapping="Wrap" />
 

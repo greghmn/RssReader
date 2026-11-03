@@ -14,15 +14,11 @@ public partial class MainWindow : Window
 	{
 		InitializeComponent();
 
-		ArticleList.AddHandler(
-				InputElement.PointerPressedEvent,
-				ArticleList_PointerPressed,
-				RoutingStrategies.Tunnel);
+		ArticleList.AddHandler(InputElement.PointerPressedEvent, ArticleList_PointerPressed, RoutingStrategies.Tunnel);
+		SubscriptionList.AddHandler(InputElement.PointerPressedEvent, SubscriptionList_PointerPressed, RoutingStrategies.Tunnel);
 	}
 
-	private async void AddSubscriptionButton_Click(
-	object? sender,
-	RoutedEventArgs e)
+	private async void AddSubscriptionButton_Click(object? sender, RoutedEventArgs e)
 	{
 		if (DataContext is not MainViewModel viewModel)
 		{
@@ -141,6 +137,40 @@ public partial class MainWindow : Window
 		if (DataContext is MainViewModel mainViewModel)
 		{
 			mainViewModel.ClearArticleSelectionCommand.Execute(null);
+		}
+	}
+
+	private void SubscriptionList_PointerPressed(object? sender, PointerPressedEventArgs e)
+	{
+		if (sender is not ListBox listBox)
+			return;
+
+		Control? source = e.Source as Control;
+
+		while (source is not null && source is not ListBoxItem)
+		{
+			source = source.GetVisualParent() as Control;
+		}
+
+		if (source is ListBoxItem item)
+		{
+			if (item.DataContext is SubscriptionViewModel subscription
+					&& ReferenceEquals(listBox.SelectedItem, subscription))
+			{
+				if (DataContext is MainViewModel viewModel)
+				{
+					viewModel.ClearSubscriptionSelectionCommand.Execute(null);
+				}
+
+				e.Handled = true;
+			}
+
+			return;
+		}
+
+		if (DataContext is MainViewModel mainViewModel)
+		{
+			mainViewModel.ClearSubscriptionSelectionCommand.Execute(null);
 		}
 	}
 }

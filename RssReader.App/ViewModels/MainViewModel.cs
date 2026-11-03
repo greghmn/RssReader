@@ -436,4 +436,10 @@ public partial class MainViewModel : ViewModelBase
 	{
 		SelectedArticle = null;
 	}
+
+	[RelayCommand]
+	private void ClearSubscriptionSelection()
+	{
+		SelectedSubscription = null;
+	}
 }

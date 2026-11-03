@@ -430,4 +430,10 @@ public partial class MainViewModel : ViewModelBase
 					"Unable to update the article's read status. Please try again.";
 		}
 	}
+
+	[RelayCommand]
+	private void ClearArticleSelection()
+	{
+		SelectedArticle = null;
+	}
 }

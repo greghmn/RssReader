@@ -165,7 +165,8 @@
                    MinHeight="20"
                    Opacity="0.7" />
 
-        <ListBox Grid.Row="3"
+        <ListBox x:Name="ArticleList"
+                 Grid.Row="3"
                  ItemsSource="{Binding Articles}"
                  SelectedItem="{Binding SelectedArticle, Mode=TwoWay}">
 
@@ -252,7 +253,7 @@
                       HorizontalAlignment="Left"
                       IsVisible="{Binding SelectedArticle.CanOpenArticleLink}"
                       Click="OpenArticleLinkButton_Click" />
-              <TextBlock Text="{Binding SelectedArticle.Item.Content}"
+              <TextBlock Text="{Binding SelectedArticle.DisplayContent}"
                          TextWrapping="Wrap" />
               <Button Content="Mark as read"
                       Command="{Binding MarkSelectedArticleAsReadCommand}"

@@ -940,4 +940,25 @@ public class FeedParserTests
 		Assert.Equal("A short summary.", item.Summary);
 		Assert.Equal("", item.Content);
 	}
+	[Fact]
+	public void Parse_AtomEntryWithSummaryAndContent_ExtractsBoth()
+	{
+		XDocument document = XDocument.Parse("""
+        <feed xmlns="http://www.w3.org/2005/Atom">
+            <title>Example Feed</title>
+            <entry>
+                <title>Example Article</title>
+                <summary>A short summary.</summary>
+                <content>
+                    The complete article body.
+                </content>
+            </entry>
+        </feed>
+        """);
+
+		FeedItem item = Assert.Single(FeedParser.Parse(document));
+
+		Assert.Equal("A short summary.", item.Summary);
+		Assert.Equal("The complete article body.", item.Content.Trim());
+	}
 }

@@ -24,6 +24,11 @@ public partial class ArticleViewModel : ViewModelBase
 		}
 	}
 
+	public string DisplayContent =>
+		!string.IsNullOrWhiteSpace(Item.Content)
+				? Item.Content
+				: Item.Summary;
+
 	public bool IsUnread => !IsRead;
 
 	public string PublishedDateText =>

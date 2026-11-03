@@ -3,6 +3,8 @@ using Avalonia.Interactivity;
 using RssReader.App.ViewModels;
 using RssReader.Core;
 using System;
+using Avalonia.Input;
+using Avalonia.VisualTree;
 
 namespace RssReader.App.Views;
 
@@ -11,6 +13,11 @@ public partial class MainWindow : Window
 	public MainWindow()
 	{
 		InitializeComponent();
+
+		ArticleList.AddHandler(
+				InputElement.PointerPressedEvent,
+				ArticleList_PointerPressed,
+				RoutingStrategies.Tunnel);
 	}
 
 	private async void AddSubscriptionButton_Click(
@@ -30,9 +37,7 @@ public partial class MainWindow : Window
 		bool result = await dialog.ShowDialog<bool>(this);
 	}
 
-	private async void RemoveSubscriptionButton_Click(
-	object? sender,
-	RoutedEventArgs e)
+	private async void RemoveSubscriptionButton_Click(object? sender, RoutedEventArgs e)
 	{
 		if (DataContext is not MainViewModel viewModel)
 		{
@@ -59,9 +64,7 @@ public partial class MainWindow : Window
 
 		await viewModel.RemoveSubscriptionAsync(subscription);
 	}
-	private async void OpenArticleLinkButton_Click(
-	object? sender,
-	RoutedEventArgs e)
+	private async void OpenArticleLinkButton_Click(object? sender, RoutedEventArgs e)
 	{
 		if (DataContext is not MainViewModel viewModel)
 			return;
@@ -104,6 +107,40 @@ public partial class MainWindow : Window
 		{
 			Console.Error.WriteLine(
 					$"Failed to open article URL: {ex}");
+		}
+	}
+	private void ArticleList_PointerPressed(object? sender, PointerPressedEventArgs e)
+	{
+		if (sender is not ListBox listBox)
+			return;
+
+		Control? source = e.Source as Control;
+
+		while (source is not null && source is not ListBoxItem)
+		{
+			source = source.GetVisualParent() as Control;
+		}
+
+		if (source is ListBoxItem item)
+		{
+			if (item.DataContext is ArticleViewModel article
+					&& ReferenceEquals(listBox.SelectedItem, article))
+			{
+				if (DataContext is MainViewModel viewModel)
+				{
+					viewModel.ClearArticleSelectionCommand.Execute(null);
+				}
+
+				// Prevent the ListBox from immediately selecting it again.
+				e.Handled = true;
+			}
+
+			return;
+		}
+
+		if (DataContext is MainViewModel mainViewModel)
+		{
+			mainViewModel.ClearArticleSelectionCommand.Execute(null);
 		}
 	}
 }

@@ -18,6 +18,16 @@ public class FakeSubscriptionRepository : ISubscriptionRepository
 
 	public TaskCompletionSource<bool>? RemoveCompletion { get; set; }
 
+	public bool UpdateTitleResult { get; set; } = true;
+
+	public Exception? UpdateTitleException { get; set; }
+
+	public TaskCompletionSource<bool>? UpdateTitleStarted { get; set; }
+
+	public TaskCompletionSource<bool>? AllowUpdateTitle { get; set; }
+
+	public TaskCompletionSource<bool>? UpdateTitleCompletion { get; set; }
+
 	public Task<List<FeedSubscription>> GetAllAsync()
 	{
 		if (GetAllException is not null)
@@ -74,4 +84,45 @@ public class FakeSubscriptionRepository : ISubscriptionRepository
 
 		return true;
 	}
+
+	public async Task<bool> UpdateTitleAsync(string url, string title)
+	{
+		if (UpdateTitleException is not null)
+		{
+			throw UpdateTitleException;
+		}
+
+		UpdateTitleStarted?.TrySetResult(true);
+
+		if (AllowUpdateTitle is not null)
+		{
+			await AllowUpdateTitle.Task;
+		}
+
+		if (UpdateTitleCompletion is not null)
+		{
+			return await UpdateTitleCompletion.Task;
+		}
+
+		if (!UpdateTitleResult)
+		{
+			return false;
+		}
+
+		FeedSubscription? subscription = Subscriptions.FirstOrDefault(
+				s => string.Equals(
+						s.Url.TrimEnd('/'),
+						url.TrimEnd('/'),
+						StringComparison.OrdinalIgnoreCase));
+
+		if (subscription is null)
+		{
+			return false;
+		}
+
+		subscription.Title = title;
+
+		return true;
+	}
+
 }

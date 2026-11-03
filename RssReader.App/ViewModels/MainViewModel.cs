@@ -305,8 +305,7 @@ public partial class MainViewModel : ViewModelBase
 
 	//failed removal sim is in the following, for future reference 
 
-	public async Task<bool> RemoveSubscriptionAsync(
-			SubscriptionViewModel subscription)
+	public async Task<bool> RemoveSubscriptionAsync(SubscriptionViewModel subscription)
 	{
 		if (IsRemovingSubscription)
 		{

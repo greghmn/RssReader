@@ -25,7 +25,7 @@
 
     <Grid Grid.Row="1"
           Grid.Column="0"
-          RowDefinitions="Auto,Auto,Auto,Auto,*"
+          RowDefinitions="Auto,Auto,Auto,Auto,*,Auto"
           Margin="16">
 
       <TextBlock Text="Subscriptions"
@@ -80,15 +80,33 @@
                            VerticalAlignment="Center"
                            Margin="8,0,0,0" />
               </Grid>
-
-              <TextBlock Text="{Binding Item.Url}"
-                         FontSize="11"
-                         Opacity="0.7"
-                         TextWrapping="Wrap" />
             </StackPanel>
           </DataTemplate>
         </ListBox.ItemTemplate>
       </ListBox>
+
+      <StackPanel Grid.Row="5"
+                  Spacing="6"
+                  Margin="0,8,0,0"
+                  IsVisible="{Binding HasSelectedSubscription}">
+
+        <TextBlock Text="Subscription details"
+                   FontWeight="SemiBold"
+                   FontSize="14" />
+
+        <TextBlock Text="{Binding SelectedSubscription.Item.Title}"
+                   FontWeight="SemiBold" />
+
+        <TextBlock Text="Feed URL"
+                   FontSize="11"
+                   Opacity="0.7" />
+
+        <HyperlinkButton NavigateUri="{Binding SelectedSubscription.FeedUri}"
+                         Content="{Binding SelectedSubscription.Item.Url}"
+                         HorizontalAlignment="Left" />
+
+      </StackPanel>
+
     </Grid>
 
     <Grid Grid.Row="1"

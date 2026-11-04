@@ -87,9 +87,7 @@ UrlsMatch(subscription.Url, url));
 				StringComparison.OrdinalIgnoreCase);
 	}
 
-	public async Task<bool> RenameAsync(
-		string url,
-		string title)
+	public async Task<bool> RenameAsync(string url, string title)
 	{
 		if (string.IsNullOrWhiteSpace(title))
 		{

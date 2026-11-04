@@ -46,4 +46,11 @@ public class FakeSubscriptionRepository : ISubscriptionRepository
 		return Task.FromResult(true);
 	}
 
+	public async Task<bool> UpdateLastRetrievedAsync(
+		string url,
+		DateTimeOffset lastRetrieved)
+	{
+		return false;
+	}
+
 }

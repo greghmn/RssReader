@@ -125,4 +125,10 @@ public class FakeSubscriptionRepository : ISubscriptionRepository
 		return true;
 	}
 
+	public async Task<bool> UpdateLastRetrievedAsync(
+		string url,
+		DateTimeOffset lastRetrieved)
+	{
+		return false;
+	}
 }

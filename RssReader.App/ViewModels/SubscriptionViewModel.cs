@@ -8,6 +8,14 @@ public partial class SubscriptionViewModel : ViewModelBase
 {
 	public FeedSubscription Item { get; }
 
+	[ObservableProperty]
+	public partial DateTimeOffset? LastRetrieved { get; set; }
+
+	public string LastRetrievedText =>
+		LastRetrieved.HasValue
+				? $"Last retrieved: {LastRetrieved.Value.ToLocalTime():g}"
+				: "Not yet retrieved";
+
 	public Uri? FeedUri
 	{
 		get
@@ -26,6 +34,8 @@ public partial class SubscriptionViewModel : ViewModelBase
 	[ObservableProperty]
 	public partial int? UnreadCount { get; set; }
 
+
+
 	[ObservableProperty]
 	public partial string Title { get; set; } = "";
 
@@ -40,10 +50,17 @@ public partial class SubscriptionViewModel : ViewModelBase
 	{
 		Item = item;
 		Title = item.Title;
+		LastRetrieved = item.LastRetrieved;
 	}
 
 	partial void OnTitleChanged(string value)
 	{
 		Item.Title = value;
+	}
+
+	partial void OnLastRetrievedChanged(DateTimeOffset? value)
+	{
+		Item.LastRetrieved = value;
+		OnPropertyChanged(nameof(LastRetrievedText));
 	}
 }

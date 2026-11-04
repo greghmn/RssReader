@@ -25,14 +25,49 @@ public class SqliteSubscriptionRepository : ISubscriptionRepository
 		await using var command = connection.CreateCommand();
 
 		command.CommandText = """
-            CREATE TABLE IF NOT EXISTS Subscriptions (
-                Url TEXT NOT NULL PRIMARY KEY,
-                Title TEXT NOT NULL,
-                DateAdded TEXT NOT NULL
-            );
-            """;
+    CREATE TABLE IF NOT EXISTS Subscriptions (
+        Url TEXT NOT NULL PRIMARY KEY,
+        Title TEXT NOT NULL,
+        DateAdded TEXT NOT NULL,
+        LastRetrieved TEXT NULL
+    );
+    """;
 
 		await command.ExecuteNonQueryAsync();
+
+		// Check whether LastRetrieved already exists.
+		await using var checkCommand = connection.CreateCommand();
+
+		checkCommand.CommandText = """
+    PRAGMA table_info(Subscriptions);
+    """;
+
+		bool hasLastRetrieved = false;
+
+		await using (var reader = await checkCommand.ExecuteReaderAsync())
+		{
+			while (await reader.ReadAsync())
+			{
+				if (reader.GetString(1) == "LastRetrieved")
+				{
+					hasLastRetrieved = true;
+					break;
+				}
+			}
+		}
+
+		// Add the column to databases created by older versions.
+		if (!hasLastRetrieved)
+		{
+			await using var alterCommand = connection.CreateCommand();
+
+			alterCommand.CommandText = """
+        ALTER TABLE Subscriptions
+        ADD COLUMN LastRetrieved TEXT NULL;
+        """;
+
+			await alterCommand.ExecuteNonQueryAsync();
+		}
 	}
 
 	public async Task<List<FeedSubscription>> GetAllAsync()
@@ -47,7 +82,7 @@ public class SqliteSubscriptionRepository : ISubscriptionRepository
 		await using var command = connection.CreateCommand();
 
 		command.CommandText = """
-            SELECT Url, Title, DateAdded
+            SELECT Url, Title, DateAdded, LastRetrieved
             FROM Subscriptions
             ORDER BY DateAdded;
             """;
@@ -60,7 +95,10 @@ public class SqliteSubscriptionRepository : ISubscriptionRepository
 			{
 				Url = reader.GetString(0),
 				Title = reader.GetString(1),
-				DateAdded = DateTimeOffset.Parse(reader.GetString(2))
+				DateAdded = DateTimeOffset.Parse(reader.GetString(2)),
+				LastRetrieved = reader.IsDBNull(3)
+							? null
+							: DateTimeOffset.Parse(reader.GetString(3))
 			});
 		}
 
@@ -111,9 +149,7 @@ public class SqliteSubscriptionRepository : ISubscriptionRepository
 		return rowsAffected > 0;
 	}
 
-	public async Task<bool> UpdateTitleAsync(
-		string url,
-		string title)
+	public async Task<bool> UpdateTitleAsync(string url, string title)
 	{
 		await using var connection =
 				new SqliteConnection(_connectionString);
@@ -130,6 +166,33 @@ public class SqliteSubscriptionRepository : ISubscriptionRepository
 
 		command.Parameters.AddWithValue("$url", url);
 		command.Parameters.AddWithValue("$title", title);
+
+		int rowsAffected = await command.ExecuteNonQueryAsync();
+
+		return rowsAffected > 0;
+	}
+
+	public async Task<bool> UpdateLastRetrievedAsync(
+		string url,
+		DateTimeOffset lastRetrieved)
+	{
+		await using var connection =
+				new SqliteConnection(_connectionString);
+
+		await connection.OpenAsync();
+
+		await using var command = connection.CreateCommand();
+
+		command.CommandText = """
+        UPDATE Subscriptions
+        SET LastRetrieved = $lastRetrieved
+        WHERE Url = $url;
+        """;
+
+		command.Parameters.AddWithValue("$url", url);
+		command.Parameters.AddWithValue(
+				"$lastRetrieved",
+				lastRetrieved.ToString("O"));
 
 		int rowsAffected = await command.ExecuteNonQueryAsync();
 

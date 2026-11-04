@@ -112,4 +112,13 @@ UrlsMatch(subscription.Url, url));
 				subscription.Url,
 				title.Trim());
 	}
+
+	public async Task<bool> UpdateLastRetrievedAsync(
+		string url,
+		DateTimeOffset lastRetrieved)
+	{
+		return await _repository.UpdateLastRetrievedAsync(
+				url,
+				lastRetrieved);
+	}
 }

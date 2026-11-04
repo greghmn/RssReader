@@ -78,17 +78,28 @@ public partial class MainViewModel : ViewModelBase
 
 	public bool CanRemoveSubscription => HasSelectedSubscription && !IsRemovingSubscription;
 
+	public bool CanRefreshSelectedFeed =>
+			HasSelectedSubscription
+			&& !IsLoadingArticles
+			&& !IsRefreshingArticles;
+
 	public bool HasArticlesAwaitingSelection => HasSelectedSubscription && HasNoSelectedArticle && !HasNoArticles && !IsLoadingArticles && ArticleLoadError is null;
 
 	partial void OnHasSelectedSubscriptionChanged(bool value)
 	{
 		OnPropertyChanged(nameof(CanRemoveSubscription));
 		OnPropertyChanged(nameof(HasArticlesAwaitingSelection));
+		OnPropertyChanged(nameof(CanRefreshSelectedFeed));
 	}
 
 	partial void OnIsRemovingSubscriptionChanged(bool value)
 	{
 		OnPropertyChanged(nameof(CanRemoveSubscription));
+	}
+
+	partial void OnIsRefreshingArticlesChanged(bool value)
+	{
+		OnPropertyChanged(nameof(CanRefreshSelectedFeed));
 	}
 
 	partial void OnHasNoSelectedArticleChanged(bool value)
@@ -278,6 +289,27 @@ public partial class MainViewModel : ViewModelBase
 			}
 
 			HasNoArticles = Articles.Count == 0;
+
+			DateTimeOffset lastRetrieved = DateTimeOffset.UtcNow;
+
+			bool timestampUpdated =
+					await _subscriptionService.UpdateLastRetrievedAsync(
+							subscription.Url,
+							lastRetrieved);
+
+			if (timestampUpdated)
+			{
+
+				if (subscriptionViewModel is not null)
+				{
+					subscriptionViewModel.LastRetrieved = lastRetrieved;
+				}
+			}
+			else
+			{
+				Console.Error.WriteLine(
+						$"Unable to update retrieval timestamp for {subscription.Url}");
+			}
 		}
 		catch (Exception ex)
 		{

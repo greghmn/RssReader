@@ -1,0 +1,39 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="RssReader.App.Views.RenameSubscriptionWindow"
+        Width="360"
+        SizeToContent="Height"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Title="Rename subscription">
+
+  <StackPanel Margin="16" Spacing="12">
+
+    <TextBlock Text="Subscription name"
+               FontWeight="SemiBold" />
+
+    <TextBox x:Name="TitleTextBox"
+             PlaceholderText="Enter a subscription name" />
+
+    <TextBlock x:Name="ErrorTextBlock"
+               Foreground="IndianRed"
+               TextWrapping="Wrap"
+               IsVisible="False" />
+
+    <StackPanel Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Spacing="8">
+
+      <Button Content="Cancel"
+              IsCancel="True"
+              Click="CancelButton_Click"/>
+
+      <Button x:Name="SaveButton"
+              Content="Save"
+              IsDefault="True"
+              Click="SaveButton_Click" />
+
+    </StackPanel>
+
+  </StackPanel>
+</Window>

@@ -65,6 +65,19 @@
                Grid.Row="4"
                ItemsSource="{Binding Subscriptions}"
                SelectedItem="{Binding SelectedSubscription, Mode=TwoWay}">
+
+        <ListBox.ItemContainerTheme>
+          <ControlTheme TargetType="ListBoxItem"
+                        BasedOn="{StaticResource {x:Type ListBoxItem}}">
+            <Setter Property="ContextMenu">
+              <ContextMenu>
+                <MenuItem Header="Rename"
+                          Click="RenameSubscriptionMenuItem_Click" />
+              </ContextMenu>
+            </Setter>
+          </ControlTheme>
+        </ListBox.ItemContainerTheme>
+
         <ListBox.ItemTemplate>
           <DataTemplate>
             <StackPanel Spacing="4">
@@ -96,7 +109,7 @@
                    FontWeight="SemiBold"
                    FontSize="14" />
 
-        <TextBlock Text="{Binding SelectedSubscription.Item.Title}"
+        <TextBlock Text="{Binding SelectedSubscription.Title}"
                    FontWeight="SemiBold" />
 
         <TextBlock Text="Feed URL"
@@ -131,7 +144,7 @@
           <Button Grid.Column="1"
                   Content="↻ Refresh"
                   Command="{Binding RefreshSelectedFeedCommand}"
-                  IsEnabled="{Binding CanRemoveSubscription}"
+                  IsEnabled="{Binding CanRefreshSelectedFeed}"
                   Margin="8,0,0,0" />
         </Grid>
 

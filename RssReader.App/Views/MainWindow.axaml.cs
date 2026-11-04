@@ -1,6 +1,7 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Interactivity;
 using RssReader.App.ViewModels;
+using RssReader.App.Views;
 using RssReader.Core;
 using System;
 using Avalonia.Input;
@@ -142,6 +143,11 @@ public partial class MainWindow : Window
 
 	private void SubscriptionList_PointerPressed(object? sender, PointerPressedEventArgs e)
 	{
+		if (!e.GetCurrentPoint(SubscriptionList)
+				.Properties.IsLeftButtonPressed)
+		{
+			return;
+		}
 		if (sender is not ListBox listBox)
 			return;
 
@@ -172,5 +178,27 @@ public partial class MainWindow : Window
 		{
 			mainViewModel.ClearSubscriptionSelectionCommand.Execute(null);
 		}
+	}
+
+	private async void RenameSubscriptionMenuItem_Click(
+			object? sender,
+			RoutedEventArgs e)
+	{
+		if (sender is not MenuItem menuItem)
+			return;
+
+		if (menuItem.DataContext is not SubscriptionViewModel subscription)
+			return;
+
+		if (DataContext is not MainViewModel viewModel)
+			return;
+
+		var dialog = new RenameSubscriptionWindow(subscription.Title)
+		{
+			SubmitAsync = newTitle =>
+					viewModel.RenameSubscriptionAsync(subscription, newTitle)
+		};
+
+		await dialog.ShowDialog<bool>(this);
 	}
 }

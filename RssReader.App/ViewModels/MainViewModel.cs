@@ -46,6 +46,12 @@ public partial class MainViewModel : ViewModelBase
 	public partial bool IsRemovingSubscription { get; set; }
 
 	[ObservableProperty]
+	public partial bool IsRenamingSubscription { get; set; }
+
+	[ObservableProperty]
+	public partial string? SubscriptionRenameError { get; set; }
+
+	[ObservableProperty]
 	public partial string? SubscriptionOperationError { get; set; }
 
 	[ObservableProperty]
@@ -319,11 +325,11 @@ public partial class MainViewModel : ViewModelBase
 		try
 		{
 
-			 /***************************************************************
-			 * For simulating a failed removal; comment out when not needed *
-			 ***************************************************************/
+			/***************************************************************
+			* For simulating a failed removal; comment out when not needed *
+			***************************************************************/
 
-			 //throw new InvalidOperationException("Simulated database failure");
+			//throw new InvalidOperationException("Simulated database failure");
 
 			bool removed = await _subscriptionService.RemoveAsync(
 					subscription.Item.Url);
@@ -358,6 +364,52 @@ public partial class MainViewModel : ViewModelBase
 		finally
 		{
 			IsRemovingSubscription = false;
+		}
+	}
+
+	public async Task<bool> RenameSubscriptionAsync(
+			SubscriptionViewModel subscription,
+			string newTitle)
+	{
+		if (IsRenamingSubscription)
+		{
+			return false;
+		}
+
+		IsRenamingSubscription = true;
+		SubscriptionRenameError = null;
+
+		try
+		{
+			bool renamed = await _subscriptionService.RenameAsync(
+					subscription.Item.Url,
+					newTitle);
+
+			if (!renamed)
+			{
+				SubscriptionRenameError =
+						"The subscription could not be found.";
+
+				return false;
+			}
+
+			subscription.Title = newTitle.Trim();
+
+			return true;
+		}
+		catch (Exception ex)
+		{
+			Console.Error.WriteLine(
+					$"Failed to rename subscription {subscription.Item.Url}: {ex}");
+
+			SubscriptionRenameError =
+					"Unable to rename the subscription. Please try again.";
+
+			return false;
+		}
+		finally
+		{
+			IsRenamingSubscription = false;
 		}
 	}
 	[RelayCommand]

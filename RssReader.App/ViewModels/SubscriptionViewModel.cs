@@ -26,6 +26,9 @@ public partial class SubscriptionViewModel : ViewModelBase
 	[ObservableProperty]
 	public partial int? UnreadCount { get; set; }
 
+	[ObservableProperty]
+	public partial string Title { get; set; } = "";
+
 	public bool HasUnreadCount => UnreadCount.HasValue;
 
 	partial void OnUnreadCountChanged(int? value)
@@ -36,5 +39,11 @@ public partial class SubscriptionViewModel : ViewModelBase
 	public SubscriptionViewModel(FeedSubscription item)
 	{
 		Item = item;
+		Title = item.Title;
+	}
+
+	partial void OnTitleChanged(string value)
+	{
+		Item.Title = value;
 	}
 }

@@ -18,11 +18,12 @@
 
   <Grid RowDefinitions="Auto,*"
         ColumnDefinitions="240,1,*">
+    <!-- Header -->
     <TextBlock Text="RSS Reader"
                FontSize="24"
                FontWeight="Bold"
                Margin="16" />
-
+    <!-- Subscription pane -->
     <Grid Grid.Row="1"
           Grid.Column="0"
           RowDefinitions="Auto,Auto,Auto,Auto,*,Auto"
@@ -68,7 +69,7 @@
           <DataTemplate>
             <StackPanel Spacing="4">
               <Grid ColumnDefinitions="*,Auto">
-                <TextBlock Text="{Binding Item.Title}"
+                <TextBlock Text="{Binding Title}"
                            FontWeight="SemiBold"
                            VerticalAlignment="Center" />
 

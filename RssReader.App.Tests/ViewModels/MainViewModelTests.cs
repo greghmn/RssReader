@@ -512,4 +512,141 @@ public class MainViewModelTests
 
 		Assert.False(viewModel.HasArticlesAwaitingSelection);
 	}
+
+	[Fact]
+	public async Task RenameSubscriptionAsync_WhenSuccessful_UpdatesTitle()
+	{
+		var (viewModel, repository) = CreateViewModel();
+
+		FeedSubscription subscription = CreateSubscription();
+		repository.Subscriptions.Add(subscription);
+
+		var subscriptionViewModel =
+				new SubscriptionViewModel(subscription);
+
+		viewModel.Subscriptions.Add(subscriptionViewModel);
+
+		viewModel.SubscriptionRenameError = "Previous error.";
+
+		bool result = await viewModel.RenameSubscriptionAsync(
+				subscriptionViewModel,
+				"Renamed Feed");
+
+		Assert.True(result);
+		Assert.Equal("Renamed Feed", subscriptionViewModel.Title);
+		Assert.Equal("Renamed Feed", subscription.Title);
+		Assert.Equal("Renamed Feed", repository.Subscriptions.Single().Title);
+
+		Assert.Null(viewModel.SubscriptionRenameError);
+		Assert.False(viewModel.IsRenamingSubscription);
+	}
+
+	[Fact]
+	public async Task RenameSubscriptionAsync_WhenSubscriptionDoesNotExist_ReturnsFalse()
+	{
+		var (viewModel, _) = CreateViewModel();
+
+		var subscriptionViewModel =
+				new SubscriptionViewModel(CreateSubscription());
+
+		bool result = await viewModel.RenameSubscriptionAsync(
+				subscriptionViewModel,
+				"Renamed Feed");
+
+		Assert.False(result);
+		Assert.Equal("Example Feed", subscriptionViewModel.Title);
+
+		Assert.Equal(
+				"The subscription could not be found.",
+				viewModel.SubscriptionRenameError);
+
+		Assert.False(viewModel.IsRenamingSubscription);
+	}
+
+	[Fact]
+	public async Task RenameSubscriptionAsync_WhenRepositoryThrows_PreservesTitle()
+	{
+		var (viewModel, repository) = CreateViewModel();
+
+		FeedSubscription subscription = CreateSubscription();
+		repository.Subscriptions.Add(subscription);
+
+		var subscriptionViewModel =
+				new SubscriptionViewModel(subscription);
+
+		viewModel.Subscriptions.Add(subscriptionViewModel);
+
+		repository.UpdateTitleException =
+				new InvalidOperationException("Simulated database failure");
+
+		bool result = await viewModel.RenameSubscriptionAsync(
+				subscriptionViewModel,
+				"Renamed Feed");
+
+		Assert.False(result);
+
+		Assert.Equal("Example Feed", subscriptionViewModel.Title);
+		Assert.Equal("Example Feed", subscription.Title);
+
+		Assert.Equal(
+				"Unable to rename the subscription. Please try again.",
+				viewModel.SubscriptionRenameError);
+
+		Assert.False(viewModel.IsRenamingSubscription);
+	}
+
+	[Fact]
+	public async Task RenameSubscriptionAsync_WhenAnotherRenameIsInProgress_RejectsSecondAttempt()
+	{
+		var (viewModel, repository) = CreateViewModel();
+
+		FeedSubscription subscription = CreateSubscription();
+		repository.Subscriptions.Add(subscription);
+
+		var subscriptionViewModel =
+				new SubscriptionViewModel(subscription);
+
+		viewModel.Subscriptions.Add(subscriptionViewModel);
+
+		var updateStarted = new TaskCompletionSource<bool>(
+				TaskCreationOptions.RunContinuationsAsynchronously);
+
+		var allowUpdate = new TaskCompletionSource<bool>(
+				TaskCreationOptions.RunContinuationsAsynchronously);
+
+		repository.UpdateTitleStarted = updateStarted;
+		repository.AllowUpdateTitle = allowUpdate;
+
+		// Start the first rename, but don't let it finish yet.
+		Task<bool> firstRename =
+				viewModel.RenameSubscriptionAsync(
+						subscriptionViewModel,
+						"First Rename");
+
+		// Wait until the repository confirms the operation has started.
+		await updateStarted.Task;
+
+		Assert.True(viewModel.IsRenamingSubscription);
+
+		// Attempt a second rename while the first is still running.
+		bool secondResult = await viewModel.RenameSubscriptionAsync(
+				subscriptionViewModel,
+				"Second Rename");
+
+		Assert.False(secondResult);
+		Assert.True(viewModel.IsRenamingSubscription);
+
+		Assert.Equal("Example Feed", subscriptionViewModel.Title);
+		Assert.Equal("Example Feed", subscription.Title);
+
+		// Allow the first rename to finish.
+		allowUpdate.SetResult(true);
+
+		bool firstResult = await firstRename;
+
+		Assert.True(firstResult);
+		Assert.Equal("First Rename", subscriptionViewModel.Title);
+		Assert.Equal("First Rename", subscription.Title);
+		Assert.False(viewModel.IsRenamingSubscription);
+	}
 }

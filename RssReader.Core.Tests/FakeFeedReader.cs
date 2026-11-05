@@ -4,16 +4,21 @@ namespace RssReader.Core.Tests;
 
 public class FakeFeedReader : IFeedReader
 {
-    public List<FeedItem> ItemsToReturn { get; set; } = [];
+	public List<FeedItem> ItemsToReturn { get; set; } = [];
 
-    public string? LastRequestedUrl { get; private set; }
+	public string? LastRequestedUrl { get; private set; }
 
-    //implement the interface 
+	public int ReadCount { get; private set; }
 
-    public Task<List<FeedItem>> ReadAsync(string feedUrl, CancellationToken cancellationToken = default)
-    {
-        LastRequestedUrl = feedUrl;
+	//implement the interface 
 
-        return Task.FromResult(ItemsToReturn);
-    }
+	public Task<List<FeedItem>> ReadAsync(
+			string feedUrl,
+			CancellationToken cancellationToken = default)
+	{
+		ReadCount++;
+		LastRequestedUrl = feedUrl;
+
+		return Task.FromResult(ItemsToReturn);
+	}
 }

@@ -1,0 +1,46 @@
+﻿using RssReader.Core;
+
+namespace RssReader.App.Tests.Fakes;
+
+public class FakeArticleRepository : IArticleRepository
+{
+	private readonly List<FeedItem> _articles = new();
+
+	public Task<List<FeedItem>> GetByFeedAsync(string feedUrl)
+	{
+		return Task.FromResult(
+				_articles
+						.Where(article => article.FeedUrl == feedUrl)
+						.ToList());
+	}
+
+	public Task SaveAsync(
+			string feedUrl,
+			IEnumerable<FeedItem> articles)
+	{
+		foreach (FeedItem article in articles)
+		{
+			string? identityKey = ArticleIdentity.GetId(article);
+
+			if (identityKey is not null)
+			{
+				_articles.RemoveAll(existing =>
+						existing.FeedUrl == feedUrl
+						&& ArticleIdentity.GetId(existing) == identityKey);
+			}
+
+			_articles.Add(new FeedItem
+			{
+				Id = article.Id,
+				FeedUrl = feedUrl,
+				Link = article.Link,
+				Title = article.Title,
+				Summary = article.Summary,
+				Content = article.Content,
+				PublishedAt = article.PublishedAt
+			});
+		}
+
+		return Task.CompletedTask;
+	}
+}

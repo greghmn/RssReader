@@ -12,66 +12,75 @@ namespace RssReader.App;
 
 public partial class App : Application
 {
-    public override void Initialize()
-    {
-        AvaloniaXamlLoader.Load(this);
-    }
+	public override void Initialize()
+	{
+		AvaloniaXamlLoader.Load(this);
+	}
 
-    public override void OnFrameworkInitializationCompleted()
-    {
-        string appDataDirectory = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "RssReader");
+	public override void OnFrameworkInitializationCompleted()
+	{
+		string appDataDirectory = Path.Combine(
+		Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+		"RssReader");
 
-        Directory.CreateDirectory(appDataDirectory);
+		Directory.CreateDirectory(appDataDirectory);
 
-        string databasePath = Path.Combine(
-            appDataDirectory,
-            "subscriptions.db");
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-        {
-            _ = StartApplicationAsync(desktop, databasePath);
-        }
+		string databasePath = Path.Combine(
+				appDataDirectory,
+				"subscriptions.db");
+		if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+		{
+			_ = StartApplicationAsync(desktop, databasePath);
+		}
 
-        base.OnFrameworkInitializationCompleted();
-    }
-    private async Task StartApplicationAsync(
-      IClassicDesktopStyleApplicationLifetime desktop,
-      string databasePath)
-    {
-        try
-        {
-            var subscriptionRepository = new SqliteSubscriptionRepository(databasePath);
+		base.OnFrameworkInitializationCompleted();
+	}
+	private async Task StartApplicationAsync(
+		IClassicDesktopStyleApplicationLifetime desktop,
+		string databasePath)
+	{
+		try
+		{
+			var subscriptionRepository = new SqliteSubscriptionRepository(databasePath);
 
-            await subscriptionRepository.InitializeAsync();
+			await subscriptionRepository.InitializeAsync();
 
-            var subscriptionService =
-                new SubscriptionService(subscriptionRepository);
-            
-            var articleStateRepository = new SqliteArticleStateRepository(databasePath);
+			var subscriptionService =
+					new SubscriptionService(subscriptionRepository);
 
-            await articleStateRepository.InitializeAsync();
+			var articleStateRepository = new SqliteArticleStateRepository(databasePath);
 
-            var articleStateService = new ArticleStateService(articleStateRepository);
-            
-            IFeedReader feedReader = new FeedReader();
+			await articleStateRepository.InitializeAsync();
 
-            var feedService = new FeedService(subscriptionService, feedReader);
+			var articleStateService =
+					new ArticleStateService(articleStateRepository);
 
-            var mainViewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
+			var articleRepository =
+					new SqliteArticleRepository(databasePath);
 
-            await mainViewModel.LoadSubscriptionsAsync();
+			await articleRepository.InitializeAsync();
 
-            desktop.MainWindow = new MainWindow
-            {
-                DataContext = mainViewModel,
-            };
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"Application startup failed: {ex}");
+			IFeedReader feedReader = new FeedReader();
 
-            desktop.Shutdown(-1);
-        }
-    }
+			var feedService = new FeedService(
+					subscriptionService,
+					feedReader,
+					articleRepository);
+
+			var mainViewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
+
+			await mainViewModel.LoadSubscriptionsAsync();
+
+			desktop.MainWindow = new MainWindow
+			{
+				DataContext = mainViewModel,
+			};
+		}
+		catch (Exception ex)
+		{
+			Console.Error.WriteLine($"Application startup failed: {ex}");
+
+			desktop.Shutdown(-1);
+		}
+	}
 }

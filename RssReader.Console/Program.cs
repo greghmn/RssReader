@@ -28,12 +28,19 @@ await articleStateRepository.InitializeAsync();
 var articleStateService =
     new ArticleStateService(articleStateRepository);
 
+// Initialize article content storage.
+var articleRepository =
+		new SqliteArticleRepository(databasePath);
+
+await articleRepository.InitializeAsync();
+
 // Set up feed reading.
 IFeedReader feedReader = new FeedReader();
 
 var feedService = new FeedService(
-    subscriptionService,
-    feedReader);
+		subscriptionService,
+		feedReader,
+		articleRepository);
 
 
 // Run the console menu until the user quits.

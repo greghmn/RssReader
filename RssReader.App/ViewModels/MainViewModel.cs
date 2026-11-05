@@ -68,6 +68,8 @@ public partial class MainViewModel : ViewModelBase
 
 	private int _articleLoadRequestId;
 
+	internal Task? InitialArticleLoadTask { get; private set; }
+
 	public ObservableCollection<SubscriptionViewModel> Subscriptions { get; } = new();
 
 	public ObservableCollection<ArticleViewModel> Articles { get; } = new();
@@ -191,7 +193,7 @@ public partial class MainViewModel : ViewModelBase
 
 		if (value is not null)
 		{
-			_ = LoadArticlesSafelyAsync(value.Item);
+			InitialArticleLoadTask = LoadArticlesSafelyAsync(value.Item);
 		}
 		else
 		{
@@ -202,6 +204,27 @@ public partial class MainViewModel : ViewModelBase
 			HasNoArticles = false;
 			IsRefreshingArticles = false;
 		}
+	}
+
+	//introduce a cache-loading helper
+	private async Task<List<ArticleViewModel>> GetStoredArticleViewModelsAsync(
+		string feedUrl)
+	{
+		List<FeedItem> storedItems =
+				await _feedService.GetStoredItemsAsync(feedUrl);
+
+		var articles = new List<ArticleViewModel>();
+
+		foreach (FeedItem item in storedItems)
+		{
+			bool isRead = await _articleStateService.IsReadAsync(
+					feedUrl,
+					item);
+
+			articles.Add(new ArticleViewModel(item, isRead));
+		}
+
+		return articles;
 	}
 
 	private async Task LoadArticlesSafelyAsync(FeedSubscription subscription, bool isRefresh = false)
@@ -230,8 +253,43 @@ public partial class MainViewModel : ViewModelBase
 
 		try
 		{
-			var articles = await _feedService.GetItemsAsync(
-							subscription.Url);
+			if (!isRefresh)
+			{
+				List<ArticleViewModel> storedArticles =
+						await GetStoredArticleViewModelsAsync(subscription.Url);
+
+				if (requestId != _articleLoadRequestId)
+				{
+					return;
+				}
+
+				foreach (ArticleViewModel article in storedArticles)
+				{
+					Articles.Add(article);
+				}
+
+				HasNoArticles = Articles.Count == 0;
+
+				SubscriptionViewModel? selectedSubscription =
+						Subscriptions.FirstOrDefault(
+								s => s.Item.Url == subscription.Url);
+
+				if (selectedSubscription is not null)
+				{
+					selectedSubscription.UnreadCount =
+							storedArticles.Count(article => !article.IsRead);
+				}
+			}
+
+			await _feedService.GetItemsAsync(subscription.Url);
+
+			if (requestId != _articleLoadRequestId)
+			{
+				return;
+			}
+
+			var articles = await _feedService.GetStoredItemsAsync(
+					subscription.Url);
 
 			if (requestId != _articleLoadRequestId)
 			{
@@ -399,9 +457,7 @@ public partial class MainViewModel : ViewModelBase
 		}
 	}
 
-	public async Task<bool> RenameSubscriptionAsync(
-			SubscriptionViewModel subscription,
-			string newTitle)
+	public async Task<bool> RenameSubscriptionAsync(SubscriptionViewModel subscription, string newTitle)
 	{
 		if (IsRenamingSubscription)
 		{
@@ -459,7 +515,9 @@ public partial class MainViewModel : ViewModelBase
 	[RelayCommand]
 	private Task RefreshSelectedFeedAsync()
 	{
-		if (SelectedSubscription is null)
+		if (SelectedSubscription is null
+				|| IsLoadingArticles
+				|| IsRefreshingArticles)
 		{
 			return Task.CompletedTask;
 		}

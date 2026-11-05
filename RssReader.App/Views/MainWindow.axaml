@@ -175,8 +175,10 @@
                      TextWrapping="Wrap" />
         </Grid>
 
-        <!-- Last successful retrieval: placeholder for now -->
+
         <TextBlock Grid.Row="2"
+                   Text="{Binding SelectedSubscription.LastRetrievedText}"
+                   IsVisible="{Binding HasSelectedSubscription}"
                    MinHeight="20"
                    Opacity="0.7" />
 

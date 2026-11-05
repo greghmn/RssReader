@@ -6,9 +6,7 @@ namespace RssReader.App.Tests.ViewModels;
 
 public class MainViewModelTests
 {
-	private static (
-			MainViewModel ViewModel,
-			FakeSubscriptionRepository Repository)
+	private static (MainViewModel ViewModel, FakeSubscriptionRepository Repository)
 			CreateViewModel()
 	{
 		var repository = new FakeSubscriptionRepository();
@@ -18,9 +16,12 @@ public class MainViewModelTests
 
 		var feedReader = new FakeFeedReader();
 
+		var articleRepository = new FakeArticleRepository();
+
 		var feedService = new FeedService(
-				subscriptionService,
-				feedReader);
+						subscriptionService,
+						feedReader,
+						articleRepository);
 
 		var articleStateRepository =
 				new FakeArticleStateRepository();
@@ -75,7 +76,12 @@ public class MainViewModelTests
 
 		var subscriptionService = new SubscriptionService(subscriptionRepository);
 
-		var feedService = new FeedService(subscriptionService, feedReader);
+		var articleRepository = new FakeArticleRepository();
+
+		var feedService = new FeedService(
+						subscriptionService,
+						feedReader,
+						articleRepository);
 
 		var articleStateService = new ArticleStateService(articleStateRepository);
 
@@ -417,7 +423,7 @@ public class MainViewModelTests
 	}
 
 	[Fact]
-	public async Task RefreshSelectedFeed_WhenSelectedArticleDisappears_ClearsSelection()
+	public async Task RRefreshSelectedFeed_WhenArticleDisappearsFromFeed_PreservesStoredArticleAndSelection()
 	{
 		var (viewModel, _, feedReader, _) =
 				await CreateArticleStateViewModel();
@@ -436,20 +442,27 @@ public class MainViewModelTests
 
 		await viewModel.RefreshSelectedFeedCommand.ExecuteAsync(null);
 
-		Assert.Single(viewModel.Articles);
+		Assert.Equal(2, viewModel.Articles.Count);
+
+		Assert.Contains(viewModel.Articles,
+				article => article.Item.Link == "https://example.com/article");
+
+		Assert.Contains(viewModel.Articles,
+				article => article.Item.Link == "https://example.com/replacement");
+
+		Assert.NotNull(viewModel.SelectedArticle);
 
 		Assert.Equal(
-				"Replacement Article",
-				viewModel.Articles[0].Item.Title);
+				"https://example.com/article",
+				viewModel.SelectedArticle.Item.Link);
 
-		Assert.Null(viewModel.SelectedArticle);
-		Assert.False(viewModel.HasSelectedArticle);
-		Assert.True(viewModel.HasNoSelectedArticle);
+		Assert.True(viewModel.HasSelectedArticle);
+		Assert.False(viewModel.HasNoSelectedArticle);
 		Assert.False(viewModel.IsRefreshingArticles);
 	}
 
 	[Fact]
-	public async Task RefreshSelectedFeed_WhenFeedIsEmpty_ShowsEmptyState()
+	public async Task RefreshSelectedFeed_WhenFeedIsEmpty_PreservesStoredArticles()
 	{
 		var (viewModel, _, feedReader, _) =
 				await CreateArticleStateViewModel();
@@ -458,18 +471,32 @@ public class MainViewModelTests
 
 		await viewModel.RefreshSelectedFeedCommand.ExecuteAsync(null);
 
-		Assert.Empty(viewModel.Articles);
-		Assert.True(viewModel.HasNoArticles);
+		// An empty feed must not erase previously saved articles.
+		Assert.Single(viewModel.Articles);
 
-		Assert.Null(viewModel.SelectedArticle);
-		Assert.False(viewModel.HasSelectedArticle);
-		Assert.True(viewModel.HasNoSelectedArticle);
+		Assert.Equal(
+				"https://example.com/article",
+				viewModel.Articles[0].Item.Link);
 
+		// The previously selected article is still available.
+		Assert.NotNull(viewModel.SelectedArticle);
+
+		Assert.Equal(
+				"https://example.com/article",
+				viewModel.SelectedArticle.Item.Link);
+
+		Assert.True(viewModel.HasSelectedArticle);
+		Assert.False(viewModel.HasNoSelectedArticle);
+
+		// The UI must not report an empty archive.
+		Assert.False(viewModel.HasNoArticles);
+		Assert.False(viewModel.HasArticlesAwaitingSelection);
+
+		// The network retrieval succeeded, even though it returned no items.
 		Assert.Null(viewModel.ArticleLoadError);
 
 		Assert.False(viewModel.IsLoadingArticles);
 		Assert.False(viewModel.IsRefreshingArticles);
-		Assert.False(viewModel.HasArticlesAwaitingSelection);
 	}
 
 	[Fact]
@@ -648,5 +675,429 @@ public class MainViewModelTests
 		Assert.Equal("First Rename", subscriptionViewModel.Title);
 		Assert.Equal("First Rename", subscription.Title);
 		Assert.False(viewModel.IsRenamingSubscription);
+	}
+
+	//test cached articles when the network fails 
+	[Fact]
+	public async Task SelectSubscription_WhenReaderThrows_DisplaysStoredArticles()
+	{
+		var subscription = CreateSubscription();
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+		subscriptionRepository.Subscriptions.Add(subscription);
+
+		var articleRepository = new FakeArticleRepository();
+
+		await articleRepository.SaveAsync(
+				subscription.Url,
+				new[]
+				{
+						new FeedItem
+						{
+								Id = "cached-article-1",
+								Title = "Saved for Offline Reading",
+								Link = "https://example.com/cached-article",
+								Summary = "An article retrieved earlier."
+						}
+				});
+
+		var feedReader = new FakeFeedReader
+		{
+			ReadException =
+						new InvalidOperationException("Simulated network failure")
+		};
+
+		var subscriptionService =
+				new SubscriptionService(subscriptionRepository);
+
+		var feedService = new FeedService(
+				subscriptionService,
+				feedReader,
+				articleRepository);
+
+		var articleStateService = new ArticleStateService(
+				new FakeArticleStateRepository());
+
+		var viewModel = new MainViewModel(
+				subscriptionService,
+				feedService,
+				articleStateService);
+
+		var subscriptionViewModel =
+				new SubscriptionViewModel(subscription);
+
+		viewModel.Subscriptions.Add(subscriptionViewModel);
+
+		// Selecting the subscription triggers asynchronous loading.
+		viewModel.SelectedSubscription = subscriptionViewModel;
+
+		// Wait for the initial load, including the failed network request.
+		Assert.NotNull(viewModel.InitialArticleLoadTask);
+		await viewModel.InitialArticleLoadTask;
+
+		// The cached article must remain visible.
+		Assert.Single(viewModel.Articles);
+
+		Assert.Equal(
+				"Saved for Offline Reading",
+				viewModel.Articles[0].Item.Title);
+
+		Assert.Equal(
+				"cached-article-1",
+				viewModel.Articles[0].Item.Id);
+
+		// The failed network request must still be reported.
+		Assert.Equal(
+				"Unable to load articles. Check your connection and try again.",
+				viewModel.ArticleLoadError);
+
+		// Cached articles must retain their read/unread information.
+		Assert.False(viewModel.Articles[0].IsRead);
+		Assert.Equal(1, subscriptionViewModel.UnreadCount);
+
+		// Loading indicators must return to their idle state.
+		Assert.False(viewModel.IsLoadingArticles);
+		Assert.False(viewModel.IsRefreshingArticles);
+	}
+
+	[Fact]
+	public async Task SelectSubscription_WhenPreviousLoadFinishesLater_KeepsCurrentFeed()
+	{
+		var feedA = new FeedSubscription
+		{
+			Url = "https://example.com/feed-a.xml",
+			Title = "Feed A"
+		};
+
+		var feedB = new FeedSubscription
+		{
+			Url = "https://example.com/feed-b.xml",
+			Title = "Feed B"
+		};
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+		subscriptionRepository.Subscriptions.Add(feedA);
+		subscriptionRepository.Subscriptions.Add(feedB);
+
+		var feedAReadStarted = new TaskCompletionSource<bool>(
+				TaskCreationOptions.RunContinuationsAsynchronously);
+
+		var allowFeedARead = new TaskCompletionSource<List<FeedItem>>(
+				TaskCreationOptions.RunContinuationsAsynchronously);
+
+		var feedReader = new FakeFeedReader
+		{
+			ReadHandler = async (url, cancellationToken) =>
+			{
+				if (url == feedA.Url)
+				{
+					feedAReadStarted.TrySetResult(true);
+
+					return await allowFeedARead.Task.WaitAsync(
+							cancellationToken);
+				}
+
+				if (url == feedB.Url)
+				{
+					return new List<FeedItem>
+								{
+										new()
+										{
+												Id = "article-b",
+												Title = "Article from Feed B",
+												Link = "https://example.com/article-b"
+										}
+								};
+				}
+
+				throw new InvalidOperationException(
+						$"Unexpected feed URL: {url}");
+			}
+		};
+
+		var subscriptionService =
+				new SubscriptionService(subscriptionRepository);
+
+		var feedService = new FeedService(
+				subscriptionService,
+				feedReader,
+				new FakeArticleRepository());
+
+		var articleStateService = new ArticleStateService(
+				new FakeArticleStateRepository());
+
+		var viewModel = new MainViewModel(
+				subscriptionService,
+				feedService,
+				articleStateService);
+
+		var subscriptionA = new SubscriptionViewModel(feedA);
+		var subscriptionB = new SubscriptionViewModel(feedB);
+
+		viewModel.Subscriptions.Add(subscriptionA);
+		viewModel.Subscriptions.Add(subscriptionB);
+
+		// Start loading Feed A, but keep its network request pending.
+		viewModel.SelectedSubscription = subscriptionA;
+
+		Assert.NotNull(viewModel.InitialArticleLoadTask);
+
+		Task feedALoad = viewModel.InitialArticleLoadTask;
+
+		await feedAReadStarted.Task;
+
+		// Switch to Feed B while Feed A is still loading.
+		viewModel.SelectedSubscription = subscriptionB;
+
+		Assert.NotNull(viewModel.InitialArticleLoadTask);
+
+		await viewModel.InitialArticleLoadTask;
+
+		// Feed B should now be fully loaded.
+		Assert.Single(viewModel.Articles);
+		Assert.Equal(
+				"Article from Feed B",
+				viewModel.Articles[0].Item.Title);
+
+		Assert.False(viewModel.IsLoadingArticles);
+		Assert.Null(viewModel.ArticleLoadError);
+
+		// Allow the older Feed A request to finish afterward.
+		allowFeedARead.SetResult(new List<FeedItem>
+		{
+				new()
+				{
+						Id = "article-a",
+						Title = "Article from Feed A",
+						Link = "https://example.com/article-a"
+				}
+		});
+
+		await feedALoad;
+
+		// Feed A must not overwrite the currently selected feed.
+		Assert.Same(subscriptionB, viewModel.SelectedSubscription);
+
+		Assert.Single(viewModel.Articles);
+
+		Assert.Equal(
+				"Article from Feed B",
+				viewModel.Articles[0].Item.Title);
+
+		Assert.Equal(1, subscriptionB.UnreadCount);
+
+		Assert.Null(viewModel.ArticleLoadError);
+		Assert.False(viewModel.IsLoadingArticles);
+		Assert.False(viewModel.IsRefreshingArticles);
+	}
+
+	[Fact]
+	public async Task SelectSubscription_WhenPreviousLoadFailsLater_DoesNotShowStaleError()
+	{
+		var feedA = new FeedSubscription
+		{
+			Url = "https://example.com/feed-a.xml",
+			Title = "Feed A"
+		};
+
+		var feedB = new FeedSubscription
+		{
+			Url = "https://example.com/feed-b.xml",
+			Title = "Feed B"
+		};
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+		subscriptionRepository.Subscriptions.Add(feedA);
+		subscriptionRepository.Subscriptions.Add(feedB);
+
+		var feedAReadStarted = new TaskCompletionSource<bool>(
+				TaskCreationOptions.RunContinuationsAsynchronously);
+
+		var allowFeedARead = new TaskCompletionSource<List<FeedItem>>(
+				TaskCreationOptions.RunContinuationsAsynchronously);
+
+		var feedReader = new FakeFeedReader
+		{
+			ReadHandler = async (url, cancellationToken) =>
+			{
+				if (url == feedA.Url)
+				{
+					feedAReadStarted.TrySetResult(true);
+
+					return await allowFeedARead.Task.WaitAsync(
+							cancellationToken);
+				}
+
+				if (url == feedB.Url)
+				{
+					return new List<FeedItem>
+								{
+										new()
+										{
+												Id = "article-b",
+												Title = "Article from Feed B",
+												Link = "https://example.com/article-b"
+										}
+								};
+				}
+
+				throw new InvalidOperationException(
+						$"Unexpected feed URL: {url}");
+			}
+		};
+
+		var subscriptionService =
+				new SubscriptionService(subscriptionRepository);
+
+		var feedService = new FeedService(
+				subscriptionService,
+				feedReader,
+				new FakeArticleRepository());
+
+		var articleStateService = new ArticleStateService(
+				new FakeArticleStateRepository());
+
+		var viewModel = new MainViewModel(
+				subscriptionService,
+				feedService,
+				articleStateService);
+
+		var subscriptionA = new SubscriptionViewModel(feedA);
+		var subscriptionB = new SubscriptionViewModel(feedB);
+
+		viewModel.Subscriptions.Add(subscriptionA);
+		viewModel.Subscriptions.Add(subscriptionB);
+
+		// Start loading Feed A, but keep its network request pending.
+		viewModel.SelectedSubscription = subscriptionA;
+
+		Assert.NotNull(viewModel.InitialArticleLoadTask);
+
+		Task feedALoad = viewModel.InitialArticleLoadTask;
+
+		await feedAReadStarted.Task;
+
+		// Switch to Feed B while Feed A is still loading.
+		viewModel.SelectedSubscription = subscriptionB;
+
+		Assert.NotNull(viewModel.InitialArticleLoadTask);
+
+		await viewModel.InitialArticleLoadTask;
+
+		// Feed B should now be fully loaded.
+		Assert.Single(viewModel.Articles);
+		Assert.Equal(
+				"Article from Feed B",
+				viewModel.Articles[0].Item.Title);
+
+		Assert.False(viewModel.IsLoadingArticles);
+		Assert.Null(viewModel.ArticleLoadError);
+
+		// Allow the older Feed A request to finish afterward.
+		allowFeedARead.SetException(
+				new InvalidOperationException("Simulated Feed A failure"));
+
+		await feedALoad;
+
+		// Feed A must not overwrite the currently selected feed.
+		Assert.Same(subscriptionB, viewModel.SelectedSubscription);
+
+		Assert.Single(viewModel.Articles);
+
+		Assert.Equal(
+				"Article from Feed B",
+				viewModel.Articles[0].Item.Title);
+
+		Assert.Equal(1, subscriptionB.UnreadCount);
+
+		Assert.Null(viewModel.ArticleLoadError);
+		Assert.False(viewModel.IsLoadingArticles);
+		Assert.False(viewModel.IsRefreshingArticles);
+	}
+
+	[Fact]
+	public async Task RefreshSelectedFeed_WhenAlreadyRefreshing_DoesNotStartAnotherRequest()
+	{
+		var subscription = CreateSubscription();
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+		subscriptionRepository.Subscriptions.Add(subscription);
+
+		int readCount = 0;
+
+		var refreshStarted = new TaskCompletionSource<bool>(
+				TaskCreationOptions.RunContinuationsAsynchronously);
+
+		var allowRefresh = new TaskCompletionSource<bool>(
+				TaskCreationOptions.RunContinuationsAsynchronously);
+
+		var feedReader = new FakeFeedReader
+		{
+			ReadHandler = async (url, cancellationToken) =>
+			{
+				readCount++;
+
+				// Let the initial subscription load complete normally.
+				if (readCount == 1)
+				{
+					return new List<FeedItem>();
+				}
+
+				refreshStarted.TrySetResult(true);
+
+				await allowRefresh.Task.WaitAsync(cancellationToken);
+
+				return new List<FeedItem>();
+			}
+		};
+
+		var subscriptionService =
+				new SubscriptionService(subscriptionRepository);
+
+		var feedService = new FeedService(
+				subscriptionService,
+				feedReader,
+				new FakeArticleRepository());
+
+		var articleStateService = new ArticleStateService(
+				new FakeArticleStateRepository());
+
+		var viewModel = new MainViewModel(
+				subscriptionService,
+				feedService,
+				articleStateService);
+
+		var subscriptionViewModel =
+				new SubscriptionViewModel(subscription);
+
+		viewModel.Subscriptions.Add(subscriptionViewModel);
+		viewModel.SelectedSubscription = subscriptionViewModel;
+
+		Assert.NotNull(viewModel.InitialArticleLoadTask);
+		await viewModel.InitialArticleLoadTask;
+
+		Assert.Equal(1, readCount);
+
+		// Start a refresh and keep it pending.
+		Task firstRefresh =
+				viewModel.RefreshSelectedFeedCommand.ExecuteAsync(null);
+
+		await refreshStarted.Task;
+
+		Assert.True(viewModel.IsRefreshingArticles);
+
+		// Attempt another refresh while the first is still running.
+		await viewModel.RefreshSelectedFeedCommand.ExecuteAsync(null);
+
+		// No second network request should have started.
+		Assert.Equal(2, readCount);
+
+		// Release the first refresh.
+		allowRefresh.SetResult(true);
+		await firstRefresh;
+
+		Assert.False(viewModel.IsRefreshingArticles);
+		Assert.False(viewModel.IsLoadingArticles);
+		Assert.Null(viewModel.ArticleLoadError);
 	}
 }

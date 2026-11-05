@@ -6,6 +6,8 @@ public class FakeArticleRepository : IArticleRepository
 {
 	private readonly List<FeedItem> _articles = new();
 
+	public Exception? SaveException { get; set; }
+
 	public Task<List<FeedItem>> GetByFeedAsync(string feedUrl)
 	{
 		return Task.FromResult(
@@ -14,10 +16,12 @@ public class FakeArticleRepository : IArticleRepository
 						.ToList());
 	}
 
-	public Task SaveAsync(
-			string feedUrl,
-			IEnumerable<FeedItem> articles)
+	public Task SaveAsync(string feedUrl, IEnumerable<FeedItem> articles)
 	{
+		if (SaveException is not null)
+		{
+			throw SaveException;
+		}
 		foreach (FeedItem article in articles)
 		{
 			string? identityKey = ArticleIdentity.GetId(article);

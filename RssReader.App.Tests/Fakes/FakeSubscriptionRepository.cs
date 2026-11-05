@@ -8,6 +8,8 @@ public class FakeSubscriptionRepository : ISubscriptionRepository
 
 	public bool RemoveResult { get; set; } = true;
 
+	public int UpdateLastRetrievedCount { get; private set; }
+
 	public Exception? GetAllException { get; set; }
 
 	public Exception? RemoveException { get; set; }
@@ -125,10 +127,23 @@ public class FakeSubscriptionRepository : ISubscriptionRepository
 		return true;
 	}
 
-	public async Task<bool> UpdateLastRetrievedAsync(
-		string url,
-		DateTimeOffset lastRetrieved)
+	public Task<bool> UpdateLastRetrievedAsync(string url, DateTimeOffset lastRetrieved)
 	{
-		return false;
+		UpdateLastRetrievedCount++;
+
+		FeedSubscription? subscription = Subscriptions.FirstOrDefault(
+				s => string.Equals(
+						s.Url.TrimEnd('/'),
+						url.TrimEnd('/'),
+						StringComparison.OrdinalIgnoreCase));
+
+		if (subscription is null)
+		{
+			return Task.FromResult(false);
+		}
+
+		subscription.LastRetrieved = lastRetrieved;
+
+		return Task.FromResult(true);
 	}
 }

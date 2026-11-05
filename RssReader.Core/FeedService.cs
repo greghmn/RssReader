@@ -32,7 +32,16 @@ public class FeedService
 		List<FeedItem> articles =
 				await _feedReader.ReadAsync(feedUrl);
 
-		await _articleRepository.SaveAsync(feedUrl, articles);
+		try
+		{
+			await _articleRepository.SaveAsync(feedUrl, articles);
+		}
+		catch (Exception ex)
+		{
+			throw new ArticleStorageException(
+					"Unable to save retrieved articles.",
+					ex);
+		}
 
 		return articles;
 	}

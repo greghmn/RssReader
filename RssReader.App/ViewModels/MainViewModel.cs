@@ -369,6 +369,19 @@ public partial class MainViewModel : ViewModelBase
 						$"Unable to update retrieval timestamp for {subscription.Url}");
 			}
 		}
+		catch (ArticleStorageException ex)
+		{
+			if (requestId != _articleLoadRequestId)
+			{
+				return;
+			}
+
+			Console.Error.WriteLine(
+					$"Failed to save articles from {subscription.Url}: {ex}");
+
+			ArticleLoadError =
+					"Unable to save retrieved articles. Your previously saved articles are still available.";
+		}
 		catch (Exception ex)
 		{
 			if (requestId != _articleLoadRequestId)
@@ -377,10 +390,10 @@ public partial class MainViewModel : ViewModelBase
 			}
 
 			Console.Error.WriteLine(
-							$"Failed to load articles from {subscription.Url}: {ex}");
+					$"Failed to load articles from {subscription.Url}: {ex}");
 
 			ArticleLoadError =
-							"Unable to load articles. Check your connection and try again.";
+					"Unable to load articles. Check your connection and try again.";
 		}
 		finally
 		{

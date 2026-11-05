@@ -1,6 +1,7 @@
-﻿using RssReader.App.ViewModels;
-using RssReader.App.Tests.Fakes;
+﻿using RssReader.App.Tests.Fakes;
+using RssReader.App.ViewModels;
 using RssReader.Core;
+using System.Runtime.Intrinsics.Arm;
 
 namespace RssReader.App.Tests.ViewModels;
 
@@ -1099,5 +1100,103 @@ public class MainViewModelTests
 		Assert.False(viewModel.IsRefreshingArticles);
 		Assert.False(viewModel.IsLoadingArticles);
 		Assert.Null(viewModel.ArticleLoadError);
+	}
+
+	//verify that a failed save preserves articles and timestamps
+	[Fact]
+	public async Task RefreshSelectedFeed_WhenArticleSaveFails_PreservesArticlesAndTimestamp()
+	{
+		var subscription = CreateSubscription();
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+		subscriptionRepository.Subscriptions.Add(subscription);
+
+		var subscriptionService =
+				new SubscriptionService(subscriptionRepository);
+
+		var feedReader = new FakeFeedReader
+		{
+			Items = new List<FeedItem>
+				{
+						new()
+						{
+								Id = "original-article",
+								Title = "Original Article",
+								Link = "https://example.com/original"
+						}
+				}
+		};
+
+		var articleRepository = new FakeArticleRepository();
+
+		var feedService = new FeedService(
+				subscriptionService,
+				feedReader,
+				articleRepository);
+
+		var articleStateService = new ArticleStateService(
+				new FakeArticleStateRepository());
+
+		var viewModel = new MainViewModel(
+				subscriptionService,
+				feedService,
+				articleStateService);
+
+		var subscriptionViewModel =
+				new SubscriptionViewModel(subscription);
+
+		viewModel.Subscriptions.Add(subscriptionViewModel);
+		viewModel.SelectedSubscription = subscriptionViewModel;
+
+		// Complete the initial successful load.
+		Assert.NotNull(viewModel.InitialArticleLoadTask);
+		await viewModel.InitialArticleLoadTask;
+
+		Assert.Single(viewModel.Articles);
+		Assert.Equal(1, subscriptionRepository.UpdateLastRetrievedCount);
+
+		// Remember the original UI state and retrieval timestamp.
+		ArticleViewModel originalArticle = viewModel.Articles.Single();
+		DateTimeOffset? originalTimestamp = subscription.LastRetrieved;
+
+		Assert.NotNull(originalTimestamp);
+
+		viewModel.SelectedArticle = originalArticle;
+
+		// The publisher now offers another article.
+		feedReader.Items = new List<FeedItem>
+		{
+				new()
+				{
+						Id = "new-article",
+						Title = "New Article",
+						Link = "https://example.com/new"
+				}
+		};
+
+		// Simulate SQLite failing to save the new articles.
+		articleRepository.SaveException =
+				new InvalidOperationException("Simulated database failure");
+
+		await viewModel.RefreshSelectedFeedCommand.ExecuteAsync(null);
+
+		// The existing article and selection must survive.
+		Assert.Single(viewModel.Articles);
+		Assert.Same(originalArticle, viewModel.Articles.Single());
+		Assert.Same(originalArticle, viewModel.SelectedArticle);
+
+		// The failed operation must be reported.
+		Assert.Equal(
+				"Unable to load articles. Check your connection and try again.",
+				viewModel.ArticleLoadError);
+
+		// A failed save must not count as a successful retrieval.
+		Assert.Equal(1, subscriptionRepository.UpdateLastRetrievedCount);
+		Assert.Equal(originalTimestamp, subscription.LastRetrieved);
+		Assert.Equal(originalTimestamp, subscriptionViewModel.LastRetrieved);
+
+		// Loading indicators must return to their idle state.
+		Assert.False(viewModel.IsLoadingArticles);
+		Assert.False(viewModel.IsRefreshingArticles);
 	}
 }

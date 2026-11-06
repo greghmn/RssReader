@@ -228,4 +228,36 @@ public class OpmlServiceTests
 				},
 				subscriptions.Select(subscription => subscription.Url));
 	}
+
+	[Theory]
+	[InlineData("Preferred Title", "Fallback Text", "Preferred Title")]
+	[InlineData(null, "Text Only Feed", "Text Only Feed")]
+	[InlineData("", "Empty Title Fallback", "Empty Title Fallback")]
+	[InlineData("   ", "Whitespace Title Fallback", "Whitespace Title Fallback")]
+	public void Import_WhenTitleIsMissingOrBlank_UsesText(
+		string? title,
+		string text,
+		string expectedTitle)
+	{
+		var service = new OpmlService();
+
+		var outline = new XElement("outline",
+				new XAttribute("text", text),
+				new XAttribute("xmlUrl", "https://example.com/feed.xml"));
+
+		if (title is not null)
+		{
+			outline.SetAttributeValue("title", title);
+		}
+
+		var document = new XDocument(
+				new XElement("opml",
+						new XAttribute("version", "2.0"),
+						new XElement("body", outline)));
+
+		FeedSubscription subscription =
+				Assert.Single(service.Import(document.ToString()));
+
+		Assert.Equal(expectedTitle, subscription.Title);
+	}
 }

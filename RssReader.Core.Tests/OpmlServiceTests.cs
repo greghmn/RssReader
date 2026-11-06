@@ -158,4 +158,38 @@ public class OpmlServiceTests
 		Assert.Contains("&lt;News&gt;", xml);
 		Assert.Contains("&quot;Daily&quot;", xml);
 	}
+
+	[Fact]
+	public void Import_WithOneSubscription_ReturnsFeedSubscription()
+	{
+		var service = new OpmlService();
+
+		const string xml = """
+        <?xml version="1.0" encoding="utf-8"?>
+        <opml version="2.0">
+          <head>
+            <title>My Subscriptions</title>
+          </head>
+          <body>
+            <outline
+              type="rss"
+              text="Example Feed"
+              title="Example Feed"
+              xmlUrl="https://example.com/feed.xml" />
+          </body>
+        </opml>
+        """;
+
+		List<FeedSubscription> subscriptions = service.Import(xml);
+
+		FeedSubscription subscription = Assert.Single(subscriptions);
+
+		Assert.Equal(
+				"https://example.com/feed.xml",
+				subscription.Url);
+
+		Assert.Equal(
+				"Example Feed",
+				subscription.Title);
+	}
 }

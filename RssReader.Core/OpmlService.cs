@@ -30,6 +30,21 @@ public class OpmlService
 	}
 	public List<FeedSubscription> Import(string xml)
 	{
-		throw new NotImplementedException();
+		XDocument document = XDocument.Parse(xml);
+
+		XElement? body = document.Root?.Element("body");
+
+		if (document.Root?.Name != "opml" || body is null)
+		{
+			throw new FormatException("Invalid OPML document.");
+		}
+
+		return body.Elements("outline")
+				.Select(outline => new FeedSubscription
+				{
+					Url = (string?)outline.Attribute("xmlUrl") ?? "",
+					Title = (string?)outline.Attribute("title") ?? ""
+				})
+				.ToList();
 	}
 }

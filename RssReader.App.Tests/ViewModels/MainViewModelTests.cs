@@ -1280,7 +1280,9 @@ public class MainViewModelTests
 		Assert.Same(originalArticle, viewModel.SelectedArticle);
 
 		// The failure must be visible.
-		Assert.NotNull(viewModel.ArticleLoadError);
+		Assert.Equal(
+				"Unable to read saved articles from local storage.",
+				viewModel.ArticleLoadError);
 
 		// No completed refresh should be recorded.
 		Assert.Equal(

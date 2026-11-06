@@ -8,8 +8,14 @@ public class FakeArticleRepository : IArticleRepository
 
 	public Exception? SaveException { get; set; }
 
+	public Exception? GetException { get; set; }
+
 	public Task<List<FeedItem>> GetByFeedAsync(string feedUrl)
 	{
+		if (GetException is not null)
+		{
+			throw GetException;
+		}
 		return Task.FromResult(
 				_articles
 						.Where(article => article.FeedUrl == feedUrl)

@@ -308,4 +308,64 @@ public class OpmlServiceTests
 		Assert.Equal("Broken Feed", issue.Title);
 		Assert.Equal("Invalid feed URL.", issue.Reason);
 	}
+
+	[Fact]
+	public void ImportWithIssues_WithEmptyUrl_ReportsIssue()
+	{
+		var service = new OpmlService();
+
+		const string xml = """
+        <opml version="2.0">
+          <body>
+            <outline text="Broken Feed"
+                     xmlUrl="" />
+          </body>
+        </opml>
+        """;
+
+		OpmlImportResult result = service.ImportWithIssues(xml);
+
+		Assert.Empty(result.Subscriptions);
+
+		OpmlImportIssue issue = Assert.Single(result.Issues);
+
+		Assert.Equal("", issue.Url);
+		Assert.Equal("Broken Feed", issue.Title);
+		Assert.Equal("Invalid feed URL.", issue.Reason);
+	}
+
+	[Fact]
+	public void ImportWithIssues_WhenRssOutlineHasNoUrl_ReportsIssue()
+	{
+		var service = new OpmlService();
+
+		const string xml = """
+        <opml version="2.0">
+          <body>
+            <outline text="Technology">
+              <outline type="rss"
+                       text="Missing URL Feed" />
+              <outline type="rss"
+                       text="Valid Feed"
+                       xmlUrl="https://example.com/feed.xml" />
+            </outline>
+          </body>
+        </opml>
+        """;
+
+		OpmlImportResult result = service.ImportWithIssues(xml);
+
+		FeedSubscription subscription =
+				Assert.Single(result.Subscriptions);
+
+		Assert.Equal(
+				"https://example.com/feed.xml",
+				subscription.Url);
+
+		OpmlImportIssue issue = Assert.Single(result.Issues);
+
+		Assert.Null(issue.Url);
+		Assert.Equal("Missing URL Feed", issue.Title);
+		Assert.Equal("Missing feed URL.", issue.Reason);
+	}
 }

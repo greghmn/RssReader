@@ -63,6 +63,33 @@ public class OpmlService
 
 		var result = new OpmlImportResult();
 
+		XDocument document = XDocument.Parse(xml);
+		XElement body = document.Root!.Element("body")!;
+
+		foreach (XElement outline in body.Descendants("outline"))
+		{
+			string? type = (string?)outline.Attribute("type");
+			string? url = (string?)outline.Attribute("xmlUrl");
+
+			if (!string.Equals(type, "rss", StringComparison.OrdinalIgnoreCase)
+					|| url is not null)
+			{
+				continue;
+			}
+
+			string? title = (string?)outline.Attribute("title");
+			string? displayName = !string.IsNullOrWhiteSpace(title)
+					? title
+					: (string?)outline.Attribute("text");
+
+			result.Issues.Add(new OpmlImportIssue
+			{
+				Url = null,
+				Title = displayName,
+				Reason = "Missing feed URL."
+			});
+		}
+
 		foreach (FeedSubscription subscription in subscriptions)
 		{
 			bool isValidUrl =

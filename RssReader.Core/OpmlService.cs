@@ -30,8 +30,12 @@ public class OpmlService
 	}
 	public List<FeedSubscription> Import(string xml)
 	{
-		XDocument document = XDocument.Parse(xml);
+		return ImportWithIssues(xml).Subscriptions;
+	}
 
+	public OpmlImportResult ImportWithIssues(string xml)
+	{
+		XDocument document = XDocument.Parse(xml);
 		XElement? body = document.Root?.Element("body");
 
 		if (document.Root?.Name != "opml" || body is null)
@@ -39,64 +43,48 @@ public class OpmlService
 			throw new FormatException("Invalid OPML document.");
 		}
 
-		return body.Descendants("outline")
-				.Where(outline => outline.Attribute("xmlUrl") is not null)
-				.Select(outline =>
-				{
-					string? title = (string?)outline.Attribute("title");
-					string? text = (string?)outline.Attribute("text");
-
-					return new FeedSubscription
-					{
-						Url = (string?)outline.Attribute("xmlUrl") ?? "",
-						Title = !string.IsNullOrWhiteSpace(title)
-									? title
-									: text ?? ""
-					};
-				})
-				.ToList();
-	}
-
-	public OpmlImportResult ImportWithIssues(string xml)
-	{
-		List<FeedSubscription> subscriptions = Import(xml);
-
 		var result = new OpmlImportResult();
 
-		XDocument document = XDocument.Parse(xml);
-		XElement body = document.Root!.Element("body")!;
+		var seenUrls = new HashSet<string>(
+		StringComparer.OrdinalIgnoreCase);
 
 		foreach (XElement outline in body.Descendants("outline"))
 		{
-			string? type = (string?)outline.Attribute("type");
 			string? url = (string?)outline.Attribute("xmlUrl");
+			string? type = (string?)outline.Attribute("type");
 
-			if (!string.Equals(type, "rss", StringComparison.OrdinalIgnoreCase)
-					|| url is not null)
+			bool isRss = string.Equals(
+					type,
+					"rss",
+					StringComparison.OrdinalIgnoreCase);
+
+			// Ignore folders, but report recognizable feeds with missing URLs.
+			if (url is null && !isRss)
 			{
 				continue;
 			}
 
 			string? title = (string?)outline.Attribute("title");
-			string? displayName = !string.IsNullOrWhiteSpace(title)
+			string? text = (string?)outline.Attribute("text");
+
+			string displayName = !string.IsNullOrWhiteSpace(title)
 					? title
-					: (string?)outline.Attribute("text");
+					: text ?? "";
 
-			result.Issues.Add(new OpmlImportIssue
+			if (url is null)
 			{
-				Url = null,
-				Title = displayName,
-				Reason = "Missing feed URL."
-			});
-		}
+				result.Issues.Add(new OpmlImportIssue
+				{
+					Url = null,
+					Title = displayName,
+					Reason = "Missing feed URL."
+				});
 
-		foreach (FeedSubscription subscription in subscriptions)
-		{
+				continue;
+			}
+
 			bool isValidUrl =
-					Uri.TryCreate(
-							subscription.Url,
-							UriKind.Absolute,
-							out Uri? uri)
+					Uri.TryCreate(url, UriKind.Absolute, out Uri? uri)
 					&& (uri.Scheme == Uri.UriSchemeHttp
 							|| uri.Scheme == Uri.UriSchemeHttps);
 
@@ -104,15 +92,33 @@ public class OpmlService
 			{
 				result.Issues.Add(new OpmlImportIssue
 				{
-					Url = subscription.Url,
-					Title = subscription.Title,
+					Url = url,
+					Title = displayName,
 					Reason = "Invalid feed URL."
 				});
 
 				continue;
 			}
 
-			result.Subscriptions.Add(subscription);
+			string normalizedUrl = url.TrimEnd('/');
+
+			if (!seenUrls.Add(normalizedUrl))
+			{
+				result.Issues.Add(new OpmlImportIssue
+				{
+					Url = url,
+					Title = displayName,
+					Reason = "Duplicate feed URL."
+				});
+
+				continue;
+			}
+
+			result.Subscriptions.Add(new FeedSubscription
+			{
+				Url = url,
+				Title = displayName
+			});
 		}
 
 		return result;

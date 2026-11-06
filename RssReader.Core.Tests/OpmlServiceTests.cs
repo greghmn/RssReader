@@ -368,4 +368,73 @@ public class OpmlServiceTests
 		Assert.Equal("Missing URL Feed", issue.Title);
 		Assert.Equal("Missing feed URL.", issue.Reason);
 	}
+
+	[Fact]
+	public void ExportThenImport_PreservesSubscriptions()
+	{
+		var service = new OpmlService();
+
+		var original = new List<FeedSubscription>
+		{
+				new()
+				{
+						Url = "https://example.com/science.xml",
+						Title = "Science & Technology"
+				},
+				new()
+				{
+						Url = "https://example.com/programming.xml",
+						Title = "C# <Programming> \"Weekly\""
+				}
+		};
+
+		string xml = service.Export(original);
+
+		OpmlImportResult result = service.ImportWithIssues(xml);
+
+		Assert.Empty(result.Issues);
+		Assert.Equal(original.Count, result.Subscriptions.Count);
+
+		for (int i = 0; i < original.Count; i++)
+		{
+			Assert.Equal(
+					original[i].Url,
+					result.Subscriptions[i].Url);
+
+			Assert.Equal(
+					original[i].Title,
+					result.Subscriptions[i].Title);
+		}
+	}
+
+	[Fact]
+	public void ImportWithIssues_WithDuplicateUrls_ReportsDuplicate()
+	{
+		var service = new OpmlService();
+
+		const string xml = """
+        <opml version="2.0">
+          <body>
+            <outline text="Original Feed"
+                     xmlUrl="https://example.com/feed/" />
+            <outline text="Duplicate Feed"
+                     xmlUrl="HTTPS://EXAMPLE.COM/FEED" />
+          </body>
+        </opml>
+        """;
+
+		OpmlImportResult result = service.ImportWithIssues(xml);
+
+		FeedSubscription subscription =
+				Assert.Single(result.Subscriptions);
+
+		Assert.Equal("Original Feed", subscription.Title);
+		Assert.Equal("https://example.com/feed/", subscription.Url);
+
+		OpmlImportIssue issue = Assert.Single(result.Issues);
+
+		Assert.Equal("Duplicate Feed", issue.Title);
+		Assert.Equal("HTTPS://EXAMPLE.COM/FEED", issue.Url);
+		Assert.Equal("Duplicate feed URL.", issue.Reason);
+	}
 }

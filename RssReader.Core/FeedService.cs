@@ -47,9 +47,17 @@ public class FeedService
 	}
 
 	//for retrieving cached articles
-	public Task<List<FeedItem>> GetStoredItemsAsync(string feedUrl)
+	public async Task<List<FeedItem>> GetStoredItemsAsync(string feedUrl)
 	{
-		return _articleRepository.GetByFeedAsync(feedUrl);
+		try
+		{
+			return await _articleRepository.GetByFeedAsync(feedUrl);
+		}
+		catch (Exception ex)
+		{
+			throw new ArticleStorageException(
+					"Unable to read saved articles.",
+					ex);
+		}
 	}
-
 }

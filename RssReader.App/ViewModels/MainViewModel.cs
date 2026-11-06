@@ -143,11 +143,19 @@ public partial class MainViewModel : ViewModelBase
 	{
 		var subscriptions = await _subscriptionService.GetAllAsync();
 
-		Subscriptions.Clear();
-
 		foreach (var subscription in subscriptions)
 		{
-			Subscriptions.Add(new SubscriptionViewModel(subscription));
+			bool alreadyDisplayed = Subscriptions.Any(existing =>
+					string.Equals(
+							existing.Item.Url,
+							subscription.Url,
+							StringComparison.OrdinalIgnoreCase));
+
+			if (!alreadyDisplayed)
+			{
+				Subscriptions.Add(
+						new SubscriptionViewModel(subscription));
+			}
 		}
 	}
 
@@ -646,5 +654,14 @@ public partial class MainViewModel : ViewModelBase
 	private void ClearSubscriptionSelection()
 	{
 		SelectedSubscription = null;
+	}
+
+	[RelayCommand]
+	private async Task ImportOpmlAsync(string xml)
+	{
+		SubscriptionImportResult result =
+				await _subscriptionImportService.ImportAsync(xml);
+
+		await LoadSubscriptionsAsync();
 	}
 }

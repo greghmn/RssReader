@@ -6,6 +6,9 @@ using RssReader.Core;
 using System;
 using Avalonia.Input;
 using Avalonia.VisualTree;
+using Avalonia.Platform.Storage;
+using System.IO;
+using System.Text;
 
 namespace RssReader.App.Views;
 
@@ -200,5 +203,45 @@ public partial class MainWindow : Window
 		};
 
 		await dialog.ShowDialog<bool>(this);
+	}
+
+	private async void ImportOpmlButton_Click(
+			object? sender,
+			RoutedEventArgs e)
+	{
+		var files = await StorageProvider.OpenFilePickerAsync(
+				new FilePickerOpenOptions
+				{
+					Title = "Import OPML subscriptions",
+					AllowMultiple = false,
+					FileTypeFilter =
+						[
+								new FilePickerFileType("OPML files")
+								{
+										Patterns = ["*.opml", "*.xml"]
+								}
+						]
+				});
+
+		if (files.Count == 0)
+		{
+			return;
+		}
+
+		if (DataContext is not MainViewModel viewModel)
+		{
+			return;
+		}
+
+		await using Stream stream = await files[0].OpenReadAsync();
+
+		using var reader = new StreamReader(
+				stream,
+				Encoding.UTF8,
+				detectEncodingFromByteOrderMarks: true);
+
+		string xml = await reader.ReadToEndAsync();
+
+		await viewModel.ImportOpmlCommand.ExecuteAsync(xml);
 	}
 }

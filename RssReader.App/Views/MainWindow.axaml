@@ -26,7 +26,7 @@
     <!-- Subscription pane -->
     <Grid Grid.Row="1"
           Grid.Column="0"
-          RowDefinitions="Auto,Auto,Auto,Auto,*,Auto"
+          RowDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto"
           Margin="16">
 
       <TextBlock Text="Subscriptions"
@@ -38,7 +38,13 @@
               HorizontalAlignment="Stretch"
               Margin="0,8,0,8" Click="AddSubscriptionButton_Click"/>
 
-      <Button Grid.Row="2"
+<Button Grid.Row="2"
+        Content="Import OPML..."
+        HorizontalAlignment="Stretch"
+        Margin="0,0,0,8"
+        Click="ImportOpmlButton_Click" />
+
+      <Button Grid.Row="3"
               x:Name="RemoveSubscriptionButton"
               Content="Remove subscription"
               HorizontalAlignment="Stretch"
@@ -46,7 +52,7 @@
               IsEnabled="{Binding CanRemoveSubscription}"
               Click="RemoveSubscriptionButton_Click" />
 
-      <Grid Grid.Row="3"
+      <Grid Grid.Row="4"
             Margin="0,0,0,8">
 
         <TextBlock Text="Removing subscription..."
@@ -62,7 +68,7 @@
       </Grid>
 
       <ListBox x:Name="SubscriptionList"
-               Grid.Row="4"
+               Grid.Row="5"
                ItemsSource="{Binding Subscriptions}"
                SelectedItem="{Binding SelectedSubscription, Mode=TwoWay}">
 
@@ -100,7 +106,7 @@
         </ListBox.ItemTemplate>
       </ListBox>
 
-      <StackPanel Grid.Row="5"
+      <StackPanel Grid.Row="6"
                   Spacing="6"
                   Margin="0,8,0,0"
                   IsVisible="{Binding HasSelectedSubscription}">

@@ -1510,4 +1510,81 @@ public class MainViewModelTests
 				0,
 				subscriptionRepository.UpdateLastRetrievedCount);
 	}
+	[Fact]
+	public async Task LoadSubscriptionsAsync_PreservesSelectionAndArticles()
+	{
+		var subscription = CreateSubscription();
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+		subscriptionRepository.Subscriptions.Add(subscription);
+
+		var articleRepository = new FakeArticleRepository();
+
+		await articleRepository.SaveAsync(
+				subscription.Url,
+				new[]
+				{
+						new FeedItem
+						{
+								Id = "cached-article-1",
+								Title = "Saved Article",
+								Link = "https://example.com/cached-article"
+						}
+				});
+
+		var feedReader = new FakeFeedReader
+		{
+			ReadException =
+						new InvalidOperationException("Simulated network failure")
+		};
+
+		var subscriptionService =
+				new SubscriptionService(subscriptionRepository);
+
+		var feedService = new FeedService(
+				subscriptionService,
+				feedReader,
+				articleRepository);
+
+		var articleStateService = new ArticleStateService(
+				new FakeArticleStateRepository());
+
+		var subscriptionImportService = new SubscriptionImportService(
+				new OpmlService(),
+				subscriptionService);
+
+		var viewModel = new MainViewModel(
+				subscriptionService,
+				feedService,
+				articleStateService,
+				subscriptionImportService);
+
+		await viewModel.LoadSubscriptionsAsync();
+
+		SubscriptionViewModel selected =
+				Assert.Single(viewModel.Subscriptions);
+
+		viewModel.SelectedSubscription = selected;
+
+		Assert.NotNull(viewModel.InitialArticleLoadTask);
+		await viewModel.InitialArticleLoadTask;
+
+		ArticleViewModel article =
+				Assert.Single(viewModel.Articles);
+
+		await subscriptionService.AddAsync(new FeedSubscription
+		{
+			Url = "https://example.com/new-feed.xml",
+			Title = "New Feed"
+		});
+
+		await viewModel.LoadSubscriptionsAsync();
+
+		Assert.Equal(2, viewModel.Subscriptions.Count);
+
+		Assert.Same(selected, viewModel.SelectedSubscription);
+		Assert.Same(selected, viewModel.Subscriptions[0]);
+
+		Assert.Same(article, Assert.Single(viewModel.Articles));
+	}
 }

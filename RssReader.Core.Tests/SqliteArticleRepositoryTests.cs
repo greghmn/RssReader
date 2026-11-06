@@ -1,6 +1,7 @@
 ﻿using Microsoft.Data.Sqlite;
 using RssReader.Core;
 using System.Reflection.Metadata;
+using Xunit;
 
 namespace RssReader.Core.Tests;
 
@@ -360,4 +361,248 @@ public class SqliteArticleRepositoryTests
 			}
 		}
 	}
+
+
+	[Fact]
+	public async Task SaveAsync_WithEmptyFeed_PreservesExistingArticles()
+	{
+		string databasePath = Path.Combine(
+				Path.GetTempPath(),
+				$"{Guid.NewGuid()}.db");
+
+		try
+		{
+			var repository =
+					new SqliteArticleRepository(databasePath);
+
+			await repository.InitializeAsync();
+
+			const string feedUrl =
+					"https://example.com/feed.xml";
+
+			var originalArticle = new FeedItem
+			{
+				FeedUrl = feedUrl,
+				Id = "article-1",
+				Link = "https://example.com/article-1",
+				Title = "Original Article",
+				Summary = "Original summary",
+				Content = "Original content"
+			};
+
+			await repository.SaveAsync(
+					feedUrl,
+					new[] { originalArticle });
+
+			await repository.SaveAsync(
+					feedUrl,
+					Array.Empty<FeedItem>());
+
+			List<FeedItem> stored =
+					await repository.GetByFeedAsync(feedUrl);
+
+			FeedItem article = Assert.Single(stored);
+
+			Assert.Equal(originalArticle.Id, article.Id);
+			Assert.Equal(originalArticle.Link, article.Link);
+			Assert.Equal(originalArticle.Title, article.Title);
+			Assert.Equal(originalArticle.Summary, article.Summary);
+			Assert.Equal(originalArticle.Content, article.Content);
+		}
+		finally
+		{
+			SqliteConnection.ClearAllPools();
+
+			if (File.Exists(databasePath))
+			{
+				File.Delete(databasePath);
+			}
+		}
+	}
+
+
+	[Fact]
+	public async Task SaveAsync_WhenBatchFails_RollsBackAllChanges()
+	{
+		string databasePath = Path.Combine(
+				Path.GetTempPath(),
+				$"{Guid.NewGuid()}.db");
+
+		const string feedUrl = "https://example.com/feed.xml";
+
+		try
+		{
+			var repository =
+					new SqliteArticleRepository(databasePath);
+
+			await repository.InitializeAsync();
+
+			await repository.SaveAsync(
+					feedUrl,
+					new[]
+					{
+								new FeedItem
+								{
+										Id = "existing",
+										Link = "https://example.com/existing",
+										Title = "Original Title",
+										Summary = "Original summary",
+										Content = "Original content",
+										FeedUrl = feedUrl
+								}
+					});
+
+			var batch = new[]
+			{
+						new FeedItem
+						{
+								Id = "existing",
+								Link = "https://example.com/existing",
+								Title = "Updated Title",
+								Summary = "Updated summary",
+								Content = "Updated content",
+								FeedUrl = feedUrl
+						},
+						new FeedItem
+						{
+								Id = "new",
+								Link = "https://example.com/new",
+								Title = "New Article",
+								Summary = "New summary",
+								Content = "New content",
+								FeedUrl = feedUrl
+						},
+						new FeedItem
+						{
+								Id = "invalid",
+								Link = "https://example.com/invalid",
+								Title = null!,
+								Summary = "Invalid summary",
+								Content = "Invalid content",
+								FeedUrl = feedUrl
+						}
+				};
+
+			await Assert.ThrowsAnyAsync<Exception>(
+					() => repository.SaveAsync(feedUrl, batch));
+
+			List<FeedItem> stored =
+					await repository.GetByFeedAsync(feedUrl);
+
+			FeedItem remaining = Assert.Single(stored);
+
+			Assert.Equal("existing", remaining.Id);
+			Assert.Equal("Original Title", remaining.Title);
+			Assert.Equal("Original summary", remaining.Summary);
+			Assert.Equal("Original content", remaining.Content);
+		}
+		finally
+		{
+			SqliteConnection.ClearAllPools();
+
+			if (File.Exists(databasePath))
+			{
+				File.Delete(databasePath);
+			}
+		}
+	}
+
+
+	[Fact]
+	public async Task SaveAsync_WhenFeedChanges_PreservesHistoricalArticles()
+	{
+		string databasePath = Path.Combine(
+				Path.GetTempPath(),
+				$"{Guid.NewGuid()}.db");
+
+		const string feedUrl = "https://example.com/feed.xml";
+
+		try
+		{
+			var repository =
+					new SqliteArticleRepository(databasePath);
+
+			await repository.InitializeAsync();
+
+			await repository.SaveAsync(
+					feedUrl,
+					new[]
+					{
+								new FeedItem
+								{
+										Id = "article-a",
+										Link = "https://example.com/a",
+										Title = "Article A",
+										Summary = "Original A",
+										Content = "Content A",
+										FeedUrl = feedUrl
+								},
+								new FeedItem
+								{
+										Id = "article-b",
+										Link = "https://example.com/b",
+										Title = "Article B",
+										Summary = "Original B",
+										Content = "Content B",
+										FeedUrl = feedUrl
+								}
+					});
+
+			await repository.SaveAsync(
+					feedUrl,
+					new[]
+					{
+								new FeedItem
+								{
+										Id = "article-b",
+										Link = "https://example.com/b",
+										Title = "Updated Article B",
+										Summary = "Updated B",
+										Content = "Updated Content B",
+										FeedUrl = feedUrl
+								},
+								new FeedItem
+								{
+										Id = "article-c",
+										Link = "https://example.com/c",
+										Title = "Article C",
+										Summary = "New C",
+										Content = "Content C",
+										FeedUrl = feedUrl
+								}
+					});
+
+			List<FeedItem> stored =
+					await repository.GetByFeedAsync(feedUrl);
+
+			Assert.Equal(3, stored.Count);
+
+			FeedItem articleA = Assert.Single(
+					stored,
+					article => article.Id == "article-a");
+
+			FeedItem articleB = Assert.Single(
+					stored,
+					article => article.Id == "article-b");
+
+			FeedItem articleC = Assert.Single(
+					stored,
+					article => article.Id == "article-c");
+
+			Assert.Equal("Original A", articleA.Summary);
+			Assert.Equal("Updated Article B", articleB.Title);
+			Assert.Equal("Updated B", articleB.Summary);
+			Assert.Equal("Article C", articleC.Title);
+		}
+		finally
+		{
+			SqliteConnection.ClearAllPools();
+
+			if (File.Exists(databasePath))
+			{
+				File.Delete(databasePath);
+			}
+		}
+	}
+
 }

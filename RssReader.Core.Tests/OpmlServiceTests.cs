@@ -260,4 +260,18 @@ public class OpmlServiceTests
 
 		Assert.Equal(expectedTitle, subscription.Title);
 	}
+
+	[Theory]
+	[InlineData("<opml>")]
+	[InlineData("<rss><channel /></rss>")]
+	[InlineData("<opml version=\"2.0\"><head /></opml>")]
+	[InlineData("<opml version=\"2.0\" />")]
+	public void Import_WithInvalidDocument_Throws(
+		string xml)
+	{
+		var service = new OpmlService();
+
+		Assert.ThrowsAny<Exception>(
+				() => service.Import(xml));
+	}
 }

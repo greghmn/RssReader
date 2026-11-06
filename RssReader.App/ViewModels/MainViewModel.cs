@@ -255,29 +255,45 @@ public partial class MainViewModel : ViewModelBase
 		{
 			if (!isRefresh)
 			{
-				List<ArticleViewModel> storedArticles =
-						await GetStoredArticleViewModelsAsync(subscription.Url);
-
-				if (requestId != _articleLoadRequestId)
+				try
 				{
-					return;
+					List<ArticleViewModel> storedArticles =
+							await GetStoredArticleViewModelsAsync(subscription.Url);
+
+					if (requestId != _articleLoadRequestId)
+					{
+						return;
+					}
+
+					foreach (ArticleViewModel article in storedArticles)
+					{
+						Articles.Add(article);
+					}
+
+					HasNoArticles = Articles.Count == 0;
+
+					SubscriptionViewModel? selectedSubscription =
+							Subscriptions.FirstOrDefault(
+									s => s.Item.Url == subscription.Url);
+
+					if (selectedSubscription is not null)
+					{
+						selectedSubscription.UnreadCount =
+								storedArticles.Count(article => !article.IsRead);
+					}
 				}
-
-				foreach (ArticleViewModel article in storedArticles)
+				catch (ArticleStorageException ex)
 				{
-					Articles.Add(article);
+					if (requestId != _articleLoadRequestId)
+					{
+						return;
+					}
+
+					Console.Error.WriteLine(
+							$"Unable to read cached articles from {subscription.Url}: {ex}");
 				}
-
-				HasNoArticles = Articles.Count == 0;
-
-				SubscriptionViewModel? selectedSubscription =
-						Subscriptions.FirstOrDefault(
-								s => s.Item.Url == subscription.Url);
-
-				if (selectedSubscription is not null)
 				{
-					selectedSubscription.UnreadCount =
-							storedArticles.Count(article => !article.IsRead);
+
 				}
 			}
 

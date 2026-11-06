@@ -305,8 +305,28 @@ public partial class MainViewModel : ViewModelBase
 				return;
 			}
 
-			var articles = await _feedService.GetStoredItemsAsync(
-					subscription.Url);
+			List<FeedItem> articles;
+
+			try
+			{
+				articles = await _feedService.GetStoredItemsAsync(subscription.Url);
+			}
+			catch (ArticleStorageException ex)
+					when (ex.Operation == ArticleStorageOperation.Read && !isRefresh)
+			{
+				if (requestId != _articleLoadRequestId)
+				{
+					return;
+				}
+
+				Console.Error.WriteLine(
+						$"Unable to read saved articles from {subscription.Url}: {ex}");
+
+				articles = retrievedArticles;
+
+				ArticleLoadError =
+						"Unable to read saved articles from local storage. Showing recently retrieved articles instead.";
+			}
 
 			if (requestId != _articleLoadRequestId)
 			{
@@ -365,25 +385,27 @@ public partial class MainViewModel : ViewModelBase
 
 			HasNoArticles = Articles.Count == 0;
 
-			DateTimeOffset lastRetrieved = DateTimeOffset.UtcNow;
-
-			bool timestampUpdated =
-					await _subscriptionService.UpdateLastRetrievedAsync(
-							subscription.Url,
-							lastRetrieved);
-
-			if (timestampUpdated)
+			if (ArticleLoadError is null)
 			{
+				DateTimeOffset lastRetrieved = DateTimeOffset.UtcNow;
 
-				if (subscriptionViewModel is not null)
+				bool timestampUpdated =
+						await _subscriptionService.UpdateLastRetrievedAsync(
+								subscription.Url,
+								lastRetrieved);
+
+				if (timestampUpdated)
 				{
-					subscriptionViewModel.LastRetrieved = lastRetrieved;
+					if (subscriptionViewModel is not null)
+					{
+						subscriptionViewModel.LastRetrieved = lastRetrieved;
+					}
 				}
-			}
-			else
-			{
-				Console.Error.WriteLine(
-						$"Unable to update retrieval timestamp for {subscription.Url}");
+				else
+				{
+					Console.Error.WriteLine(
+							$"Unable to update retrieval timestamp for {subscription.Url}");
+				}
 			}
 		}
 		catch (ArticleStorageException ex)

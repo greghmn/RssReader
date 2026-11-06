@@ -120,4 +120,42 @@ public class OpmlServiceTests
 		Assert.NotNull(body);
 		Assert.Empty(body.Elements("outline"));
 	}
+
+	[Fact]
+	public void Export_WithSpecialCharacters_PreservesSubscriptionTitle()
+	{
+		var service = new OpmlService();
+
+		const string title = "Science & Tech <News> \"Daily\"";
+
+		var subscriptions = new List<FeedSubscription>
+		{
+				new()
+				{
+						Url = "https://example.com/feed.xml",
+						Title = title
+				}
+		};
+
+		string xml = service.Export(subscriptions);
+
+		XDocument document = XDocument.Parse(xml);
+
+		XElement outline = Assert.Single(
+				document.Root!
+						.Element("body")!
+						.Elements("outline"));
+
+		Assert.Equal(
+				title,
+				(string?)outline.Attribute("text"));
+
+		Assert.Equal(
+				title,
+				(string?)outline.Attribute("title"));
+
+		Assert.Contains("&amp;", xml);
+		Assert.Contains("&lt;News&gt;", xml);
+		Assert.Contains("&quot;Daily&quot;", xml);
+	}
 }

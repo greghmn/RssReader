@@ -54,4 +54,50 @@ public class OpmlServiceTests
 				"https://example.com/feed.xml",
 				(string?)outline.Attribute("xmlUrl"));
 	}
+
+	[Fact]
+	public void Export_WithMultipleSubscriptions_PreservesOrder()
+	{
+		var service = new OpmlService();
+
+		var subscriptions = new List<FeedSubscription>
+		{
+				new()
+				{
+						Url = "https://example.com/first.xml",
+						Title = "First Feed"
+				},
+				new()
+				{
+						Url = "https://example.com/second.xml",
+						Title = "Second Feed"
+				},
+				new()
+				{
+						Url = "https://example.com/third.xml",
+						Title = "Third Feed"
+				}
+		};
+
+		string xml = service.Export(subscriptions);
+
+		XDocument document = XDocument.Parse(xml);
+
+		List<XElement> outlines = document.Root!
+				.Element("body")!
+				.Elements("outline")
+				.ToList();
+
+		Assert.Equal(3, outlines.Count);
+
+		Assert.Equal(
+				new[]
+				{
+						"https://example.com/first.xml",
+						"https://example.com/second.xml",
+						"https://example.com/third.xml"
+				},
+				outlines.Select(outline =>
+						(string?)outline.Attribute("xmlUrl")));
+	}
 }

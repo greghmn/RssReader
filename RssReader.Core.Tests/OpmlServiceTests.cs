@@ -437,4 +437,46 @@ public class OpmlServiceTests
 		Assert.Equal("HTTPS://EXAMPLE.COM/FEED", issue.Url);
 		Assert.Equal("Duplicate feed URL.", issue.Reason);
 	}
+
+	[Fact]
+	public void ExportThenImport_PreservesTitlesUrlsAndSpecialCharacters()
+	{
+		var opmlService = new OpmlService();
+
+		var original = new List<FeedSubscription>
+		{
+				new()
+				{
+						Url = "https://example.com/first.xml",
+						Title = "First Feed"
+				},
+				new()
+				{
+						Url = "https://example.com/second.xml",
+						Title = "Science & Technology"
+				}
+		};
+
+		string xml = opmlService.Export(original);
+
+		List<FeedSubscription> imported = opmlService.Import(xml);
+
+		Assert.Equal(2, imported.Count);
+
+		Assert.Equal(
+						original[0].Url,
+						imported[0].Url);
+
+		Assert.Equal(
+						original[0].Title,
+						imported[0].Title);
+
+		Assert.Equal(
+						original[1].Url,
+						imported[1].Url);
+
+		Assert.Equal(
+						original[1].Title,
+						imported[1].Title);
+	}
 }

@@ -77,7 +77,8 @@ public partial class App : Application
 					subscriptionService,
 					feedService,
 					articleStateService,
-					subscriptionImportService);
+					subscriptionImportService,
+					new OpmlService());
 
 			await mainViewModel.LoadSubscriptionsAsync();
 

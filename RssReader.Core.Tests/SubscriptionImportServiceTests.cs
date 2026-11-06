@@ -1,4 +1,5 @@
-﻿using RssReader.Core;
+﻿using Microsoft.Data.Sqlite;
+using RssReader.Core;
 
 namespace RssReader.Core.Tests;
 
@@ -218,5 +219,148 @@ public class SubscriptionImportServiceTests
 
 		FeedSubscription saved = Assert.Single(stored);
 		Assert.Equal("First Feed", saved.Title);
+	}
+
+	[Fact]
+	public async Task ExportThenImport_PersistsSubscriptionsInNewRepository()
+	{
+		var opmlService = new OpmlService();
+
+		var sourceRepository = new FakeSubscriptionRepository();
+		var sourceService = new SubscriptionService(sourceRepository);
+
+		await sourceService.AddAsync(new FeedSubscription
+		{
+			Url = "https://example.com/first.xml",
+			Title = "First Feed"
+		});
+
+		await sourceService.AddAsync(new FeedSubscription
+		{
+			Url = "https://example.com/second.xml",
+			Title = "Science & Technology"
+		});
+
+		List<FeedSubscription> sourceSubscriptions =
+				await sourceService.GetAllAsync();
+
+		string xml = opmlService.Export(sourceSubscriptions);
+
+		var destinationRepository = new FakeSubscriptionRepository();
+		var destinationService =
+				new SubscriptionService(destinationRepository);
+
+		var importService = new SubscriptionImportService(
+				opmlService,
+				destinationService);
+
+		SubscriptionImportResult result =
+				await importService.ImportAsync(xml);
+
+		Assert.Equal(2, result.Added.Count);
+		Assert.Empty(result.AlreadySubscribed);
+		Assert.Empty(result.Issues);
+		Assert.Empty(result.Failures);
+		Assert.Empty(result.NotAttempted);
+
+		List<FeedSubscription> imported =
+				await destinationService.GetAllAsync();
+
+		Assert.Equal(2, imported.Count);
+
+		Assert.Equal(sourceSubscriptions[0].Url, imported[0].Url);
+		Assert.Equal(sourceSubscriptions[0].Title, imported[0].Title);
+
+		Assert.Equal(sourceSubscriptions[1].Url, imported[1].Url);
+		Assert.Equal(sourceSubscriptions[1].Title, imported[1].Title);
+	}
+
+	[Fact]
+	public async Task ExportThenImport_PersistsSubscriptionsAcrossSqliteDatabases()
+	{
+		string sourcePath = Path.Combine(
+				Path.GetTempPath(),
+				$"{Guid.NewGuid()}.db");
+
+		string destinationPath = Path.Combine(
+				Path.GetTempPath(),
+				$"{Guid.NewGuid()}.db");
+
+		try
+		{
+			var sourceRepository =
+					new SqliteSubscriptionRepository(sourcePath);
+
+			var destinationRepository =
+					new SqliteSubscriptionRepository(destinationPath);
+
+			await sourceRepository.InitializeAsync();
+			await destinationRepository.InitializeAsync();
+
+			var sourceService =
+					new SubscriptionService(sourceRepository);
+
+			var destinationService =
+					new SubscriptionService(destinationRepository);
+
+			await sourceService.AddAsync(new FeedSubscription
+			{
+				Url = "https://example.com/first.xml",
+				Title = "First Feed"
+			});
+
+			await sourceService.AddAsync(new FeedSubscription
+			{
+				Url = "https://example.com/second.xml",
+				Title = "Science & Technology"
+			});
+
+			var opmlService = new OpmlService();
+
+			List<FeedSubscription> original =
+					await sourceService.GetAllAsync();
+
+			string xml = opmlService.Export(original);
+
+			var importService = new SubscriptionImportService(
+					opmlService,
+					destinationService);
+
+			SubscriptionImportResult result =
+					await importService.ImportAsync(xml);
+
+			Assert.Equal(2, result.Added.Count);
+			Assert.Empty(result.Failures);
+			Assert.Empty(result.NotAttempted);
+			Assert.Empty(result.Issues);
+
+			List<FeedSubscription> imported =
+					await destinationService.GetAllAsync();
+
+			Assert.Equal(2, imported.Count);
+
+			foreach (FeedSubscription subscription in original)
+			{
+				FeedSubscription match = Assert.Single(
+						imported,
+						item => item.Url == subscription.Url);
+
+				Assert.Equal(subscription.Title, match.Title);
+			}
+		}
+		finally
+		{
+			SqliteConnection.ClearAllPools();
+
+			if (File.Exists(sourcePath))
+			{
+				File.Delete(sourcePath);
+			}
+
+			if (File.Exists(destinationPath))
+			{
+				File.Delete(destinationPath);
+			}
+		}
 	}
 }

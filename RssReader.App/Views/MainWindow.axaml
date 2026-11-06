@@ -26,7 +26,7 @@
     <!-- Subscription pane -->
     <Grid Grid.Row="1"
           Grid.Column="0"
-          RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,*,Auto"
+          RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,*,Auto"
           Margin="16">
 
       <TextBlock Text="Subscriptions"
@@ -43,7 +43,32 @@
               HorizontalAlignment="Stretch"
               Margin="0,0,0,8"
               Click="ImportOpmlButton_Click" />
-      <StackPanel Grid.Row="3"
+
+      <Button Grid.Row="3"
+              Content="Export OPML..."
+              Click="ExportOpmlButton_Click"
+              HorizontalAlignment="Stretch"
+              IsEnabled="{Binding !IsExportingOpml}" />
+
+      <StackPanel Grid.Row="4"
+                  Spacing="4">
+
+        <TextBlock Text="Exporting subscriptions..."
+                   IsVisible="{Binding IsExportingOpml}"
+                   TextWrapping="Wrap" />
+
+        <TextBlock Text="{Binding OpmlExportStatus}"
+                   IsVisible="{Binding !!OpmlExportStatus}"
+                   TextWrapping="Wrap" />
+
+        <TextBlock Text="{Binding OpmlExportError}"
+                   IsVisible="{Binding !!OpmlExportError}"
+                   Foreground="Red"
+                   TextWrapping="Wrap" />
+
+      </StackPanel>
+
+      <StackPanel Grid.Row="5"
                   Spacing="4"
                   Margin="0,0,0,8">
 
@@ -63,7 +88,7 @@
 
       </StackPanel>
 
-      <Button Grid.Row="4"
+      <Button Grid.Row="6"
               x:Name="RemoveSubscriptionButton"
               Content="Remove subscription"
               HorizontalAlignment="Stretch"
@@ -71,7 +96,7 @@
               IsEnabled="{Binding CanRemoveSubscription}"
               Click="RemoveSubscriptionButton_Click" />
 
-      <Grid Grid.Row="5"
+      <Grid Grid.Row="7"
             Margin="0,0,0,8">
 
         <TextBlock Text="Removing subscription..."
@@ -87,7 +112,7 @@
       </Grid>
 
       <ListBox x:Name="SubscriptionList"
-               Grid.Row="6"
+               Grid.Row="8"
                ItemsSource="{Binding Subscriptions}"
                SelectedItem="{Binding SelectedSubscription, Mode=TwoWay}">
 
@@ -125,7 +150,7 @@
         </ListBox.ItemTemplate>
       </ListBox>
 
-      <StackPanel Grid.Row="7"
+      <StackPanel Grid.Row="9"
                   Spacing="6"
                   Margin="0,8,0,0"
                   IsVisible="{Binding HasSelectedSubscription}">

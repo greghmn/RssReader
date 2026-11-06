@@ -37,7 +37,9 @@ public class MainViewModelTests
 		var viewModel = new MainViewModel(
 				subscriptionService,
 				feedService,
-				articleStateService, subscriptionImportService);
+				articleStateService,
+				subscriptionImportService,
+				new OpmlService());
 
 		return (viewModel, repository);
 	}
@@ -98,7 +100,8 @@ public class MainViewModelTests
 				subscriptionService,
 				feedService,
 				articleStateService,
-				subscriptionImportService);
+				subscriptionImportService,
+				new OpmlService());
 
 		var subscriptionViewModel = new SubscriptionViewModel(subscription);
 
@@ -739,7 +742,8 @@ public class MainViewModelTests
 				subscriptionService,
 				feedService,
 				articleStateService,
-				subscriptionImportService);
+				subscriptionImportService,
+				new OpmlService());
 
 		var subscriptionViewModel =
 				new SubscriptionViewModel(subscription);
@@ -852,7 +856,8 @@ public class MainViewModelTests
 				subscriptionService,
 				feedService,
 				articleStateService,
-				subscriptionImportService);
+				subscriptionImportService,
+				new OpmlService());
 
 		var subscriptionA = new SubscriptionViewModel(feedA);
 		var subscriptionB = new SubscriptionViewModel(feedB);
@@ -988,7 +993,8 @@ public class MainViewModelTests
 				subscriptionService,
 				feedService,
 				articleStateService,
-				subscriptionImportService);
+				subscriptionImportService,
+				new OpmlService());
 
 		var subscriptionA = new SubscriptionViewModel(feedA);
 		var subscriptionB = new SubscriptionViewModel(feedB);
@@ -1098,7 +1104,8 @@ public class MainViewModelTests
 				subscriptionService,
 				feedService,
 				articleStateService,
-				subscriptionImportService);
+				subscriptionImportService,
+				new OpmlService());
 
 		var subscriptionViewModel =
 				new SubscriptionViewModel(subscription);
@@ -1177,7 +1184,8 @@ public class MainViewModelTests
 				subscriptionService,
 				feedService,
 				articleStateService,
-				subscriptionImportService);
+				subscriptionImportService,
+				new OpmlService());
 
 		var subscriptionViewModel =
 				new SubscriptionViewModel(subscription);
@@ -1279,7 +1287,8 @@ public class MainViewModelTests
 				subscriptionService,
 				feedService,
 				articleStateService,
-				subscriptionImportService);
+				subscriptionImportService,
+				new OpmlService());
 
 		var subscriptionViewModel =
 				new SubscriptionViewModel(subscription);
@@ -1404,7 +1413,8 @@ public class MainViewModelTests
 				subscriptionService,
 				feedService,
 				articleStateService,
-				subscriptionImportService);
+				subscriptionImportService,
+				new OpmlService());
 
 		var subscriptionViewModel =
 				new SubscriptionViewModel(subscription);
@@ -1477,7 +1487,8 @@ public class MainViewModelTests
 				subscriptionService,
 				feedService,
 				articleStateService,
-				subscriptionImportService);
+				subscriptionImportService,
+				new OpmlService());
 
 		var subscriptionViewModel =
 				new SubscriptionViewModel(subscription);
@@ -1557,7 +1568,8 @@ public class MainViewModelTests
 				subscriptionService,
 				feedService,
 				articleStateService,
-				subscriptionImportService);
+				subscriptionImportService,
+				new OpmlService());
 
 		await viewModel.LoadSubscriptionsAsync();
 
@@ -1612,7 +1624,8 @@ public class MainViewModelTests
 				subscriptionService,
 				feedService,
 				articleStateService,
-				subscriptionImportService);
+				subscriptionImportService,
+				new OpmlService());
 
 		const string xml = """
         <opml version="2.0">
@@ -1662,7 +1675,8 @@ public class MainViewModelTests
 				subscriptionService,
 				feedService,
 				articleStateService,
-				subscriptionImportService);
+				subscriptionImportService,
+				new OpmlService());
 
 		const string xml = """
     <opml version="2.0">
@@ -1714,7 +1728,8 @@ public class MainViewModelTests
 				subscriptionService,
 				feedService,
 				articleStateService,
-				subscriptionImportService);
+				subscriptionImportService,
+				new OpmlService());
 
 		const string xml = """
         <opml version="2.0">
@@ -1769,7 +1784,8 @@ public class MainViewModelTests
 				subscriptionService,
 				feedService,
 				articleStateService,
-				subscriptionImportService);
+				subscriptionImportService,
+				new OpmlService());
 
 		const string xml = """
         <opml version="2.0">
@@ -1804,5 +1820,73 @@ public class MainViewModelTests
 				Assert.Single(viewModel.Subscriptions);
 
 		Assert.Equal("First Feed", displayed.Title);
+	}
+
+	[Fact]
+	public async Task ExportOpmlAsync_ExportsPersistedSubscriptions()
+	{
+		var subscriptionRepository = new FakeSubscriptionRepository();
+
+		var subscriptionService =
+				new SubscriptionService(subscriptionRepository);
+
+		await subscriptionService.AddAsync(new FeedSubscription
+		{
+			Url = "https://example.com/first.xml",
+			Title = "First Feed"
+		});
+
+		await subscriptionService.AddAsync(new FeedSubscription
+		{
+			Url = "https://example.com/second.xml",
+			Title = "Second & Third"
+		});
+
+		var feedService = new FeedService(
+				subscriptionService,
+				new FakeFeedReader(),
+				new FakeArticleRepository());
+
+		var articleStateService = new ArticleStateService(
+				new FakeArticleStateRepository());
+
+		var subscriptionImportService = new SubscriptionImportService(
+				new OpmlService(),
+				subscriptionService);
+
+		var viewModel = new MainViewModel(
+				subscriptionService,
+				feedService,
+				articleStateService,
+				subscriptionImportService,
+				new OpmlService());
+
+		string xml = await viewModel.ExportOpmlAsync();
+
+		var document = System.Xml.Linq.XDocument.Parse(xml);
+
+		var outlines = document
+				.Descendants("outline")
+				.ToList();
+
+		Assert.Equal(2, outlines.Count);
+
+		Assert.Equal(
+				"https://example.com/first.xml",
+				(string?)outlines[0].Attribute("xmlUrl"));
+
+		Assert.Equal(
+				"First Feed",
+				(string?)outlines[0].Attribute("title"));
+
+		Assert.Equal(
+				"https://example.com/second.xml",
+				(string?)outlines[1].Attribute("xmlUrl"));
+
+		Assert.Equal(
+				"Second & Third",
+				(string?)outlines[1].Attribute("title"));
+
+		Assert.Empty(viewModel.Subscriptions);
 	}
 }

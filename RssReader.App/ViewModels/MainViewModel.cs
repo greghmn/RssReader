@@ -70,7 +70,18 @@ public partial class MainViewModel : ViewModelBase
 	[ObservableProperty]
 	public partial string? OpmlImportError { get; set; }
 
+	[ObservableProperty]
+	public partial bool IsExportingOpml { get; set; }
+
+	[ObservableProperty]
+	public partial string? OpmlExportStatus { get; set; }
+
+	[ObservableProperty]
+	public partial string? OpmlExportError { get; set; }
+
 	private readonly SubscriptionService _subscriptionService;
+
+	private readonly OpmlService _opmlService;
 
 	private readonly FeedService _feedService;
 
@@ -142,12 +153,13 @@ public partial class MainViewModel : ViewModelBase
 		OnPropertyChanged(nameof(CanMarkSelectedArticleAsUnread));
 	}
 
-	public MainViewModel(SubscriptionService subscriptionService, FeedService feedService, ArticleStateService articleStateService, SubscriptionImportService subscriptionImportService)
+	public MainViewModel(SubscriptionService subscriptionService, FeedService feedService, ArticleStateService articleStateService, SubscriptionImportService subscriptionImportService, OpmlService opmlService)
 	{
 		_subscriptionService = subscriptionService;
 		_feedService = feedService;
 		_articleStateService = articleStateService;
 		_subscriptionImportService = subscriptionImportService;
+		_opmlService = opmlService;
 	}
 	public async Task LoadSubscriptionsAsync()
 	{
@@ -724,5 +736,13 @@ public partial class MainViewModel : ViewModelBase
 		{
 			IsImportingOpml = false;
 		}
+	}
+
+	public async Task<string> ExportOpmlAsync()
+	{
+		List<FeedSubscription> subscriptions =
+				await _subscriptionService.GetAllAsync();
+
+		return _opmlService.Export(subscriptions);
 	}
 }

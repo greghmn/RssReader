@@ -259,4 +259,82 @@ public partial class MainWindow : Window
 					"Permission denied while reading the selected OPML file.";
 		}
 	}
+	private async void ExportOpmlButton_Click(
+			object? sender,
+			RoutedEventArgs e)
+	{
+		if (DataContext is not MainViewModel viewModel)
+		{
+			return;
+		}
+
+		if (viewModel.IsExportingOpml)
+		{
+			return;
+		}
+
+		viewModel.IsExportingOpml = true;
+		viewModel.OpmlExportStatus = null;
+		viewModel.OpmlExportError = null;
+
+		try
+		{
+			var file = await StorageProvider.SaveFilePickerAsync(
+					new FilePickerSaveOptions
+					{
+						Title = "Export OPML subscriptions",
+						SuggestedFileName = "subscriptions.opml",
+						DefaultExtension = "opml",
+						ShowOverwritePrompt = true,
+						FileTypeChoices =
+							[
+									new FilePickerFileType("OPML files")
+										{
+												Patterns = ["*.opml"]
+										}
+							]
+					});
+
+			if (file is null)
+			{
+				return;
+			}
+
+			string xml = await viewModel.ExportOpmlAsync();
+
+			await using Stream stream = await file.OpenWriteAsync();
+
+			await using var writer = new StreamWriter(
+					stream,
+					new UTF8Encoding(
+							encoderShouldEmitUTF8Identifier: false));
+
+			await writer.WriteLineAsync(
+					"<?xml version=\"1.0\" encoding=\"utf-8\"?>");
+
+			await writer.WriteAsync(xml);
+
+			viewModel.OpmlExportStatus =
+					"Subscriptions exported successfully.";
+		}
+		catch (UnauthorizedAccessException)
+		{
+			viewModel.OpmlExportError =
+					"Permission denied while exporting subscriptions.";
+		}
+		catch (IOException)
+		{
+			viewModel.OpmlExportError =
+					"Unable to write the OPML file.";
+		}
+		catch (Exception ex)
+		{
+			viewModel.OpmlExportError =
+					$"Unable to export subscriptions: {ex.Message}";
+		}
+		finally
+		{
+			viewModel.IsExportingOpml = false;
+		}
+	}
 }

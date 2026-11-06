@@ -7,7 +7,9 @@
         x:Class="RssReader.App.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Title="RssReader.App">
+        Title="RssReader.App"
+        MinWidth="600"
+        MinHeight="300">
 
   <Design.DataContext>
     <!-- This only sets the DataContext for the previewer in an IDE,
@@ -17,102 +19,118 @@
 
 
   <Grid RowDefinitions="Auto,*"
-        ColumnDefinitions="240,1,*">
+        ColumnDefinitions="240*,5,600*">
     <!-- Header -->
     <TextBlock Text="RSS Reader"
                FontSize="24"
                FontWeight="Bold"
                Margin="16" />
     <!-- Subscription pane -->
+
+
+    <!-- Subscription pane -->
     <Grid Grid.Row="1"
           Grid.Column="0"
-          RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,*,Auto"
+          RowDefinitions="Auto,2*,3*,Auto"
           Margin="16">
 
-      <TextBlock Text="Subscriptions"
+      <!-- Heading -->
+      <TextBlock Grid.Row="0"
+                 Text="Subscriptions"
                  FontSize="18"
                  FontWeight="SemiBold" />
 
-      <Button Grid.Row="1"
-              Content="Add subscription"
-              HorizontalAlignment="Stretch"
-              Margin="0,8,0,8" Click="AddSubscriptionButton_Click"/>
+      <!-- Scrollable subscription controls -->
+      <ScrollViewer Grid.Row="1"
+                    VerticalScrollBarVisibility="Auto"
+                    HorizontalScrollBarVisibility="Disabled">
 
-      <Button Grid.Row="2"
-              Content="Import OPML..."
-              HorizontalAlignment="Stretch"
-              Margin="0,0,0,8"
-              Click="ImportOpmlButton_Click" />
+        <StackPanel Spacing="4"
+                    Margin="0,8,0,8">
 
-      <Button Grid.Row="3"
-              Content="Export OPML..."
-              Click="ExportOpmlButton_Click"
-              HorizontalAlignment="Stretch"
-              IsEnabled="{Binding !IsExportingOpml}" />
+          <!-- Add subscription -->
+          <Button Content="Add subscription"
+                  HorizontalAlignment="Stretch"
+                  Click="AddSubscriptionButton_Click" />
 
-      <StackPanel Grid.Row="4"
-                  Spacing="4">
+          <!-- Remove subscription -->
+          <Button x:Name="RemoveSubscriptionButton"
+                  Content="Remove subscription"
+                  HorizontalAlignment="Stretch"
+                  IsEnabled="{Binding CanRemoveSubscription}"
+                  Click="RemoveSubscriptionButton_Click" />
 
-        <TextBlock Text="Exporting subscriptions..."
-                   IsVisible="{Binding IsExportingOpml}"
-                   TextWrapping="Wrap" />
+          <!-- Remove status / error -->
+          <StackPanel Spacing="4">
 
-        <TextBlock Text="{Binding OpmlExportStatus}"
-                   IsVisible="{Binding !!OpmlExportStatus}"
-                   TextWrapping="Wrap" />
+            <TextBlock Text="Removing subscription..."
+                       IsVisible="{Binding IsRemovingSubscription}"
+                       Opacity="0.7"
+                       TextWrapping="Wrap" />
 
-        <TextBlock Text="{Binding OpmlExportError}"
-                   IsVisible="{Binding !!OpmlExportError}"
-                   Foreground="Red"
-                   TextWrapping="Wrap" />
+            <TextBlock Text="{Binding SubscriptionOperationError}"
+                       IsVisible="{Binding !!SubscriptionOperationError}"
+                       Foreground="IndianRed"
+                       TextWrapping="Wrap" />
 
-      </StackPanel>
+          </StackPanel>
 
-      <StackPanel Grid.Row="5"
-                  Spacing="4"
-                  Margin="0,0,0,8">
+          <!-- Import OPML -->
+          <Button Content="Import OPML..."
+                  HorizontalAlignment="Stretch"
+                  Margin="0,12,0,0"
+                  Click="ImportOpmlButton_Click" />
 
-        <TextBlock Text="Importing subscriptions..."
-                   IsVisible="{Binding IsImportingOpml}"
-                   Opacity="0.7"
-                   TextWrapping="Wrap" />
+          <!-- Export OPML -->
+          <Button Content="Export OPML..."
+                  HorizontalAlignment="Stretch"
+                  IsEnabled="{Binding !IsExportingOpml}"
+                  Click="ExportOpmlButton_Click" />
 
-        <TextBlock Text="{Binding OpmlImportStatus}"
-                   IsVisible="{Binding OpmlImportStatus}"
-                   TextWrapping="Wrap" />
+          <!-- Import status / error -->
+          <StackPanel Spacing="4">
 
-        <TextBlock Text="{Binding OpmlImportError}"
-                   IsVisible="{Binding OpmlImportError}"
-                   Foreground="IndianRed"
-                   TextWrapping="Wrap" />
+            <TextBlock Text="Importing subscriptions..."
+                       IsVisible="{Binding IsImportingOpml}"
+                       Opacity="0.7"
+                       TextWrapping="Wrap" />
 
-      </StackPanel>
+            <TextBlock Text="{Binding OpmlImportStatus}"
+                       IsVisible="{Binding !!OpmlImportStatus}"
+                       TextWrapping="Wrap" />
 
-      <Button Grid.Row="6"
-              x:Name="RemoveSubscriptionButton"
-              Content="Remove subscription"
-              HorizontalAlignment="Stretch"
-              Margin="0,0,0,8"
-              IsEnabled="{Binding CanRemoveSubscription}"
-              Click="RemoveSubscriptionButton_Click" />
+            <TextBlock Text="{Binding OpmlImportError}"
+                       IsVisible="{Binding !!OpmlImportError}"
+                       Foreground="IndianRed"
+                       TextWrapping="Wrap" />
 
-      <Grid Grid.Row="7"
-            Margin="0,0,0,8">
+          </StackPanel>
 
-        <TextBlock Text="Removing subscription..."
-                   IsVisible="{Binding IsRemovingSubscription}"
-                   Opacity="0.7"
-                   TextWrapping="Wrap" />
+          <!-- Export status / error -->
+          <StackPanel Spacing="4">
 
-        <TextBlock Text="{Binding SubscriptionOperationError}"
-                   IsVisible="{Binding SubscriptionOperationError}"
-                   Foreground="IndianRed"
-                   TextWrapping="Wrap" />
+            <TextBlock Text="Exporting subscriptions..."
+                       IsVisible="{Binding IsExportingOpml}"
+                       TextWrapping="Wrap" />
 
-      </Grid>
+            <TextBlock Text="{Binding OpmlExportStatus}"
+                       IsVisible="{Binding !!OpmlExportStatus}"
+                       TextWrapping="Wrap" />
 
+            <TextBlock Text="{Binding OpmlExportError}"
+                       IsVisible="{Binding !!OpmlExportError}"
+                       Foreground="IndianRed"
+                       TextWrapping="Wrap" />
+
+          </StackPanel>
+
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- Subscription list -->
       <ListBox x:Name="SubscriptionList"
-               Grid.Row="8"
+               Grid.Row="2"
+               MinHeight="40"
                ItemsSource="{Binding Subscriptions}"
                SelectedItem="{Binding SelectedSubscription, Mode=TwoWay}">
 
@@ -132,6 +150,7 @@
           <DataTemplate>
             <StackPanel Spacing="4">
               <Grid ColumnDefinitions="*,Auto">
+
                 <TextBlock Text="{Binding Title}"
                            FontWeight="SemiBold"
                            VerticalAlignment="Center" />
@@ -144,44 +163,55 @@
                            Foreground="DodgerBlue"
                            VerticalAlignment="Center"
                            Margin="8,0,0,0" />
+
               </Grid>
             </StackPanel>
           </DataTemplate>
         </ListBox.ItemTemplate>
       </ListBox>
 
-      <StackPanel Grid.Row="9"
-                  Spacing="6"
-                  Margin="0,8,0,0"
-                  IsVisible="{Binding HasSelectedSubscription}">
+      <!-- Scrollable subscription details -->
+      <ScrollViewer Grid.Row="3"
+                    MinHeight="48"
+                    MaxHeight="80"
+                    Margin="0,8,0,0"
+                    VerticalScrollBarVisibility="Auto"
+                    HorizontalScrollBarVisibility="Auto"
+                    IsVisible="{Binding HasSelectedSubscription}">
 
-        <TextBlock Text="Subscription details"
-                   FontWeight="SemiBold"
-                   FontSize="14" />
+        <StackPanel Spacing="6">
 
-        <TextBlock Text="{Binding SelectedSubscription.Title}"
-                   FontWeight="SemiBold" />
+          <TextBlock Text="Subscription details"
+                     FontWeight="SemiBold"
+                     FontSize="14" />
 
-        <TextBlock Text="Feed URL"
-                   FontSize="11"
-                   Opacity="0.7" />
+          <TextBlock Text="{Binding SelectedSubscription.Title}"
+                     FontWeight="SemiBold"
+                     TextWrapping="Wrap" />
 
-        <HyperlinkButton NavigateUri="{Binding SelectedSubscription.FeedUri}"
-                         Content="{Binding SelectedSubscription.Item.Url}"
-                         HorizontalAlignment="Left" />
+          <TextBlock Text="Feed URL"
+                     FontSize="11"
+                     Opacity="0.7" />
 
-      </StackPanel>
+          <HyperlinkButton NavigateUri="{Binding SelectedSubscription.FeedUri}"
+                           Content="{Binding SelectedSubscription.Item.Url}"
+                           HorizontalAlignment="Left" />
+
+        </StackPanel>
+      </ScrollViewer>
 
     </Grid>
 
+
+
     <Grid Grid.Row="1"
           Grid.Column="2"
-          ColumnDefinitions="2*,3*"
+          ColumnDefinitions="2*,5,3*"
           Margin="16">
 
       <!-- Article list -->
       <Grid Grid.Column="0"
-            RowDefinitions="Auto,Auto,Auto,*"
+            RowDefinitions="Auto,Auto,Auto,Auto,*"
             Margin="0,0,12,0">
 
         <!-- Header -->
@@ -199,8 +229,11 @@
         </Grid>
 
         <!-- Current retrieval status -->
-        <Grid Grid.Row="1"
-              MinHeight="24">
+
+        <StackPanel Grid.Row="2"
+                    MinHeight="24"
+                    Spacing="4">
+
           <TextBlock Text="Select a feed to view its articles."
                      IsVisible="{Binding HasNoSelectedSubscription}"
                      Opacity="0.7"
@@ -223,17 +256,19 @@
                      IsVisible="{Binding ArticleLoadError}"
                      Foreground="IndianRed"
                      TextWrapping="Wrap" />
-        </Grid>
+
+        </StackPanel>
 
 
-        <TextBlock Grid.Row="2"
+
+        <TextBlock Grid.Row="3"
                    Text="{Binding SelectedSubscription.LastRetrievedText}"
                    IsVisible="{Binding HasSelectedSubscription}"
                    MinHeight="20"
                    Opacity="0.7" />
 
         <ListBox x:Name="ArticleList"
-                 Grid.Row="3"
+                 Grid.Row="4"
                  ItemsSource="{Binding Articles}"
                  SelectedItem="{Binding SelectedArticle, Mode=TwoWay}">
 
@@ -276,8 +311,14 @@
         </ListBox>
       </Grid>
 
+      <GridSplitter Grid.Column="1"
+                    Width="5"
+                    ResizeDirection="Columns"
+                    HorizontalAlignment="Stretch"
+                    Background="#606060" />
+
       <!-- Reading pane -->
-      <Border Grid.Column="1"
+      <Border Grid.Column="2"
               BorderBrush="#404040"
               BorderThickness="1,0,0,0"
               Padding="12,0,0,0">
@@ -302,6 +343,7 @@
                      TextWrapping="Wrap" />
 
           <ScrollViewer IsVisible="{Binding HasSelectedArticle}">
+
             <StackPanel Spacing="8">
 
               <TextBlock Text="{Binding SelectedArticle.Item.Title}"
@@ -312,33 +354,52 @@
               <TextBlock Text="{Binding SelectedArticle.PublishedDateText}"
                          FontSize="12"
                          Opacity="0.7" />
+
               <TextBlock Text="{Binding ArticleStateError}"
                          IsVisible="{Binding ArticleStateError}"
                          Foreground="IndianRed"
                          TextWrapping="Wrap" />
-              <Button Content="Open original article ↗"
-                      HorizontalAlignment="Left"
-                      IsVisible="{Binding SelectedArticle.CanOpenArticleLink}"
-                      Click="OpenArticleLinkButton_Click" />
+
+              <!-- Article actions -->
+              <Grid ColumnDefinitions="*,Auto"
+                    ColumnSpacing="8">
+
+                <Button Grid.Column="0"
+                        Content="Open original article ↗"
+                        HorizontalAlignment="Left"
+                        IsVisible="{Binding SelectedArticle.CanOpenArticleLink}"
+                        Click="OpenArticleLinkButton_Click" />
+
+                <Button Grid.Column="1"
+                        Content="Mark as read"
+                        Command="{Binding MarkSelectedArticleAsReadCommand}"
+                        IsVisible="{Binding CanMarkSelectedArticleAsRead}" />
+
+                <Button Grid.Column="1"
+                        Content="Mark as unread"
+                        Command="{Binding MarkSelectedArticleAsUnreadCommand}"
+                        IsVisible="{Binding CanMarkSelectedArticleAsUnread}" />
+
+              </Grid>
+
+              <!-- Article content -->
               <TextBlock Text="{Binding SelectedArticle.DisplayContent}"
                          TextWrapping="Wrap" />
-              <Button Content="Mark as read"
-                      Command="{Binding MarkSelectedArticleAsReadCommand}"
-                      IsVisible="{Binding CanMarkSelectedArticleAsRead}" />
 
-              <Button Content="Mark as unread"
-                      Command="{Binding MarkSelectedArticleAsUnreadCommand}"
-                      IsVisible="{Binding CanMarkSelectedArticleAsUnread}" />
             </StackPanel>
+
           </ScrollViewer>
         </Grid>
       </Border>
 
     </Grid>
 
-    <Border Grid.Row="1"
-            Grid.Column="1"
-            BorderBrush="#404040"
-            BorderThickness="0,0,1,0" />
+    <GridSplitter Grid.Row="1"
+                  Grid.Column="1"
+                  Width="5"
+                  ResizeDirection="Columns"
+                  ResizeBehavior="PreviousAndNext"
+                  HorizontalAlignment="Stretch"
+                  Background="#606060" />
   </Grid>
 </Window>

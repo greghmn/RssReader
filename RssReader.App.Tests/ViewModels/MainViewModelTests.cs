@@ -1741,4 +1741,68 @@ public class MainViewModelTests
 		Assert.Equal(2, viewModel.Subscriptions.Count);
 		Assert.Equal(2, subscriptionRepository.Subscriptions.Count);
 	}
+
+	[Fact]
+	public async Task ImportOpmlAsync_WhenSaveFails_ReportsPartialImport()
+	{
+		var subscriptionRepository = new FakeSubscriptionRepository
+		{
+			FailOnAddNumber = 2
+		};
+
+		var subscriptionService =
+				new SubscriptionService(subscriptionRepository);
+
+		var feedService = new FeedService(
+				subscriptionService,
+				new FakeFeedReader(),
+				new FakeArticleRepository());
+
+		var articleStateService = new ArticleStateService(
+				new FakeArticleStateRepository());
+
+		var subscriptionImportService = new SubscriptionImportService(
+				new OpmlService(),
+				subscriptionService);
+
+		var viewModel = new MainViewModel(
+				subscriptionService,
+				feedService,
+				articleStateService,
+				subscriptionImportService);
+
+		const string xml = """
+        <opml version="2.0">
+          <body>
+            <outline text="First Feed"
+                     xmlUrl="https://example.com/first.xml" />
+            <outline text="Second Feed"
+                     xmlUrl="https://example.com/second.xml" />
+            <outline text="Third Feed"
+                     xmlUrl="https://example.com/third.xml" />
+          </body>
+        </opml>
+        """;
+
+		await viewModel.ImportOpmlCommand.ExecuteAsync(xml);
+
+		Assert.Equal(
+				"Imported 1 subscription. Failed to save: 1. Not attempted: 1.",
+				viewModel.OpmlImportStatus);
+
+		Assert.Null(viewModel.OpmlImportError);
+		Assert.False(viewModel.IsImportingOpml);
+
+		Assert.Equal(2, subscriptionRepository.AddCount);
+
+		FeedSubscription saved =
+				Assert.Single(subscriptionRepository.Subscriptions);
+
+		Assert.Equal("First Feed", saved.Title);
+
+		SubscriptionViewModel displayed =
+				Assert.Single(viewModel.Subscriptions);
+
+		Assert.Equal("First Feed", displayed.Title);
+	}
 }

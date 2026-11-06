@@ -10,6 +10,10 @@ public class FakeSubscriptionRepository : ISubscriptionRepository
 
 	public int UpdateLastRetrievedCount { get; private set; }
 
+	public int AddCount { get; private set; }
+
+	public int? FailOnAddNumber { get; set; }
+
 	public Exception? GetAllException { get; set; }
 
 	public Exception? RemoveException { get; set; }
@@ -42,6 +46,14 @@ public class FakeSubscriptionRepository : ISubscriptionRepository
 
 	public Task AddAsync(FeedSubscription subscription)
 	{
+		AddCount++;
+
+		if (AddCount == FailOnAddNumber)
+		{
+			throw new InvalidOperationException(
+					"Simulated subscription database failure.");
+		}
+
 		Subscriptions.Add(subscription);
 
 		return Task.CompletedTask;

@@ -233,15 +233,30 @@ public partial class MainWindow : Window
 			return;
 		}
 
-		await using Stream stream = await files[0].OpenReadAsync();
+		try
+		{
+			await using Stream stream = await files[0].OpenReadAsync();
 
-		using var reader = new StreamReader(
-				stream,
-				Encoding.UTF8,
-				detectEncodingFromByteOrderMarks: true);
+			using var reader = new StreamReader(
+					stream,
+					Encoding.UTF8,
+					detectEncodingFromByteOrderMarks: true);
 
-		string xml = await reader.ReadToEndAsync();
+			string xml = await reader.ReadToEndAsync();
 
-		await viewModel.ImportOpmlCommand.ExecuteAsync(xml);
+			await viewModel.ImportOpmlCommand.ExecuteAsync(xml);
+		}
+		catch (IOException)
+		{
+			viewModel.OpmlImportStatus = null;
+			viewModel.OpmlImportError =
+					"Unable to read the selected OPML file.";
+		}
+		catch (UnauthorizedAccessException)
+		{
+			viewModel.OpmlImportStatus = null;
+			viewModel.OpmlImportError =
+					"Permission denied while reading the selected OPML file.";
+		}
 	}
 }

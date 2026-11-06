@@ -41,10 +41,18 @@ public class OpmlService
 
 		return body.Descendants("outline")
 				.Where(outline => outline.Attribute("xmlUrl") is not null)
-				.Select(outline => new FeedSubscription
+				.Select(outline =>
 				{
-					Url = (string?)outline.Attribute("xmlUrl") ?? "",
-					Title = (string?)outline.Attribute("title") ?? ""
+					string? title = (string?)outline.Attribute("title");
+					string? text = (string?)outline.Attribute("text");
+
+					return new FeedSubscription
+					{
+						Url = (string?)outline.Attribute("xmlUrl") ?? "",
+						Title = !string.IsNullOrWhiteSpace(title)
+									? title
+									: text ?? ""
+					};
 				})
 				.ToList();
 	}

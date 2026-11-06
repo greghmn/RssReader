@@ -66,6 +66,8 @@ public partial class MainViewModel : ViewModelBase
 
 	private readonly ArticleStateService _articleStateService;
 
+	private readonly SubscriptionImportService _subscriptionImportService;
+
 	private int _articleLoadRequestId;
 
 	internal Task? InitialArticleLoadTask { get; private set; }
@@ -130,11 +132,12 @@ public partial class MainViewModel : ViewModelBase
 		OnPropertyChanged(nameof(CanMarkSelectedArticleAsUnread));
 	}
 
-	public MainViewModel(SubscriptionService subscriptionService, FeedService feedService, ArticleStateService articleStateService)
+	public MainViewModel(SubscriptionService subscriptionService, FeedService feedService, ArticleStateService articleStateService, SubscriptionImportService subscriptionImportService)
 	{
 		_subscriptionService = subscriptionService;
 		_feedService = feedService;
 		_articleStateService = articleStateService;
+		_subscriptionImportService = subscriptionImportService;
 	}
 	public async Task LoadSubscriptionsAsync()
 	{

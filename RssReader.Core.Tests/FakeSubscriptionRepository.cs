@@ -7,6 +7,10 @@ public class FakeSubscriptionRepository : ISubscriptionRepository
 {
 	private readonly List<FeedSubscription> _subscriptions = [];
 
+	public int AddCount { get; private set; }
+
+	public int? FailOnAddNumber { get; set; }
+
 	public Task<List<FeedSubscription>> GetAllAsync()
 	{
 		return Task.FromResult(_subscriptions.ToList());
@@ -14,6 +18,14 @@ public class FakeSubscriptionRepository : ISubscriptionRepository
 
 	public Task AddAsync(FeedSubscription subscription)
 	{
+		AddCount++;
+
+		if (AddCount == FailOnAddNumber)
+		{
+			throw new InvalidOperationException(
+					"Simulated subscription database failure.");
+		}
+
 		_subscriptions.Add(subscription);
 		return Task.CompletedTask;
 	}

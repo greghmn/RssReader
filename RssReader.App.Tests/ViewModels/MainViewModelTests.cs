@@ -30,10 +30,14 @@ public class MainViewModelTests
 		var articleStateService =
 				new ArticleStateService(articleStateRepository);
 
+		var subscriptionImportService = new SubscriptionImportService(
+		new OpmlService(),
+		subscriptionService);
+
 		var viewModel = new MainViewModel(
 				subscriptionService,
 				feedService,
-				articleStateService);
+				articleStateService, subscriptionImportService);
 
 		return (viewModel, repository);
 	}
@@ -86,7 +90,15 @@ public class MainViewModelTests
 
 		var articleStateService = new ArticleStateService(articleStateRepository);
 
-		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
+		var subscriptionImportService = new SubscriptionImportService(
+				new OpmlService(),
+				subscriptionService);
+
+		var viewModel = new MainViewModel(
+				subscriptionService,
+				feedService,
+				articleStateService,
+				subscriptionImportService);
 
 		var subscriptionViewModel = new SubscriptionViewModel(subscription);
 
@@ -719,10 +731,15 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
+		var subscriptionImportService = new SubscriptionImportService(
+				new OpmlService(),
+				subscriptionService);
+
 		var viewModel = new MainViewModel(
 				subscriptionService,
 				feedService,
-				articleStateService);
+				articleStateService,
+				subscriptionImportService);
 
 		var subscriptionViewModel =
 				new SubscriptionViewModel(subscription);
@@ -827,10 +844,15 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
+		var subscriptionImportService = new SubscriptionImportService(
+				new OpmlService(),
+				subscriptionService);
+
 		var viewModel = new MainViewModel(
 				subscriptionService,
 				feedService,
-				articleStateService);
+				articleStateService,
+				subscriptionImportService);
 
 		var subscriptionA = new SubscriptionViewModel(feedA);
 		var subscriptionB = new SubscriptionViewModel(feedB);
@@ -958,10 +980,15 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
+		var subscriptionImportService = new SubscriptionImportService(
+				new OpmlService(),
+				subscriptionService);
+
 		var viewModel = new MainViewModel(
 				subscriptionService,
 				feedService,
-				articleStateService);
+				articleStateService,
+				subscriptionImportService);
 
 		var subscriptionA = new SubscriptionViewModel(feedA);
 		var subscriptionB = new SubscriptionViewModel(feedB);
@@ -1063,10 +1090,15 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
+		var subscriptionImportService = new SubscriptionImportService(
+				new OpmlService(),
+				subscriptionService);
+
 		var viewModel = new MainViewModel(
 				subscriptionService,
 				feedService,
-				articleStateService);
+				articleStateService,
+				subscriptionImportService);
 
 		var subscriptionViewModel =
 				new SubscriptionViewModel(subscription);
@@ -1137,10 +1169,15 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
+		var subscriptionImportService = new SubscriptionImportService(
+				new OpmlService(),
+				subscriptionService);
+
 		var viewModel = new MainViewModel(
 				subscriptionService,
 				feedService,
-				articleStateService);
+				articleStateService,
+				subscriptionImportService);
 
 		var subscriptionViewModel =
 				new SubscriptionViewModel(subscription);
@@ -1234,10 +1271,15 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
+		var subscriptionImportService = new SubscriptionImportService(
+				new OpmlService(),
+				subscriptionService);
+
 		var viewModel = new MainViewModel(
 				subscriptionService,
 				feedService,
-				articleStateService);
+				articleStateService,
+				subscriptionImportService);
 
 		var subscriptionViewModel =
 				new SubscriptionViewModel(subscription);
@@ -1354,10 +1396,15 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
+		var subscriptionImportService = new SubscriptionImportService(
+				new OpmlService(),
+				subscriptionService);
+
 		var viewModel = new MainViewModel(
 				subscriptionService,
 				feedService,
-				articleStateService);
+				articleStateService,
+				subscriptionImportService);
 
 		var subscriptionViewModel =
 				new SubscriptionViewModel(subscription);
@@ -1422,10 +1469,15 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
+		var subscriptionImportService = new SubscriptionImportService(
+				new OpmlService(),
+				subscriptionService);
+
 		var viewModel = new MainViewModel(
 				subscriptionService,
 				feedService,
-				articleStateService);
+				articleStateService,
+				subscriptionImportService);
 
 		var subscriptionViewModel =
 				new SubscriptionViewModel(subscription);

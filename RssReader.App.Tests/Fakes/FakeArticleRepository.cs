@@ -12,9 +12,17 @@ public class FakeArticleRepository : IArticleRepository
 
 	public int GetCount { get; private set; }
 
+	public bool FailFirstGet { get; set; }
+
 	public Task<List<FeedItem>> GetByFeedAsync(string feedUrl)
 	{
 		GetCount++;
+
+		if (FailFirstGet && GetCount == 1)
+		{
+			throw new InvalidOperationException(
+					"Simulated initial archive read failure");
+		}
 
 		if (GetException is not null)
 		{

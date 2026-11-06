@@ -1295,4 +1295,71 @@ public class MainViewModelTests
 		Assert.False(viewModel.IsLoadingArticles);
 		Assert.False(viewModel.IsRefreshingArticles);
 	}
+
+	//intial archive read fails, network retrieval still runs, and retrieved article is saved and displayed
+	[Fact]
+	public async Task SelectSubscription_WhenInitialArchiveReadFails_StillRetrievesFeed()
+	{
+		var subscription = new FeedSubscription
+		{
+			Url = "https://example.com/feed.xml",
+			Title = "Example Feed"
+		};
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+		subscriptionRepository.Subscriptions.Add(subscription);
+
+		var subscriptionService =
+				new SubscriptionService(subscriptionRepository);
+
+		var feedReader = new FakeFeedReader
+		{
+			Items = new List<FeedItem>
+				{
+						new()
+						{
+								Id = "article-1",
+								Title = "Retrieved Article",
+								Link = "https://example.com/article-1"
+						}
+				}
+		};
+
+		var articleRepository = new FakeArticleRepository
+		{
+			FailFirstGet = true
+		};
+
+		var feedService = new FeedService(
+				subscriptionService,
+				feedReader,
+				articleRepository);
+
+		var articleStateService = new ArticleStateService(
+				new FakeArticleStateRepository());
+
+		var viewModel = new MainViewModel(
+				subscriptionService,
+				feedService,
+				articleStateService);
+
+		var subscriptionViewModel =
+				new SubscriptionViewModel(subscription);
+
+		viewModel.Subscriptions.Add(subscriptionViewModel);
+		viewModel.SelectedSubscription = subscriptionViewModel;
+
+		Assert.NotNull(viewModel.InitialArticleLoadTask);
+		await viewModel.InitialArticleLoadTask;
+
+		Assert.True(articleRepository.GetCount >= 2);
+
+		ArticleViewModel article = Assert.Single(viewModel.Articles);
+
+		Assert.Equal("Retrieved Article", article.Item.Title);
+		Assert.Null(viewModel.ArticleLoadError);
+
+		Assert.NotNull(subscription.LastRetrieved);
+		Assert.False(viewModel.IsLoadingArticles);
+	}
 }

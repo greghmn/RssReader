@@ -35,9 +35,7 @@ public partial class App : Application
 
 		base.OnFrameworkInitializationCompleted();
 	}
-	private async Task StartApplicationAsync(
-		IClassicDesktopStyleApplicationLifetime desktop,
-		string databasePath)
+	private async Task StartApplicationAsync(IClassicDesktopStyleApplicationLifetime desktop, string databasePath)
 	{
 		try
 		{
@@ -78,7 +76,7 @@ public partial class App : Application
 					feedService,
 					articleStateService,
 					subscriptionImportService,
-					new OpmlService());
+					opmlService);
 
 			await mainViewModel.LoadSubscriptionsAsync();
 
@@ -89,9 +87,10 @@ public partial class App : Application
 		}
 		catch (Exception ex)
 		{
-			Console.Error.WriteLine($"Application startup failed: {ex}");
+			Console.Error.WriteLine(
+					$"Application startup failed: {ex}");
 
-			desktop.Shutdown(-1);
+			desktop.MainWindow = new StartupErrorWindow();
 		}
 	}
 }

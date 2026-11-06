@@ -1,0 +1,30 @@
+
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="RssReader.App.Views.StartupErrorWindow"
+        Title="RSS Reader - Startup Error"
+        Width="450"
+        SizeToContent="Height"
+        MinHeight="180"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen">
+
+  <StackPanel Margin="20"
+              Spacing="16">
+
+    <TextBlock Text="Unable to start RSS Reader"
+               FontSize="18"
+               FontWeight="Bold" />
+
+    <TextBlock Text="The application could not initialize its local database. Your existing data has not been intentionally deleted or reset."
+               TextWrapping="Wrap" />
+
+    <TextBlock Text="Check that the application's data directory is accessible and that sufficient disk space is available."
+               TextWrapping="Wrap" />
+
+    <Button Content="Close"
+            HorizontalAlignment="Right"
+            Click="CloseButton_Click" />
+
+  </StackPanel>
+</Window>

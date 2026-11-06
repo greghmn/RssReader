@@ -379,8 +379,17 @@ public partial class MainViewModel : ViewModelBase
 			Console.Error.WriteLine(
 					$"Failed to save articles from {subscription.Url}: {ex}");
 
-			ArticleLoadError =
-					"Unable to save retrieved articles. Your previously saved articles are still available.";
+			ArticleLoadError = ex.Operation switch
+			{
+				ArticleStorageOperation.Read =>
+						"Unable to read saved articles from local storage.",
+
+				ArticleStorageOperation.Write =>
+						"Unable to save retrieved articles. Your previously saved articles are still available.",
+
+				_ =>
+						"Unable to access local article storage."
+			};
 		}
 		catch (Exception ex)
 		{

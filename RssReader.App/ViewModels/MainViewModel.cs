@@ -94,13 +94,13 @@ public partial class MainViewModel : ViewModelBase
 
 	private CancellationTokenSource? _articleLoadCancellation;
 
-	private CancellationToken BeginArticleLoad()
+	private CancellationTokenSource BeginArticleLoad()
 	{
 		_articleLoadCancellation?.Cancel();
 
 		_articleLoadCancellation = new CancellationTokenSource();
 
-		return _articleLoadCancellation.Token;
+		return _articleLoadCancellation;
 	}
 
 	private void CancelArticleLoad()
@@ -282,7 +282,8 @@ public partial class MainViewModel : ViewModelBase
 
 	private async Task LoadArticlesSafelyAsync(FeedSubscription subscription, bool isRefresh = false)
 	{
-		CancellationToken cancellationToken = BeginArticleLoad();
+		CancellationTokenSource cancellationSource = BeginArticleLoad();
+		CancellationToken cancellationToken = cancellationSource.Token;
 
 		int requestId = ++_articleLoadRequestId;
 
@@ -509,6 +510,15 @@ public partial class MainViewModel : ViewModelBase
 				IsLoadingArticles = false;
 				IsRefreshingArticles = false;
 			}
+
+			if (ReferenceEquals(
+							_articleLoadCancellation,
+							cancellationSource))
+			{
+				_articleLoadCancellation = null;
+			}
+
+			cancellationSource.Dispose();
 		}
 	}
 

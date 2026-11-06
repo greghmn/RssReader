@@ -39,7 +39,8 @@ public class OpmlService
 			throw new FormatException("Invalid OPML document.");
 		}
 
-		return body.Elements("outline")
+		return body.Descendants("outline")
+				.Where(outline => outline.Attribute("xmlUrl") is not null)
 				.Select(outline => new FeedSubscription
 				{
 					Url = (string?)outline.Attribute("xmlUrl") ?? "",

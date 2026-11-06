@@ -5,6 +5,20 @@ namespace RssReader.Core.Tests;
 
 public class FeedServiceTests
 {
+	private sealed class RecordingFeedReader : IFeedReader
+	{
+		public CancellationToken ReceivedToken { get; private set; }
+
+		public Task<List<FeedItem>> ReadAsync(
+				string feedUrl,
+				CancellationToken cancellationToken = default)
+		{
+			ReceivedToken = cancellationToken;
+
+			return Task.FromResult(new List<FeedItem>());
+		}
+	}
+
 	[Fact]
 	public async Task GetItemsAsync_UnsubscribedUrl_ThrowsException()
 	{
@@ -213,5 +227,41 @@ public class FeedServiceTests
 
 		Assert.Contains(storedArticles,
 				article => article.Id == "newer-article");
+	}
+
+	[Fact]
+	public async Task GetItemsAsync_ForwardsCancellationTokenToFeedReader()
+	{
+		var subscriptionRepository = new FakeSubscriptionRepository();
+
+		var subscriptionService =
+				new SubscriptionService(subscriptionRepository);
+
+		const string feedUrl = "https://example.com/feed.xml";
+
+		await subscriptionService.AddAsync(new FeedSubscription
+		{
+			Url = feedUrl,
+			Title = "Test Feed"
+		});
+
+		var feedReader = new RecordingFeedReader();
+		var articleRepository = new FakeArticleRepository();
+
+		var feedService = new FeedService(
+				subscriptionService,
+				feedReader,
+				articleRepository);
+
+		using var cancellationSource =
+				new CancellationTokenSource();
+
+		await feedService.GetItemsAsync(
+				feedUrl,
+				cancellationSource.Token);
+
+		Assert.Equal(
+				cancellationSource.Token,
+				feedReader.ReceivedToken);
 	}
 }

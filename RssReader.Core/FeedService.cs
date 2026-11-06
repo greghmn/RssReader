@@ -18,7 +18,9 @@ public class FeedService
 	}
 
 
-	public async Task<List<FeedItem>> GetItemsAsync(string feedUrl)
+	public async Task<List<FeedItem>> GetItemsAsync(
+			string feedUrl,
+			CancellationToken cancellationToken = default)
 	{
 		bool isSubscribed =
 				await _subscriptionService.IsSubscribedAsync(feedUrl);
@@ -30,7 +32,9 @@ public class FeedService
 		}
 
 		List<FeedItem> articles =
-				await _feedReader.ReadAsync(feedUrl);
+				await _feedReader.ReadAsync(
+						feedUrl,
+						cancellationToken);
 
 		try
 		{

@@ -48,7 +48,7 @@ public class FeedReader : IFeedReader
 
         List<FeedItem> items = FeedParser.Parse(document, finalFeedUri);
 
-        //note: FeedItem's properties have init, not set; the immutabiliry removes any potential shared state issue, but it might be computationally costly to copy like so. We'll see/figure out a workaround if necessary.
+        //note: FeedItem's properties have init, not set; the immutability removes any potential shared state issue, but it might be computationally costly to copy like so. We'll see/figure out a workaround if necessary.
 
         return items
     .Select(item => new FeedItem

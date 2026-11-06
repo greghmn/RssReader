@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 
@@ -90,6 +91,22 @@ public partial class MainViewModel : ViewModelBase
 	private readonly SubscriptionImportService _subscriptionImportService;
 
 	private int _articleLoadRequestId;
+
+	private CancellationTokenSource? _articleLoadCancellation;
+
+	private CancellationToken BeginArticleLoad()
+	{
+		_articleLoadCancellation?.Cancel();
+
+		_articleLoadCancellation = new CancellationTokenSource();
+
+		return _articleLoadCancellation.Token;
+	}
+
+	private void CancelArticleLoad()
+	{
+		_articleLoadCancellation?.Cancel();
+	}
 
 	internal Task? InitialArticleLoadTask { get; private set; }
 
@@ -230,6 +247,8 @@ public partial class MainViewModel : ViewModelBase
 		}
 		else
 		{
+			CancelArticleLoad();
+
 			++_articleLoadRequestId;
 			Articles.Clear();
 			ArticleLoadError = null;
@@ -260,8 +279,11 @@ public partial class MainViewModel : ViewModelBase
 		return articles;
 	}
 
+
 	private async Task LoadArticlesSafelyAsync(FeedSubscription subscription, bool isRefresh = false)
 	{
+		CancellationToken cancellationToken = BeginArticleLoad();
+
 		int requestId = ++_articleLoadRequestId;
 
 		string? selectedArticleId = isRefresh
@@ -291,7 +313,7 @@ public partial class MainViewModel : ViewModelBase
 				try
 				{
 					List<ArticleViewModel> storedArticles =
-							await GetStoredArticleViewModelsAsync(subscription.Url);
+									await GetStoredArticleViewModelsAsync(subscription.Url);
 
 					if (requestId != _articleLoadRequestId)
 					{
@@ -306,13 +328,13 @@ public partial class MainViewModel : ViewModelBase
 					HasNoArticles = Articles.Count == 0;
 
 					SubscriptionViewModel? selectedSubscription =
-							Subscriptions.FirstOrDefault(
-									s => s.Item.Url == subscription.Url);
+									Subscriptions.FirstOrDefault(
+													s => s.Item.Url == subscription.Url);
 
 					if (selectedSubscription is not null)
 					{
 						selectedSubscription.UnreadCount =
-								storedArticles.Count(article => !article.IsRead);
+										storedArticles.Count(article => !article.IsRead);
 					}
 				}
 				catch (ArticleStorageException ex)
@@ -323,15 +345,14 @@ public partial class MainViewModel : ViewModelBase
 					}
 
 					Console.Error.WriteLine(
-							$"Unable to read cached articles from {subscription.Url}: {ex}");
-				}
-				{
-
+									$"Unable to read cached articles from {subscription.Url}: {ex}");
 				}
 			}
 
 			List<FeedItem> retrievedArticles =
-					await _feedService.GetItemsAsync(subscription.Url);
+							await _feedService.GetItemsAsync(
+											subscription.Url,
+											cancellationToken);
 
 			if (requestId != _articleLoadRequestId)
 			{
@@ -345,7 +366,7 @@ public partial class MainViewModel : ViewModelBase
 				articles = await _feedService.GetStoredItemsAsync(subscription.Url);
 			}
 			catch (ArticleStorageException ex)
-					when (ex.Operation == ArticleStorageOperation.Read && !isRefresh)
+							when (ex.Operation == ArticleStorageOperation.Read && !isRefresh)
 			{
 				if (requestId != _articleLoadRequestId)
 				{
@@ -353,12 +374,12 @@ public partial class MainViewModel : ViewModelBase
 				}
 
 				Console.Error.WriteLine(
-						$"Unable to read saved articles from {subscription.Url}: {ex}");
+								$"Unable to read saved articles from {subscription.Url}: {ex}");
 
 				articles = retrievedArticles;
 
 				ArticleLoadError =
-						"Unable to read saved articles from local storage. Showing recently retrieved articles instead.";
+								"Unable to read saved articles from local storage. Showing recently retrieved articles instead.";
 			}
 
 			if (requestId != _articleLoadRequestId)
@@ -401,11 +422,11 @@ public partial class MainViewModel : ViewModelBase
 			}
 
 			SelectedArticle = loadedArticles.FirstOrDefault(
-				article =>
-								!string.IsNullOrEmpty(selectedArticleId)
-								&& article.Item.Id == selectedArticleId
-								|| !string.IsNullOrEmpty(selectedArticleLink)
-								&& article.Item.Link == selectedArticleLink);
+							article =>
+											(!string.IsNullOrEmpty(selectedArticleId)
+											&& article.Item.Id == selectedArticleId)
+											|| (!string.IsNullOrEmpty(selectedArticleLink)
+											&& article.Item.Link == selectedArticleLink));
 
 			SubscriptionViewModel? subscriptionViewModel =
 							Subscriptions.FirstOrDefault(
@@ -423,9 +444,9 @@ public partial class MainViewModel : ViewModelBase
 				DateTimeOffset lastRetrieved = DateTimeOffset.UtcNow;
 
 				bool timestampUpdated =
-						await _subscriptionService.UpdateLastRetrievedAsync(
-								subscription.Url,
-								lastRetrieved);
+								await _subscriptionService.UpdateLastRetrievedAsync(
+												subscription.Url,
+												lastRetrieved);
 
 				if (timestampUpdated)
 				{
@@ -437,9 +458,14 @@ public partial class MainViewModel : ViewModelBase
 				else
 				{
 					Console.Error.WriteLine(
-							$"Unable to update retrieval timestamp for {subscription.Url}");
+									$"Unable to update retrieval timestamp for {subscription.Url}");
 				}
 			}
+		}
+		catch (OperationCanceledException)
+						when (cancellationToken.IsCancellationRequested)
+		{
+			// An obsolete request was canceled intentionally.
 		}
 		catch (ArticleStorageException ex)
 		{
@@ -449,18 +475,18 @@ public partial class MainViewModel : ViewModelBase
 			}
 
 			Console.Error.WriteLine(
-					$"Failed to save articles from {subscription.Url}: {ex}");
+							$"Failed to save articles from {subscription.Url}: {ex}");
 
 			ArticleLoadError = ex.Operation switch
 			{
 				ArticleStorageOperation.Read =>
-						"Unable to read saved articles from local storage.",
+								"Unable to read saved articles from local storage.",
 
 				ArticleStorageOperation.Write =>
-						"Unable to save retrieved articles. Your previously saved articles are still available.",
+								"Unable to save retrieved articles. Your previously saved articles are still available.",
 
 				_ =>
-						"Unable to access local article storage."
+								"Unable to access local article storage."
 			};
 		}
 		catch (Exception ex)
@@ -471,10 +497,10 @@ public partial class MainViewModel : ViewModelBase
 			}
 
 			Console.Error.WriteLine(
-					$"Failed to load articles from {subscription.Url}: {ex}");
+							$"Failed to load articles from {subscription.Url}: {ex}");
 
 			ArticleLoadError =
-					"Unable to load articles. Check your connection and try again.";
+							"Unable to load articles. Check your connection and try again.";
 		}
 		finally
 		{
@@ -485,6 +511,7 @@ public partial class MainViewModel : ViewModelBase
 			}
 		}
 	}
+
 
 	partial void OnSelectedArticleChanged(ArticleViewModel? value)
 	{
@@ -745,4 +772,5 @@ public partial class MainViewModel : ViewModelBase
 
 		return _opmlService.Export(subscriptions);
 	}
+
 }

@@ -1199,4 +1199,98 @@ public class MainViewModelTests
 		Assert.False(viewModel.IsLoadingArticles);
 		Assert.False(viewModel.IsRefreshingArticles);
 	}
+
+	[Fact]
+	public async Task RefreshSelectedFeed_WhenArchiveReadFails_PreservesExistingArticles()
+	{
+		var subscription = CreateSubscription();
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+		subscriptionRepository.Subscriptions.Add(subscription);
+
+		var subscriptionService =
+				new SubscriptionService(subscriptionRepository);
+
+		var feedReader = new FakeFeedReader
+		{
+			Items = new List<FeedItem>
+				{
+						new()
+						{
+								Id = "original-article",
+								Title = "Original Article",
+								Link = "https://example.com/original"
+						}
+				}
+		};
+
+		var articleRepository = new FakeArticleRepository();
+
+		var feedService = new FeedService(
+				subscriptionService,
+				feedReader,
+				articleRepository);
+
+		var articleStateService = new ArticleStateService(
+				new FakeArticleStateRepository());
+
+		var viewModel = new MainViewModel(
+				subscriptionService,
+				feedService,
+				articleStateService);
+
+		var subscriptionViewModel =
+				new SubscriptionViewModel(subscription);
+
+		viewModel.Subscriptions.Add(subscriptionViewModel);
+		viewModel.SelectedSubscription = subscriptionViewModel;
+
+		Assert.NotNull(viewModel.InitialArticleLoadTask);
+		await viewModel.InitialArticleLoadTask;
+
+		ArticleViewModel originalArticle = viewModel.Articles.Single();
+		viewModel.SelectedArticle = originalArticle;
+
+		DateTimeOffset? originalTimestamp = subscription.LastRetrieved;
+		int originalUpdateCount =
+				subscriptionRepository.UpdateLastRetrievedCount;
+
+		Assert.NotNull(originalTimestamp);
+
+		// The network now returns another article.
+		feedReader.Items = new List<FeedItem>
+		{
+				new()
+				{
+						Id = "new-article",
+						Title = "New Article",
+						Link = "https://example.com/new"
+				}
+		};
+
+		// Simulate failure when reading the saved archive.
+		articleRepository.GetException =
+				new InvalidOperationException("Simulated archive read failure");
+
+		await viewModel.RefreshSelectedFeedCommand.ExecuteAsync(null);
+
+		// Existing articles and selection must survive.
+		Assert.Single(viewModel.Articles);
+		Assert.Same(originalArticle, viewModel.Articles.Single());
+		Assert.Same(originalArticle, viewModel.SelectedArticle);
+
+		// The failure must be visible.
+		Assert.NotNull(viewModel.ArticleLoadError);
+
+		// No completed refresh should be recorded.
+		Assert.Equal(
+				originalUpdateCount,
+				subscriptionRepository.UpdateLastRetrievedCount);
+
+		Assert.Equal(originalTimestamp, subscription.LastRetrieved);
+		Assert.Equal(originalTimestamp, subscriptionViewModel.LastRetrieved);
+
+		Assert.False(viewModel.IsLoadingArticles);
+		Assert.False(viewModel.IsRefreshingArticles);
+	}
 }

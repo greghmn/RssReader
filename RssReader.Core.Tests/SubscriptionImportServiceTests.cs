@@ -334,8 +334,16 @@ public class SubscriptionImportServiceTests
 			Assert.Empty(result.NotAttempted);
 			Assert.Empty(result.Issues);
 
+			var reopenedRepository =
+					new SqliteSubscriptionRepository(destinationPath);
+
+			await reopenedRepository.InitializeAsync();
+
+			var reopenedService =
+					new SubscriptionService(reopenedRepository);
+
 			List<FeedSubscription> imported =
-					await destinationService.GetAllAsync();
+					await reopenedService.GetAllAsync();
 
 			Assert.Equal(2, imported.Count);
 

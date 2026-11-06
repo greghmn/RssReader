@@ -1187,7 +1187,7 @@ public class MainViewModelTests
 
 		// The failed operation must be reported.
 		Assert.Equal(
-				"Unable to load articles. Check your connection and try again.",
+				"Unable to save retrieved articles. Your previously saved articles are still available.",
 				viewModel.ArticleLoadError);
 
 		// A failed save must not count as a successful retrieval.
@@ -1195,7 +1195,7 @@ public class MainViewModelTests
 		Assert.Equal(originalTimestamp, subscription.LastRetrieved);
 		Assert.Equal(originalTimestamp, subscriptionViewModel.LastRetrieved);
 
-		// Loading indicators must return to their idle state.
+		// Loading indicators must return to their irdle state.
 		Assert.False(viewModel.IsLoadingArticles);
 		Assert.False(viewModel.IsRefreshingArticles);
 	}

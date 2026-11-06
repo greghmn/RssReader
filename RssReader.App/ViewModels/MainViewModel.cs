@@ -772,5 +772,4 @@ public partial class MainViewModel : ViewModelBase
 
 		return _opmlService.Export(subscriptions);
 	}
-
 }

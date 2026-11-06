@@ -274,4 +274,38 @@ public class OpmlServiceTests
 		Assert.ThrowsAny<Exception>(
 				() => service.Import(xml));
 	}
+
+	[Fact]
+	public void ImportWithIssues_WithInvalidUrl_ReportsIssueAndPreservesValidFeed()
+	{
+		var service = new OpmlService();
+
+		const string xml = """
+        <opml version="2.0">
+          <body>
+            <outline text="Valid Feed"
+                     xmlUrl="https://example.com/feed.xml" />
+            <outline text="Broken Feed"
+                     xmlUrl="not-a-url" />
+          </body>
+        </opml>
+        """;
+
+		OpmlImportResult result = service.ImportWithIssues(xml);
+
+		FeedSubscription subscription =
+				Assert.Single(result.Subscriptions);
+
+		Assert.Equal(
+				"https://example.com/feed.xml",
+				subscription.Url);
+
+		Assert.Equal("Valid Feed", subscription.Title);
+
+		OpmlImportIssue issue = Assert.Single(result.Issues);
+
+		Assert.Equal("not-a-url", issue.Url);
+		Assert.Equal("Broken Feed", issue.Title);
+		Assert.Equal("Invalid feed URL.", issue.Reason);
+	}
 }

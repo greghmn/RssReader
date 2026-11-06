@@ -56,4 +56,38 @@ public class OpmlService
 				})
 				.ToList();
 	}
+
+	public OpmlImportResult ImportWithIssues(string xml)
+	{
+		List<FeedSubscription> subscriptions = Import(xml);
+
+		var result = new OpmlImportResult();
+
+		foreach (FeedSubscription subscription in subscriptions)
+		{
+			bool isValidUrl =
+					Uri.TryCreate(
+							subscription.Url,
+							UriKind.Absolute,
+							out Uri? uri)
+					&& (uri.Scheme == Uri.UriSchemeHttp
+							|| uri.Scheme == Uri.UriSchemeHttps);
+
+			if (!isValidUrl)
+			{
+				result.Issues.Add(new OpmlImportIssue
+				{
+					Url = subscription.Url,
+					Title = subscription.Title,
+					Reason = "Invalid feed URL."
+				});
+
+				continue;
+			}
+
+			result.Subscriptions.Add(subscription);
+		}
+
+		return result;
+	}
 }

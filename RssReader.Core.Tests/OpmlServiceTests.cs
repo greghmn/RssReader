@@ -100,4 +100,24 @@ public class OpmlServiceTests
 				outlines.Select(outline =>
 						(string?)outline.Attribute("xmlUrl")));
 	}
+
+	[Fact]
+	public void Export_WithNoSubscriptions_ProducesEmptyOpmlBody()
+	{
+		var service = new OpmlService();
+
+		string xml = service.Export(Array.Empty<FeedSubscription>());
+
+		XDocument document = XDocument.Parse(xml);
+
+		Assert.Equal("opml", document.Root?.Name.LocalName);
+		Assert.Equal(
+				"2.0",
+				(string?)document.Root?.Attribute("version"));
+
+		XElement? body = document.Root?.Element("body");
+
+		Assert.NotNull(body);
+		Assert.Empty(body.Elements("outline"));
+	}
 }

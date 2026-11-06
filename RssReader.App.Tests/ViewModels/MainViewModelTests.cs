@@ -1425,11 +1425,14 @@ public class MainViewModelTests
 
 		// The archive failure must be reported accurately.
 		Assert.Equal(
-				"Unable to read saved articles from local storage.",
+				"Unable to read saved articles from local storage. Showing recently retrieved articles instead.",
 				viewModel.ArticleLoadError);
 
 		// The UI should remain in a consistent state.
-		Assert.Empty(viewModel.Articles);
+		ArticleViewModel article = Assert.Single(viewModel.Articles);
+
+		Assert.Equal("article-1", article.Item.Id);
+		Assert.Equal("Retrieved Article", article.Item.Title);
 		Assert.False(viewModel.IsLoadingArticles);
 		Assert.False(viewModel.IsRefreshingArticles);
 

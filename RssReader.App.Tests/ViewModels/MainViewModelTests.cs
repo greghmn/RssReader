@@ -1274,6 +1274,22 @@ public class MainViewModelTests
 
 		await viewModel.RefreshSelectedFeedCommand.ExecuteAsync(null);
 
+		// The newly retrieved article was saved successfully.
+		articleRepository.GetException = null;
+
+		List<FeedItem> storedArticles =
+				await articleRepository.GetByFeedAsync(subscription.Url);
+
+		Assert.Equal(2, storedArticles.Count);
+
+		Assert.Contains(
+				storedArticles,
+				article => article.Id == "original-article");
+
+		Assert.Contains(
+				storedArticles,
+				article => article.Id == "new-article");
+
 		// Existing articles and selection must survive.
 		Assert.Single(viewModel.Articles);
 		Assert.Same(originalArticle, viewModel.Articles.Single());

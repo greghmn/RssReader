@@ -1362,4 +1362,81 @@ public class MainViewModelTests
 		Assert.NotNull(subscription.LastRetrieved);
 		Assert.False(viewModel.IsLoadingArticles);
 	}
+
+	//scenario: archive is persistently unreadable
+	[Fact]
+	public async Task SelectSubscription_WhenArchiveRemainsUnreadable_ReportsStorageError()
+	{
+		var subscription = new FeedSubscription
+		{
+			Url = "https://example.com/feed.xml",
+			Title = "Example Feed"
+		};
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+		subscriptionRepository.Subscriptions.Add(subscription);
+
+		var subscriptionService =
+				new SubscriptionService(subscriptionRepository);
+
+		var feedReader = new FakeFeedReader
+		{
+			Items = new List<FeedItem>
+				{
+						new()
+						{
+								Id = "article-1",
+								Title = "Retrieved Article",
+								Link = "https://example.com/article-1"
+						}
+				}
+		};
+
+		var articleRepository = new FakeArticleRepository
+		{
+			GetException = new InvalidOperationException(
+						"Simulated persistent archive read failure")
+		};
+
+		var feedService = new FeedService(
+				subscriptionService,
+				feedReader,
+				articleRepository);
+
+		var articleStateService = new ArticleStateService(
+				new FakeArticleStateRepository());
+
+		var viewModel = new MainViewModel(
+				subscriptionService,
+				feedService,
+				articleStateService);
+
+		var subscriptionViewModel =
+				new SubscriptionViewModel(subscription);
+
+		viewModel.Subscriptions.Add(subscriptionViewModel);
+		viewModel.SelectedSubscription = subscriptionViewModel;
+
+		Assert.NotNull(viewModel.InitialArticleLoadTask);
+		await viewModel.InitialArticleLoadTask;
+
+		// Both archive reads should have been attempted.
+		Assert.Equal(2, articleRepository.GetCount);
+
+		// The archive failure must be reported accurately.
+		Assert.Equal(
+				"Unable to read saved articles from local storage.",
+				viewModel.ArticleLoadError);
+
+		// The UI should remain in a consistent state.
+		Assert.Empty(viewModel.Articles);
+		Assert.False(viewModel.IsLoadingArticles);
+		Assert.False(viewModel.IsRefreshingArticles);
+
+		// The full loading workflow did not complete.
+		Assert.Null(subscription.LastRetrieved);
+		Assert.Equal(
+				0,
+				subscriptionRepository.UpdateLastRetrievedCount);
+	}
 }

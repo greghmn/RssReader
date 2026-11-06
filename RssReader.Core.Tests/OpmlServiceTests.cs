@@ -192,4 +192,40 @@ public class OpmlServiceTests
 				"Example Feed",
 				subscription.Title);
 	}
+
+	[Fact]
+	public void Import_WithNestedFolders_ReturnsOnlyFeedSubscriptions()
+	{
+		var service = new OpmlService();
+
+		const string xml = """
+        <opml version="2.0">
+          <body>
+            <outline text="Technology">
+              <outline text="Programming">
+                <outline text="C# Weekly"
+                         xmlUrl="https://example.com/csharp.xml" />
+              </outline>
+              <outline text="Security News"
+                       xmlUrl="https://example.com/security.xml" />
+            </outline>
+            <outline text="Science Feed"
+                     xmlUrl="https://example.com/science.xml" />
+          </body>
+        </opml>
+        """;
+
+		List<FeedSubscription> subscriptions = service.Import(xml);
+
+		Assert.Equal(3, subscriptions.Count);
+
+		Assert.Equal(
+				new[]
+				{
+						"https://example.com/csharp.xml",
+						"https://example.com/security.xml",
+						"https://example.com/science.xml"
+				},
+				subscriptions.Select(subscription => subscription.Url));
+	}
 }

@@ -40,6 +40,7 @@ public class FeedService
 		{
 			throw new ArticleStorageException(
 					"Unable to save retrieved articles.",
+					ArticleStorageOperation.Write,
 					ex);
 		}
 
@@ -57,6 +58,7 @@ public class FeedService
 		{
 			throw new ArticleStorageException(
 					"Unable to read saved articles.",
+					ArticleStorageOperation.Read,
 					ex);
 		}
 	}

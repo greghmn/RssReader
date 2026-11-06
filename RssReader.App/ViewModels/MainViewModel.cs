@@ -297,7 +297,8 @@ public partial class MainViewModel : ViewModelBase
 				}
 			}
 
-			await _feedService.GetItemsAsync(subscription.Url);
+			List<FeedItem> retrievedArticles =
+					await _feedService.GetItemsAsync(subscription.Url);
 
 			if (requestId != _articleLoadRequestId)
 			{

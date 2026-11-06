@@ -1587,4 +1587,158 @@ public class MainViewModelTests
 
 		Assert.Same(article, Assert.Single(viewModel.Articles));
 	}
+
+	[Fact]
+	public async Task ImportOpmlAsync_WhenSuccessful_ReportsAddedSubscriptions()
+	{
+		var subscriptionRepository = new FakeSubscriptionRepository();
+
+		var subscriptionService =
+				new SubscriptionService(subscriptionRepository);
+
+		var feedService = new FeedService(
+				subscriptionService,
+				new FakeFeedReader(),
+				new FakeArticleRepository());
+
+		var articleStateService = new ArticleStateService(
+				new FakeArticleStateRepository());
+
+		var subscriptionImportService = new SubscriptionImportService(
+				new OpmlService(),
+				subscriptionService);
+
+		var viewModel = new MainViewModel(
+				subscriptionService,
+				feedService,
+				articleStateService,
+				subscriptionImportService);
+
+		const string xml = """
+        <opml version="2.0">
+          <body>
+            <outline text="First Feed"
+                     xmlUrl="https://example.com/first.xml" />
+            <outline text="Second Feed"
+                     xmlUrl="https://example.com/second.xml" />
+          </body>
+        </opml>
+        """;
+
+		await viewModel.ImportOpmlCommand.ExecuteAsync(xml);
+
+		Assert.Equal(
+				"Imported 2 subscriptions.",
+				viewModel.OpmlImportStatus);
+
+		Assert.Null(viewModel.OpmlImportError);
+		Assert.False(viewModel.IsImportingOpml);
+
+		Assert.Equal(2, viewModel.Subscriptions.Count);
+		Assert.Equal(2, subscriptionRepository.Subscriptions.Count);
+	}
+
+	[Fact]
+	public async Task ImportOpmlAsync_WhenXmlMalformed_ReportsError()
+	{
+		var subscriptionRepository = new FakeSubscriptionRepository();
+
+		var subscriptionService =
+				new SubscriptionService(subscriptionRepository);
+
+		var feedService = new FeedService(
+				subscriptionService,
+				new FakeFeedReader(),
+				new FakeArticleRepository());
+
+		var articleStateService = new ArticleStateService(
+				new FakeArticleStateRepository());
+
+		var subscriptionImportService = new SubscriptionImportService(
+				new OpmlService(),
+				subscriptionService);
+
+		var viewModel = new MainViewModel(
+				subscriptionService,
+				feedService,
+				articleStateService,
+				subscriptionImportService);
+
+		const string xml = """
+    <opml version="2.0">
+      <body>
+        <outline text="Broken Feed"
+                 xmlUrl="https://example.com/feed.xml">
+      </body>
+    </opml>
+    """;
+
+		await viewModel.ImportOpmlCommand.ExecuteAsync(xml);
+
+		Assert.Null(viewModel.OpmlImportStatus);
+		Assert.NotNull(viewModel.OpmlImportError);
+		Assert.Contains("OPML", viewModel.OpmlImportError);
+		Assert.False(viewModel.IsImportingOpml);
+
+		Assert.Empty(viewModel.Subscriptions);
+		Assert.Empty(subscriptionRepository.Subscriptions);
+	}
+
+	[Fact]
+	public async Task ImportOpmlAsync_WithMixedEntries_ReportsSummary()
+	{
+		var subscriptionRepository = new FakeSubscriptionRepository();
+
+		var subscriptionService =
+				new SubscriptionService(subscriptionRepository);
+
+		await subscriptionService.AddAsync(new FeedSubscription
+		{
+			Url = "https://example.com/existing.xml",
+			Title = "Existing Feed"
+		});
+
+		var feedService = new FeedService(
+				subscriptionService,
+				new FakeFeedReader(),
+				new FakeArticleRepository());
+
+		var articleStateService = new ArticleStateService(
+				new FakeArticleStateRepository());
+
+		var subscriptionImportService = new SubscriptionImportService(
+				new OpmlService(),
+				subscriptionService);
+
+		var viewModel = new MainViewModel(
+				subscriptionService,
+				feedService,
+				articleStateService,
+				subscriptionImportService);
+
+		const string xml = """
+        <opml version="2.0">
+          <body>
+            <outline text="New Feed"
+                     xmlUrl="https://example.com/new.xml" />
+            <outline text="Existing Feed"
+                     xmlUrl="https://example.com/existing.xml" />
+            <outline text="Invalid Feed"
+                     xmlUrl="not-a-url" />
+          </body>
+        </opml>
+        """;
+
+		await viewModel.ImportOpmlCommand.ExecuteAsync(xml);
+
+		Assert.Equal(
+				"Imported 1 subscription. Already subscribed: 1. Invalid entries: 1.",
+				viewModel.OpmlImportStatus);
+
+		Assert.Null(viewModel.OpmlImportError);
+		Assert.False(viewModel.IsImportingOpml);
+
+		Assert.Equal(2, viewModel.Subscriptions.Count);
+		Assert.Equal(2, subscriptionRepository.Subscriptions.Count);
+	}
 }

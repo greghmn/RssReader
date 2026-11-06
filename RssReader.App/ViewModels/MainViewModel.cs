@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace RssReader.App.ViewModels;
 
@@ -59,6 +60,15 @@ public partial class MainViewModel : ViewModelBase
 
 	[ObservableProperty]
 	public partial bool HasEmptyFeed { get; set; }
+
+	[ObservableProperty]
+	public partial bool IsImportingOpml { get; set; }
+
+	[ObservableProperty]
+	public partial string? OpmlImportStatus { get; set; }
+
+	[ObservableProperty]
+	public partial string? OpmlImportError { get; set; }
 
 	private readonly SubscriptionService _subscriptionService;
 
@@ -659,9 +669,60 @@ public partial class MainViewModel : ViewModelBase
 	[RelayCommand]
 	private async Task ImportOpmlAsync(string xml)
 	{
-		SubscriptionImportResult result =
-				await _subscriptionImportService.ImportAsync(xml);
+		IsImportingOpml = true;
+		OpmlImportStatus = null;
+		OpmlImportError = null;
 
-		await LoadSubscriptionsAsync();
+		try
+		{
+			SubscriptionImportResult result =
+					await _subscriptionImportService.ImportAsync(xml);
+
+			await LoadSubscriptionsAsync();
+
+			string subscriptionWord =
+					result.Added.Count == 1 ? "subscription" : "subscriptions";
+
+			OpmlImportStatus =
+					$"Imported {result.Added.Count} {subscriptionWord}.";
+
+			if (result.AlreadySubscribed.Count > 0)
+			{
+				OpmlImportStatus +=
+						$" Already subscribed: {result.AlreadySubscribed.Count}.";
+			}
+
+			if (result.Issues.Count > 0)
+			{
+				OpmlImportStatus +=
+						$" Invalid entries: {result.Issues.Count}.";
+			}
+
+			if (result.Failures.Count > 0)
+			{
+				OpmlImportStatus +=
+						$" Failed to save: {result.Failures.Count}.";
+			}
+
+			if (result.NotAttempted.Count > 0)
+			{
+				OpmlImportStatus +=
+						$" Not attempted: {result.NotAttempted.Count}.";
+			}
+		}
+		catch (XmlException)
+		{
+			OpmlImportError =
+					"Unable to import OPML: The file contains malformed XML.";
+		}
+		catch (FormatException)
+		{
+			OpmlImportError =
+					"Unable to import OPML: The file is not a valid OPML document.";
+		}
+		finally
+		{
+			IsImportingOpml = false;
+		}
 	}
 }

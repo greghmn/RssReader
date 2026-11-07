@@ -19,7 +19,7 @@
 
 
   <Grid RowDefinitions="Auto,*"
-        ColumnDefinitions="240*,5,600*">
+        ColumnDefinitions="160*,5,440*">
     <!-- Header -->
     <TextBlock Text="RSS Reader"
                FontSize="24"
@@ -32,7 +32,8 @@
     <Grid Grid.Row="1"
           Grid.Column="0"
           RowDefinitions="Auto,2*,3*,Auto"
-          Margin="16">
+          Margin="16"
+          MinWidth="140">
 
       <!-- Heading -->
       <TextBlock Grid.Row="0"
@@ -139,34 +140,71 @@
                         BasedOn="{StaticResource {x:Type ListBoxItem}}">
             <Setter Property="ContextMenu">
               <ContextMenu>
+                <MenuItem Header="Refresh"
+                          Click="RefreshSubscriptionMenuItem_Click" />
+
+                <MenuItem Header="Open feed URL"
+                          Click="OpenFeedUrlMenuItem_Click" />
+
+                <Separator />
+
                 <MenuItem Header="Rename"
                           Click="RenameSubscriptionMenuItem_Click" />
+
+                <MenuItem Header="Remove subscription"
+                          Click="RemoveSubscriptionMenuItem_Click" />
               </ContextMenu>
             </Setter>
           </ControlTheme>
         </ListBox.ItemContainerTheme>
 
         <ListBox.ItemTemplate>
-          <DataTemplate>
-            <StackPanel Spacing="4">
-              <Grid ColumnDefinitions="*,Auto">
 
-                <TextBlock Text="{Binding Title}"
-                           FontWeight="SemiBold"
-                           VerticalAlignment="Center" />
+<DataTemplate>
+  <StackPanel Spacing="4">
 
-                <TextBlock Grid.Column="1"
-                           Text="{Binding UnreadCount}"
-                           IsVisible="{Binding HasUnreadCount}"
-                           FontSize="11"
-                           FontWeight="Bold"
-                           Foreground="DodgerBlue"
-                           VerticalAlignment="Center"
-                           Margin="8,0,0,0" />
+    <!-- Subscription title and unread count -->
+    <Grid ColumnDefinitions="*,Auto">
 
-              </Grid>
-            </StackPanel>
-          </DataTemplate>
+      <TextBlock Text="{Binding Title}"
+                 FontWeight="SemiBold"
+                 VerticalAlignment="Center"
+                 TextTrimming="CharacterEllipsis" />
+
+      <TextBlock Grid.Column="1"
+                 Text="{Binding UnreadCount}"
+                 IsVisible="{Binding HasUnreadCount}"
+                 FontSize="11"
+                 FontWeight="Bold"
+                 Foreground="DodgerBlue"
+                 VerticalAlignment="Center"
+                 Margin="8,0,0,0" />
+
+    </Grid>
+
+    <!-- Background refresh progress -->
+    <TextBlock Text="Refreshing..."
+               IsVisible="{Binding IsRefreshing}"
+               FontSize="11"
+               Opacity="0.7" />
+
+    <!-- Background refresh success -->
+    <TextBlock Text="{Binding RefreshStatus}"
+               IsVisible="{Binding !!RefreshStatus}"
+               FontSize="11"
+               Opacity="0.7"
+               TextWrapping="Wrap" />
+
+    <!-- Background refresh failure -->
+    <TextBlock Text="{Binding RefreshError}"
+               IsVisible="{Binding !!RefreshError}"
+               FontSize="11"
+               Foreground="IndianRed"
+               TextWrapping="Wrap" />
+
+  </StackPanel>
+</DataTemplate>
+
         </ListBox.ItemTemplate>
       </ListBox>
 
@@ -179,7 +217,8 @@
                     HorizontalScrollBarVisibility="Auto"
                     IsVisible="{Binding HasSelectedSubscription}">
 
-        <StackPanel Spacing="6">
+        <StackPanel Spacing="6"
+                    Margin="0,0,0,18">
 
           <TextBlock Text="Subscription details"
                      FontWeight="SemiBold"
@@ -212,7 +251,8 @@
       <!-- Article list -->
       <Grid Grid.Column="0"
             RowDefinitions="Auto,Auto,Auto,Auto,*"
-            Margin="0,0,12,0">
+            Margin="0,0,12,0"
+            MinWidth="120">
 
         <!-- Header -->
         <Grid ColumnDefinitions="*,Auto">
@@ -321,7 +361,8 @@
       <Border Grid.Column="2"
               BorderBrush="#404040"
               BorderThickness="1,0,0,0"
-              Padding="12,0,0,0">
+              Padding="12,0,0,0"
+              MinWidth="160">
 
         <Grid>
           <!-- No subscription selected -->

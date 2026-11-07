@@ -39,6 +39,15 @@ public partial class SubscriptionViewModel : ViewModelBase
 	[ObservableProperty]
 	public partial string Title { get; set; } = "";
 
+	[ObservableProperty]
+	public partial bool IsRefreshing { get; set; }
+
+	[ObservableProperty]
+	public partial string? RefreshError { get; set; }
+
+	[ObservableProperty]
+	public partial string? RefreshStatus { get; set; }
+
 	public bool HasUnreadCount => UnreadCount.HasValue;
 
 	partial void OnUnreadCountChanged(int? value)

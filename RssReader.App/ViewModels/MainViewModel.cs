@@ -90,9 +90,14 @@ public partial class MainViewModel : ViewModelBase
 
 	private readonly SubscriptionImportService _subscriptionImportService;
 
+	private readonly HashSet<string> _backgroundRefreshes =
+				new(StringComparer.OrdinalIgnoreCase);
+
 	private int _articleLoadRequestId;
 
 	private CancellationTokenSource? _articleLoadCancellation;
+
+	private SubscriptionViewModel? _subscriptionBeingRemoved;
 
 	private CancellationTokenSource BeginArticleLoad()
 	{
@@ -259,8 +264,7 @@ public partial class MainViewModel : ViewModelBase
 	}
 
 	//introduce a cache-loading helper
-	private async Task<List<ArticleViewModel>> GetStoredArticleViewModelsAsync(
-		string feedUrl)
+	private async Task<List<ArticleViewModel>> GetStoredArticleViewModelsAsync(string feedUrl)
 	{
 		List<FeedItem> storedItems =
 				await _feedService.GetStoredItemsAsync(feedUrl);
@@ -541,6 +545,7 @@ public partial class MainViewModel : ViewModelBase
 
 		IsRemovingSubscription = true;
 		SubscriptionOperationError = null;
+		_subscriptionBeingRemoved = subscription;
 
 
 		try
@@ -585,6 +590,7 @@ public partial class MainViewModel : ViewModelBase
 		finally
 		{
 			IsRemovingSubscription = false;
+			_subscriptionBeingRemoved = null;
 		}
 	}
 
@@ -657,6 +663,82 @@ public partial class MainViewModel : ViewModelBase
 				SelectedSubscription.Item,
 				isRefresh: true);
 	}
+
+
+	public async Task RefreshSubscriptionInBackgroundAsync(
+					SubscriptionViewModel subscription)
+	{
+		string feedUrl = subscription.Item.Url;
+
+		if (!_backgroundRefreshes.Add(feedUrl))
+		{
+			return;
+		}
+
+		subscription.IsRefreshing = true;
+		subscription.RefreshStatus = null;
+		subscription.RefreshError = null;
+
+		try
+		{
+			await _feedService.GetItemsAsync(feedUrl);
+
+			if (!Subscriptions.Contains(subscription)
+							|| ReferenceEquals(_subscriptionBeingRemoved, subscription))
+			{
+				return;
+			}
+
+			List<ArticleViewModel> storedArticles =
+				await GetStoredArticleViewModelsAsync(feedUrl);
+
+			if (!Subscriptions.Contains(subscription)
+				|| ReferenceEquals(_subscriptionBeingRemoved, subscription))
+			{
+				return;
+			}
+
+			subscription.UnreadCount =
+							storedArticles.Count(article => article.IsUnread);
+
+			DateTimeOffset lastRetrieved = DateTimeOffset.UtcNow;
+
+			bool updated =
+							await _subscriptionService.UpdateLastRetrievedAsync(
+											feedUrl,
+											lastRetrieved);
+
+			if (!updated)
+			{
+				return;
+			}
+
+			if (!Subscriptions.Contains(subscription)
+							|| ReferenceEquals(_subscriptionBeingRemoved, subscription))
+			{
+				return;
+			}
+
+			subscription.LastRetrieved = lastRetrieved;
+
+			subscription.RefreshStatus =
+							"Refreshed successfully.";
+		}
+		catch (Exception ex)
+		{
+			Console.Error.WriteLine(
+							$"Background refresh failed for {feedUrl}: {ex}");
+
+			subscription.RefreshError =
+							"Unable to refresh feed. Check your connection and try again.";
+		}
+		finally
+		{
+			subscription.IsRefreshing = false;
+			_backgroundRefreshes.Remove(feedUrl);
+		}
+	}
+
 
 	private async Task SetSelectedArticleReadStateAsync(bool isRead)
 	{

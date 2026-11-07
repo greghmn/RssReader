@@ -53,8 +53,7 @@ public class MainViewModelTests
 		};
 	}
 
-	private static async Task<(MainViewModel ViewModel, FakeArticleStateRepository ArticleStateRepository, FakeFeedReader feedReader, FeedItem Article)>
-		CreateArticleStateViewModel(bool initiallyRead = false)
+	private static async Task<(MainViewModel ViewModel, FakeArticleStateRepository ArticleStateRepository, FakeFeedReader feedReader, FeedItem Article)> CreateArticleStateViewModel(bool initiallyRead = false)
 	{
 		var subscriptionRepository = new FakeSubscriptionRepository();
 
@@ -2091,6 +2090,770 @@ public class MainViewModelTests
 		Assert.False(viewModel.IsLoadingArticles);
 		Assert.False(viewModel.IsRefreshingArticles);
 		Assert.False(viewModel.HasNoArticles);
+	}
+
+
+	[Fact]
+	public async Task RefreshSubscriptionInBackgroundAsync_PreventsDuplicateRequests()
+	{
+		const string feedUrl = "https://example.com/feed.xml";
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+
+		var subscriptionService =
+				new SubscriptionService(subscriptionRepository);
+
+		await subscriptionService.AddAsync(new FeedSubscription
+		{
+			Url = feedUrl,
+			Title = "Test Feed"
+		});
+
+		var readStarted = new TaskCompletionSource<bool>(
+				TaskCreationOptions.RunContinuationsAsynchronously);
+
+		var allowRead = new TaskCompletionSource<bool>(
+				TaskCreationOptions.RunContinuationsAsynchronously);
+
+		int readCount = 0;
+
+		var feedReader = new FakeFeedReader
+		{
+			ReadHandler = async (url, token) =>
+			{
+				readCount++;
+
+				readStarted.TrySetResult(true);
+
+				await allowRead.Task.WaitAsync(token);
+
+				return new List<FeedItem>();
+			}
+		};
+
+		var feedService = new FeedService(
+				subscriptionService,
+				feedReader,
+				new FakeArticleRepository());
+
+		var articleStateService = new ArticleStateService(
+				new FakeArticleStateRepository());
+
+		var subscriptionImportService = new SubscriptionImportService(
+				new OpmlService(),
+				subscriptionService);
+
+		var viewModel = new MainViewModel(
+				subscriptionService,
+				feedService,
+				articleStateService,
+				subscriptionImportService,
+				new OpmlService());
+
+		await viewModel.LoadSubscriptionsAsync();
+
+		SubscriptionViewModel subscription =
+				Assert.Single(viewModel.Subscriptions);
+
+		Task firstRefresh =
+				viewModel.RefreshSubscriptionInBackgroundAsync(subscription);
+
+		try
+		{
+			await readStarted.Task.WaitAsync(
+					TimeSpan.FromSeconds(5));
+
+			Task secondRefresh =
+					viewModel.RefreshSubscriptionInBackgroundAsync(subscription);
+
+			await secondRefresh;
+
+			Assert.Equal(1, readCount);
+		}
+		finally
+		{
+			allowRead.TrySetResult(true);
+			await firstRefresh;
+		}
+
+		Assert.Equal(1, readCount);
+	}
+
+
+	[Fact]
+	public async Task RefreshSubscriptionInBackgroundAsync_AllowsSubsequentRefresh()
+	{
+		const string feedUrl = "https://example.com/feed.xml";
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+
+		var subscriptionService =
+				new SubscriptionService(subscriptionRepository);
+
+		await subscriptionService.AddAsync(new FeedSubscription
+		{
+			Url = feedUrl,
+			Title = "Test Feed"
+		});
+
+		int readCount = 0;
+
+		var feedReader = new FakeFeedReader
+		{
+			ReadHandler = (url, token) =>
+			{
+				readCount++;
+
+				return Task.FromResult(new List<FeedItem>());
+			}
+		};
+
+		var feedService = new FeedService(
+				subscriptionService,
+				feedReader,
+				new FakeArticleRepository());
+
+		var articleStateService = new ArticleStateService(
+				new FakeArticleStateRepository());
+
+		var subscriptionImportService = new SubscriptionImportService(
+				new OpmlService(),
+				subscriptionService);
+
+		var viewModel = new MainViewModel(
+				subscriptionService,
+				feedService,
+				articleStateService,
+				subscriptionImportService,
+				new OpmlService());
+
+		await viewModel.LoadSubscriptionsAsync();
+
+		SubscriptionViewModel subscription =
+				Assert.Single(viewModel.Subscriptions);
+
+		await viewModel.RefreshSubscriptionInBackgroundAsync(subscription);
+
+		await viewModel.RefreshSubscriptionInBackgroundAsync(subscription);
+
+		Assert.Equal(2, readCount);
+	}
+
+
+	[Fact]
+	public async Task RefreshSubscriptionInBackgroundAsync_ReportsSuccess()
+	{
+		const string feedUrl = "https://example.com/feed.xml";
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+
+		var subscriptionService =
+				new SubscriptionService(subscriptionRepository);
+
+		await subscriptionService.AddAsync(new FeedSubscription
+		{
+			Url = feedUrl,
+			Title = "Test Feed"
+		});
+
+		var readStarted = new TaskCompletionSource<bool>(
+				TaskCreationOptions.RunContinuationsAsynchronously);
+
+		var allowRead = new TaskCompletionSource<bool>(
+				TaskCreationOptions.RunContinuationsAsynchronously);
+
+		var feedReader = new FakeFeedReader
+		{
+			ReadHandler = async (url, token) =>
+			{
+				readStarted.TrySetResult(true);
+
+				await allowRead.Task.WaitAsync(token);
+
+				return new List<FeedItem>();
+			}
+		};
+
+		var feedService = new FeedService(
+				subscriptionService,
+				feedReader,
+				new FakeArticleRepository());
+
+		var articleStateService = new ArticleStateService(
+				new FakeArticleStateRepository());
+
+		var subscriptionImportService = new SubscriptionImportService(
+				new OpmlService(),
+				subscriptionService);
+
+		var viewModel = new MainViewModel(
+				subscriptionService,
+				feedService,
+				articleStateService,
+				subscriptionImportService,
+				new OpmlService());
+
+		await viewModel.LoadSubscriptionsAsync();
+
+		SubscriptionViewModel subscription =
+				Assert.Single(viewModel.Subscriptions);
+
+		Task refreshTask =
+				viewModel.RefreshSubscriptionInBackgroundAsync(subscription);
+
+		try
+		{
+			await readStarted.Task.WaitAsync(
+					TimeSpan.FromSeconds(5));
+
+			Assert.True(subscription.IsRefreshing);
+			Assert.Null(subscription.RefreshStatus);
+			Assert.Null(subscription.RefreshError);
+		}
+		finally
+		{
+			allowRead.TrySetResult(true);
+			await refreshTask;
+		}
+
+		Assert.False(subscription.IsRefreshing);
+		Assert.Equal(
+				"Refreshed successfully.",
+				subscription.RefreshStatus);
+		Assert.Null(subscription.RefreshError);
+	}
+
+
+	[Fact]
+	public async Task RefreshSubscriptionInBackgroundAsync_ReportsFailure()
+	{
+		const string firstUrl = "https://example.com/first.xml";
+		const string secondUrl = "https://example.com/second.xml";
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+
+		var subscriptionService =
+				new SubscriptionService(subscriptionRepository);
+
+		await subscriptionService.AddAsync(new FeedSubscription
+		{
+			Url = firstUrl,
+			Title = "First Feed"
+		});
+
+		await subscriptionService.AddAsync(new FeedSubscription
+		{
+			Url = secondUrl,
+			Title = "Second Feed"
+		});
+
+		var feedReader = new FakeFeedReader
+		{
+			ReadHandler = (url, token) =>
+			{
+				if (url == secondUrl)
+				{
+					throw new HttpRequestException(
+							"Simulated network failure.");
+				}
+
+				return Task.FromResult(new List<FeedItem>());
+			}
+		};
+
+		var feedService = new FeedService(
+				subscriptionService,
+				feedReader,
+				new FakeArticleRepository());
+
+		var articleStateService = new ArticleStateService(
+				new FakeArticleStateRepository());
+
+		var subscriptionImportService = new SubscriptionImportService(
+				new OpmlService(),
+				subscriptionService);
+
+		var viewModel = new MainViewModel(
+				subscriptionService,
+				feedService,
+				articleStateService,
+				subscriptionImportService,
+				new OpmlService());
+
+		await viewModel.LoadSubscriptionsAsync();
+
+		SubscriptionViewModel firstSubscription =
+				Assert.Single(
+						viewModel.Subscriptions,
+						item => item.Item.Url == firstUrl);
+
+		SubscriptionViewModel secondSubscription =
+				Assert.Single(
+						viewModel.Subscriptions,
+						item => item.Item.Url == secondUrl);
+
+		viewModel.SelectedSubscription = firstSubscription;
+
+		await viewModel.InitialArticleLoadTask;
+
+		await viewModel.RefreshSubscriptionInBackgroundAsync(
+				secondSubscription);
+
+		Assert.False(secondSubscription.IsRefreshing);
+		Assert.Null(secondSubscription.RefreshStatus);
+
+		Assert.Equal(
+				"Unable to refresh feed. Check your connection and try again.",
+				secondSubscription.RefreshError);
+
+		Assert.Same(
+				firstSubscription,
+				viewModel.SelectedSubscription);
+
+		Assert.Null(viewModel.ArticleLoadError);
+		Assert.Null(firstSubscription.RefreshError);
+	}
+
+
+	[Fact]
+	public async Task RefreshSubscriptionInBackgroundAsync_UpdatesUnreadCount()
+	{
+		const string feedUrl = "https://example.com/feed.xml";
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+		var subscriptionService =
+				new SubscriptionService(subscriptionRepository);
+
+		await subscriptionService.AddAsync(new FeedSubscription
+		{
+			Url = feedUrl,
+			Title = "Test Feed"
+		});
+
+		var items = new List<FeedItem>
+		{
+				new()
+				{
+						FeedUrl = feedUrl,
+						Id = "article-1",
+						Title = "First article"
+				},
+				new()
+				{
+						FeedUrl = feedUrl,
+						Id = "article-2",
+						Title = "Second article"
+				}
+		};
+
+		var feedReader = new FakeFeedReader
+		{
+			ReadHandler = (url, token) =>
+					Task.FromResult(items)
+		};
+
+		var feedService = new FeedService(
+				subscriptionService,
+				feedReader,
+				new FakeArticleRepository());
+
+		var articleStateService = new ArticleStateService(
+				new FakeArticleStateRepository());
+
+		await articleStateService.MarkAsReadAsync(
+				feedUrl,
+				items[0]);
+
+		var subscriptionImportService = new SubscriptionImportService(
+				new OpmlService(),
+				subscriptionService);
+
+		var viewModel = new MainViewModel(
+				subscriptionService,
+				feedService,
+				articleStateService,
+				subscriptionImportService,
+				new OpmlService());
+
+		await viewModel.LoadSubscriptionsAsync();
+
+		SubscriptionViewModel subscription =
+				Assert.Single(viewModel.Subscriptions);
+
+		await viewModel.RefreshSubscriptionInBackgroundAsync(
+				subscription);
+
+		Assert.Equal(1, subscription.UnreadCount);
+		Assert.False(subscription.IsRefreshing);
+		Assert.Null(subscription.RefreshError);
+	}
+
+
+	[Fact]
+	public async Task RefreshSubscriptionInBackgroundAsync_DoesNotUpdateRemovedSubscription()
+	{
+		const string feedUrl = "https://example.com/feed.xml";
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+
+		var subscriptionService =
+				new SubscriptionService(subscriptionRepository);
+
+		await subscriptionService.AddAsync(new FeedSubscription
+		{
+			Url = feedUrl,
+			Title = "Test Feed"
+		});
+
+		var readStarted = new TaskCompletionSource<bool>(
+				TaskCreationOptions.RunContinuationsAsynchronously);
+
+		var allowRead = new TaskCompletionSource<bool>(
+				TaskCreationOptions.RunContinuationsAsynchronously);
+
+		var feedReader = new FakeFeedReader
+		{
+			ReadHandler = async (url, token) =>
+			{
+				readStarted.TrySetResult(true);
+
+				await allowRead.Task.WaitAsync(token);
+
+				return new List<FeedItem>();
+			}
+		};
+
+		var feedService = new FeedService(
+				subscriptionService,
+				feedReader,
+				new FakeArticleRepository());
+
+		var articleStateService = new ArticleStateService(
+				new FakeArticleStateRepository());
+
+		var subscriptionImportService = new SubscriptionImportService(
+				new OpmlService(),
+				subscriptionService);
+
+		var viewModel = new MainViewModel(
+				subscriptionService,
+				feedService,
+				articleStateService,
+				subscriptionImportService,
+				new OpmlService());
+
+		await viewModel.LoadSubscriptionsAsync();
+
+		SubscriptionViewModel subscription =
+				Assert.Single(viewModel.Subscriptions);
+
+		DateTimeOffset? originalLastRetrieved =
+				subscription.LastRetrieved;
+
+		Task refreshTask =
+				viewModel.RefreshSubscriptionInBackgroundAsync(subscription);
+
+		try
+		{
+			await readStarted.Task.WaitAsync(
+					TimeSpan.FromSeconds(5));
+
+			Assert.True(subscription.IsRefreshing);
+
+			bool removed =
+					await viewModel.RemoveSubscriptionAsync(subscription);
+
+			Assert.True(removed);
+			Assert.Empty(viewModel.Subscriptions);
+		}
+		finally
+		{
+			allowRead.TrySetResult(true);
+			await refreshTask;
+		}
+
+		Assert.False(subscription.IsRefreshing);
+
+		Assert.Equal(
+				originalLastRetrieved,
+				subscription.LastRetrieved);
+
+		Assert.Null(subscription.RefreshStatus);
+		Assert.Null(subscription.RefreshError);
+	}
+
+
+	[Fact]
+	public async Task RefreshSubscriptionInBackgroundAsync_SkipsUpdatesDuringRemoval()
+	{
+		const string feedUrl = "https://example.com/feed.xml";
+
+		var subscriptionRepository = new FakeSubscriptionRepository
+		{
+			RemoveStarted = new TaskCompletionSource<bool>(
+						TaskCreationOptions.RunContinuationsAsynchronously),
+
+			AllowRemove = new TaskCompletionSource<bool>(
+						TaskCreationOptions.RunContinuationsAsynchronously)
+		};
+
+		var subscriptionService =
+				new SubscriptionService(subscriptionRepository);
+
+		await subscriptionService.AddAsync(new FeedSubscription
+		{
+			Url = feedUrl,
+			Title = "Test Feed"
+		});
+
+		var readStarted = new TaskCompletionSource<bool>(
+				TaskCreationOptions.RunContinuationsAsynchronously);
+
+		var allowRead = new TaskCompletionSource<bool>(
+				TaskCreationOptions.RunContinuationsAsynchronously);
+
+		var feedReader = new FakeFeedReader
+		{
+			ReadHandler = async (url, token) =>
+			{
+				readStarted.TrySetResult(true);
+
+				await allowRead.Task.WaitAsync(token);
+
+				return new List<FeedItem>();
+			}
+		};
+
+		var feedService = new FeedService(
+				subscriptionService,
+				feedReader,
+				new FakeArticleRepository());
+
+		var articleStateService = new ArticleStateService(
+				new FakeArticleStateRepository());
+
+		var subscriptionImportService = new SubscriptionImportService(
+				new OpmlService(),
+				subscriptionService);
+
+		var viewModel = new MainViewModel(
+				subscriptionService,
+				feedService,
+				articleStateService,
+				subscriptionImportService,
+				new OpmlService());
+
+		await viewModel.LoadSubscriptionsAsync();
+
+		SubscriptionViewModel subscription =
+				Assert.Single(viewModel.Subscriptions);
+
+		DateTimeOffset? originalLastRetrieved =
+				subscription.LastRetrieved;
+
+		Task refreshTask =
+				viewModel.RefreshSubscriptionInBackgroundAsync(subscription);
+
+		Task<bool>? removalTask = null;
+
+		try
+		{
+			// Wait until the background refresh is retrieving the feed.
+			await readStarted.Task.WaitAsync(
+					TimeSpan.FromSeconds(5));
+
+			// Start removal, but keep the repository operation pending.
+			removalTask = viewModel.RemoveSubscriptionAsync(subscription);
+
+			await subscriptionRepository.RemoveStarted.Task.WaitAsync(
+					TimeSpan.FromSeconds(5));
+
+			Assert.True(viewModel.IsRemovingSubscription);
+			Assert.Contains(subscription, viewModel.Subscriptions);
+
+			// Complete retrieval while removal is still pending.
+			allowRead.TrySetResult(true);
+
+			await refreshTask;
+
+			// The subscription still exists, but is being removed.
+			Assert.Contains(subscription, viewModel.Subscriptions);
+
+			// Refresh must not update its displayed state.
+			Assert.Equal(
+					originalLastRetrieved,
+					subscription.LastRetrieved);
+
+			Assert.Null(subscription.RefreshStatus);
+			Assert.Null(subscription.RefreshError);
+			Assert.False(subscription.IsRefreshing);
+
+			// It must not attempt to update the database timestamp.
+			Assert.Equal(
+					0,
+					subscriptionRepository.UpdateLastRetrievedCount);
+		}
+		finally
+		{
+			allowRead.TrySetResult(true);
+			subscriptionRepository.AllowRemove.TrySetResult(true);
+
+			await refreshTask;
+
+			if (removalTask is not null)
+			{
+				await removalTask;
+			}
+		}
+
+		Assert.Empty(viewModel.Subscriptions);
+		Assert.False(viewModel.IsRemovingSubscription);
+	}
+
+	[Fact]
+	public async Task RefreshSubscriptionInBackgroundAsync_DoesNotReportSuccessWhenTimestampUpdateFails()
+	{
+		const string feedUrl = "https://example.com/feed.xml";
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+
+		var subscriptionService =
+				new SubscriptionService(subscriptionRepository);
+
+		await subscriptionService.AddAsync(new FeedSubscription
+		{
+			Url = feedUrl,
+			Title = "Test Feed"
+		});
+
+		var feedReader = new FakeFeedReader
+		{
+			ReadHandler = (url, token) =>
+			{
+				// Simulate the subscription disappearing from
+				// persistence while the refresh is underway.
+				subscriptionRepository.Subscriptions.Clear();
+
+				return Task.FromResult(new List<FeedItem>());
+			}
+		};
+
+		var feedService = new FeedService(
+				subscriptionService,
+				feedReader,
+				new FakeArticleRepository());
+
+		var articleStateService = new ArticleStateService(
+				new FakeArticleStateRepository());
+
+		var subscriptionImportService = new SubscriptionImportService(
+				new OpmlService(),
+				subscriptionService);
+
+		var viewModel = new MainViewModel(
+				subscriptionService,
+				feedService,
+				articleStateService,
+				subscriptionImportService,
+				new OpmlService());
+
+		await viewModel.LoadSubscriptionsAsync();
+
+		SubscriptionViewModel subscription =
+				Assert.Single(viewModel.Subscriptions);
+
+		await viewModel.RefreshSubscriptionInBackgroundAsync(
+				subscription);
+
+		Assert.Equal(
+				1,
+				subscriptionRepository.UpdateLastRetrievedCount);
+
+		Assert.Null(subscription.RefreshStatus);
+		Assert.Null(subscription.RefreshError);
+		Assert.False(subscription.IsRefreshing);
+		Assert.Null(subscription.LastRetrieved);
+	}
+
+
+	[Fact]
+	public async Task RefreshSubscriptionInBackgroundAsync_AllowsRetryAfterFailure()
+	{
+		const string feedUrl = "https://example.com/feed.xml";
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+
+		var subscriptionService =
+				new SubscriptionService(subscriptionRepository);
+
+		await subscriptionService.AddAsync(new FeedSubscription
+		{
+			Url = feedUrl,
+			Title = "Test Feed"
+		});
+
+		int readCount = 0;
+
+		var feedReader = new FakeFeedReader
+		{
+			ReadHandler = (url, token) =>
+			{
+				readCount++;
+
+				if (readCount == 1)
+				{
+					throw new HttpRequestException(
+							"Simulated temporary network failure.");
+				}
+
+				return Task.FromResult(new List<FeedItem>());
+			}
+		};
+
+		var feedService = new FeedService(
+				subscriptionService,
+				feedReader,
+				new FakeArticleRepository());
+
+		var articleStateService = new ArticleStateService(
+				new FakeArticleStateRepository());
+
+		var subscriptionImportService = new SubscriptionImportService(
+				new OpmlService(),
+				subscriptionService);
+
+		var viewModel = new MainViewModel(
+				subscriptionService,
+				feedService,
+				articleStateService,
+				subscriptionImportService,
+				new OpmlService());
+
+		await viewModel.LoadSubscriptionsAsync();
+
+		SubscriptionViewModel subscription =
+				Assert.Single(viewModel.Subscriptions);
+
+		// First attempt fails.
+		await viewModel.RefreshSubscriptionInBackgroundAsync(
+				subscription);
+
+		Assert.Equal(1, readCount);
+		Assert.False(subscription.IsRefreshing);
+		Assert.NotNull(subscription.RefreshError);
+		Assert.Null(subscription.RefreshStatus);
+
+		// Second attempt succeeds.
+		await viewModel.RefreshSubscriptionInBackgroundAsync(
+				subscription);
+
+		Assert.Equal(2, readCount);
+		Assert.False(subscription.IsRefreshing);
+		Assert.Null(subscription.RefreshError);
+
+		Assert.Equal(
+				"Refreshed successfully.",
+				subscription.RefreshStatus);
 	}
 
 

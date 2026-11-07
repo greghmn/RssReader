@@ -22,3 +22,4 @@ sealed class Program
             .WithInterFont()
             .LogToTrace();
 }
+//If the behavior is good, we'll next investigate how to make long titles, URLs, and status messages behave gracefully inside those constrained widths.

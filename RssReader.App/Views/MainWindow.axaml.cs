@@ -20,6 +20,17 @@ public partial class MainWindow : Window
 
 		ArticleList.AddHandler(InputElement.PointerPressedEvent, ArticleList_PointerPressed, RoutingStrategies.Tunnel);
 		SubscriptionList.AddHandler(InputElement.PointerPressedEvent, SubscriptionList_PointerPressed, RoutingStrategies.Tunnel);
+		AddHandler(InputElement.KeyDownEvent, MainWindow_KeyDown, RoutingStrategies.Tunnel);
+	}
+
+	private void MainWindow_KeyDown(object? sender, KeyEventArgs e)
+	{
+		if (e.Key == Key.W
+				&& e.KeyModifiers.HasFlag(KeyModifiers.Control))
+		{
+			Close();
+			e.Handled = true;
+		}
 	}
 
 	private async void AddSubscriptionButton_Click(object? sender, RoutedEventArgs e)
@@ -146,8 +157,16 @@ public partial class MainWindow : Window
 
 	private void SubscriptionList_PointerPressed(object? sender, PointerPressedEventArgs e)
 	{
-		if (!e.GetCurrentPoint(SubscriptionList)
-				.Properties.IsLeftButtonPressed)
+		var properties =
+						e.GetCurrentPoint(SubscriptionList).Properties;
+
+		if (properties.IsRightButtonPressed)
+		{
+			e.Handled = true;
+			return;
+		}
+
+		if (!properties.IsLeftButtonPressed)
 		{
 			return;
 		}
@@ -183,9 +202,7 @@ public partial class MainWindow : Window
 		}
 	}
 
-	private async void RenameSubscriptionMenuItem_Click(
-			object? sender,
-			RoutedEventArgs e)
+	private async void RenameSubscriptionMenuItem_Click(object? sender, RoutedEventArgs e)
 	{
 		if (sender is not MenuItem menuItem)
 			return;
@@ -205,9 +222,37 @@ public partial class MainWindow : Window
 		await dialog.ShowDialog<bool>(this);
 	}
 
-	private async void ImportOpmlButton_Click(
-			object? sender,
-			RoutedEventArgs e)
+	private async void RemoveSubscriptionMenuItem_Click(object? sender, RoutedEventArgs e)
+	{
+		if (sender is not MenuItem menuItem)
+		{
+			return;
+		}
+
+		if (menuItem.DataContext is not SubscriptionViewModel subscription)
+		{
+			return;
+		}
+
+		if (DataContext is not MainViewModel viewModel)
+		{
+			return;
+		}
+
+		var dialog = new RemoveSubscriptionWindow(
+						subscription.Item.Title);
+
+		bool confirmed = await dialog.ShowDialog<bool>(this);
+
+		if (!confirmed)
+		{
+			return;
+		}
+
+		await viewModel.RemoveSubscriptionAsync(subscription);
+	}
+
+	private async void ImportOpmlButton_Click(object? sender, RoutedEventArgs e)
 	{
 		var files = await StorageProvider.OpenFilePickerAsync(
 				new FilePickerOpenOptions
@@ -259,9 +304,8 @@ public partial class MainWindow : Window
 					"Permission denied while reading the selected OPML file.";
 		}
 	}
-	private async void ExportOpmlButton_Click(
-			object? sender,
-			RoutedEventArgs e)
+
+	private async void ExportOpmlButton_Click(object? sender, RoutedEventArgs e)
 	{
 		if (DataContext is not MainViewModel viewModel)
 		{
@@ -335,6 +379,59 @@ public partial class MainWindow : Window
 		finally
 		{
 			viewModel.IsExportingOpml = false;
+		}
+	}
+
+	private async void OpenFeedUrlMenuItem_Click(object? sender, RoutedEventArgs e)
+	{
+		if (sender is not MenuItem menuItem)
+		{
+			return;
+		}
+
+		if (menuItem.DataContext is not SubscriptionViewModel subscription)
+		{
+			return;
+		}
+
+		Uri? uri = subscription.FeedUri;
+
+		if (uri is null)
+		{
+			return;
+		}
+
+		await TopLevel.GetTopLevel(this)!
+						.Launcher.LaunchUriAsync(uri);
+	}
+
+	private async void RefreshSubscriptionMenuItem_Click(object? sender, RoutedEventArgs e)
+	{
+		if (sender is not MenuItem menuItem)
+		{
+			return;
+		}
+
+		if (menuItem.DataContext is not SubscriptionViewModel subscription)
+		{
+			return;
+		}
+
+		if (DataContext is not MainViewModel viewModel)
+		{
+			return;
+		}
+
+		if (ReferenceEquals(
+						viewModel.SelectedSubscription,
+						subscription))
+		{
+			await viewModel.RefreshSelectedFeedCommand.ExecuteAsync(null);
+		}
+		else
+		{
+			await viewModel.RefreshSubscriptionInBackgroundAsync(
+							subscription);
 		}
 	}
 }

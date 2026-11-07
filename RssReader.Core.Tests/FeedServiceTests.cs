@@ -17,6 +17,13 @@ public class FeedServiceTests
 
 			return Task.FromResult(new List<FeedItem>());
 		}
+
+		public Task<string?> ReadTitleAsync(
+				string feedUrl,
+				CancellationToken cancellationToken = default)
+		{
+			return Task.FromResult<string?>(null);
+		}
 	}
 
 	[Fact]

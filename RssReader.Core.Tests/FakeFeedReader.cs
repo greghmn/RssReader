@@ -10,6 +10,12 @@ public class FakeFeedReader : IFeedReader
 
 	public int ReadCount { get; private set; }
 
+	public string? TitleToReturn { get; set; }
+
+	public Exception? TitleException { get; set; }
+
+	public int TitleReadCount { get; private set; }
+
 	//implement the interface 
 
 	public Task<List<FeedItem>> ReadAsync(
@@ -21,4 +27,20 @@ public class FakeFeedReader : IFeedReader
 
 		return Task.FromResult(ItemsToReturn);
 	}
+
+
+	public Task<string?> ReadTitleAsync(
+					string feedUrl,
+					CancellationToken cancellationToken = default)
+	{
+		TitleReadCount++;
+
+		if (TitleException is not null)
+		{
+			throw TitleException;
+		}
+
+		return Task.FromResult(TitleToReturn);
+	}
+
 }

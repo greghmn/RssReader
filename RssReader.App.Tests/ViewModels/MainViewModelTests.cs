@@ -2,6 +2,7 @@
 using RssReader.App.ViewModels;
 using RssReader.Core;
 using System.Runtime.Intrinsics.Arm;
+using RssReader.App.Results;
 
 namespace RssReader.App.Tests.ViewModels;
 
@@ -2856,5 +2857,176 @@ public class MainViewModelTests
 				subscription.RefreshStatus);
 	}
 
+
+	[Fact]
+	public async Task AddSubscriptionAsync_BlankTitle_UsesDiscoveredFeedTitle()
+	{
+		const string feedUrl = "https://example.com/feed.xml";
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+
+		var subscriptionService =
+				new SubscriptionService(subscriptionRepository);
+
+		var feedReader = new FakeFeedReader
+		{
+			TitleToReturn = "Example News"
+		};
+
+		var feedService = new FeedService(
+				subscriptionService,
+				feedReader,
+				new FakeArticleRepository());
+
+		var articleStateService = new ArticleStateService(
+				new FakeArticleStateRepository());
+
+		var opmlService = new OpmlService();
+
+		var subscriptionImportService =
+				new SubscriptionImportService(
+						opmlService,
+						subscriptionService);
+
+		var viewModel = new MainViewModel(
+				subscriptionService,
+				feedService,
+				articleStateService,
+				subscriptionImportService,
+				opmlService);
+
+		AddSubscriptionResult result =
+				await viewModel.AddSubscriptionAsync(feedUrl, "");
+
+		Assert.Equal(AddSubscriptionResult.Success, result);
+
+		Assert.Equal(1, feedReader.TitleReadCount);
+
+		SubscriptionViewModel subscription =
+				Assert.Single(viewModel.Subscriptions);
+
+		Assert.Equal("Example News", subscription.Title);
+
+		FeedSubscription storedSubscription =
+				Assert.Single(subscriptionRepository.Subscriptions);
+
+		Assert.Equal("Example News", storedSubscription.Title);
+	}
+
+
+	[Fact]
+	public async Task AddSubscriptionAsync_CustomTitle_SkipsTitleDiscovery()
+	{
+		const string feedUrl = "https://example.com/feed.xml";
+		const string customTitle = "My Favorite News";
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+
+		var subscriptionService =
+				new SubscriptionService(subscriptionRepository);
+
+		var feedReader = new FakeFeedReader
+		{
+			TitleToReturn = "Original Feed Title"
+		};
+
+		var feedService = new FeedService(
+				subscriptionService,
+				feedReader,
+				new FakeArticleRepository());
+
+		var articleStateService = new ArticleStateService(
+				new FakeArticleStateRepository());
+
+		var opmlService = new OpmlService();
+
+		var subscriptionImportService =
+				new SubscriptionImportService(
+						opmlService,
+						subscriptionService);
+
+		var viewModel = new MainViewModel(
+				subscriptionService,
+				feedService,
+				articleStateService,
+				subscriptionImportService,
+				opmlService);
+
+		var result =
+				await viewModel.AddSubscriptionAsync(
+						feedUrl,
+						customTitle);
+
+		Assert.Equal("Success", result.ToString());
+
+		// A custom title should eliminate the metadata request.
+		Assert.Equal(0, feedReader.TitleReadCount);
+
+		SubscriptionViewModel subscription =
+				Assert.Single(viewModel.Subscriptions);
+
+		Assert.Equal(customTitle, subscription.Title);
+
+		FeedSubscription storedSubscription =
+				Assert.Single(subscriptionRepository.Subscriptions);
+
+		Assert.Equal(customTitle, storedSubscription.Title);
+	}
+
+
+	[Fact]
+	public async Task AddSubscriptionAsync_TitleDiscoveryFails_UsesUrlFallback()
+	{
+		const string feedUrl = "https://example.com/feed.xml";
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+
+		var subscriptionService =
+				new SubscriptionService(subscriptionRepository);
+
+		var feedReader = new FakeFeedReader
+		{
+			TitleException = new HttpRequestException(
+						"Simulated network failure.")
+		};
+
+		var feedService = new FeedService(
+				subscriptionService,
+				feedReader,
+				new FakeArticleRepository());
+
+		var articleStateService = new ArticleStateService(
+				new FakeArticleStateRepository());
+
+		var opmlService = new OpmlService();
+
+		var subscriptionImportService =
+				new SubscriptionImportService(
+						opmlService,
+						subscriptionService);
+
+		var viewModel = new MainViewModel(
+				subscriptionService,
+				feedService,
+				articleStateService,
+				subscriptionImportService,
+				opmlService);
+
+		var result =
+				await viewModel.AddSubscriptionAsync(feedUrl, "");
+
+		Assert.Equal("Success", result.ToString());
+		Assert.Equal(1, feedReader.TitleReadCount);
+
+		SubscriptionViewModel subscription =
+				Assert.Single(viewModel.Subscriptions);
+
+		Assert.Equal(feedUrl, subscription.Title);
+
+		FeedSubscription storedSubscription =
+				Assert.Single(subscriptionRepository.Subscriptions);
+
+		Assert.Equal(feedUrl, storedSubscription.Title);
+	}
 
 }

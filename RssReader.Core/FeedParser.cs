@@ -79,6 +79,41 @@ public static class FeedParser
 				$"Unsupported feed format: {root.Name}");
 	}
 
+
+	public static string? ParseFeedTitle(XDocument document)
+	{
+		XElement? root = document.Root;
+
+		if (root is null)
+		{
+			return null;
+		}
+
+		string? title = null;
+
+		if (root.Name.LocalName == "rss")
+		{
+			XElement? channel = root
+							.Elements()
+							.FirstOrDefault(element =>
+											element.Name.LocalName == "channel");
+
+			if (channel is not null)
+			{
+				title = GetElementValue(channel, "title");
+			}
+		}
+		else if (root.Name == Atom + "feed")
+		{
+			title = (string?)root.Element(Atom + "title");
+		}
+
+		return string.IsNullOrWhiteSpace(title)
+						? null
+						: title.Trim();
+	}
+
+
 	private static string GetElementValue(
 			XElement parent, string name)
 	{

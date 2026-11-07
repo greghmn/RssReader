@@ -203,16 +203,42 @@ public partial class MainViewModel : ViewModelBase
 		}
 	}
 
-	public async Task<AddSubscriptionResult> AddSubscriptionAsync(string url, string title)
-	{
-		var subscription = new FeedSubscription
-		{
-			Url = url,
-			Title = string.IsNullOrWhiteSpace(title) ? url : title
-		};
 
+	public async Task<AddSubscriptionResult> AddSubscriptionAsync(
+					string url,
+					string title)
+	{
 		try
 		{
+			string subscriptionTitle = title;
+
+			if (string.IsNullOrWhiteSpace(subscriptionTitle))
+			{
+				subscriptionTitle = url;
+
+				try
+				{
+					string? discoveredTitle =
+									await _feedService.GetFeedTitleAsync(url);
+
+					if (!string.IsNullOrWhiteSpace(discoveredTitle))
+					{
+						subscriptionTitle = discoveredTitle;
+					}
+				}
+				catch (Exception ex)
+				{
+					Console.Error.WriteLine(
+									$"Unable to discover feed title for {url}: {ex}");
+				}
+			}
+
+			var subscription = new FeedSubscription
+			{
+				Url = url,
+				Title = subscriptionTitle
+			};
+
 			bool added = await _subscriptionService.AddAsync(subscription);
 
 			if (!added)
@@ -220,7 +246,8 @@ public partial class MainViewModel : ViewModelBase
 				return AddSubscriptionResult.AlreadyExists;
 			}
 
-			var subscriptionViewModel = new SubscriptionViewModel(subscription);
+			var subscriptionViewModel =
+							new SubscriptionViewModel(subscription);
 
 			Subscriptions.Add(subscriptionViewModel);
 			SelectedSubscription = subscriptionViewModel;
@@ -234,11 +261,12 @@ public partial class MainViewModel : ViewModelBase
 		catch (Exception ex)
 		{
 			Console.Error.WriteLine(
-					$"Failed to add subscription {url}: {ex}");
+							$"Failed to add subscription {url}: {ex}");
 
 			return AddSubscriptionResult.Failed;
 		}
 	}
+
 
 
 	partial void OnSelectedSubscriptionChanged(SubscriptionViewModel? value)

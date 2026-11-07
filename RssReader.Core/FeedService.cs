@@ -66,4 +66,15 @@ public class FeedService
 					ex);
 		}
 	}
+
+
+	public Task<string?> GetFeedTitleAsync(
+					string feedUrl,
+					CancellationToken cancellationToken = default)
+	{
+		return _feedReader.ReadTitleAsync(
+				feedUrl,
+				cancellationToken);
+	}
+
 }

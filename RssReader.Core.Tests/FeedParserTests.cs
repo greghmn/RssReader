@@ -961,4 +961,81 @@ public class FeedParserTests
 		Assert.Equal("A short summary.", item.Summary);
 		Assert.Equal("The complete article body.", item.Content.Trim());
 	}
+
+
+	[Fact]
+	public void ParseFeedTitle_Rss_ReturnsChannelTitle()
+	{
+		XDocument document = XDocument.Parse("""
+        <rss version="2.0">
+            <channel>
+                <title>Example News</title>
+                <description>A sample RSS feed.</description>
+                <item>
+                    <title>First Article</title>
+                </item>
+            </channel>
+        </rss>
+        """);
+
+		string? title = FeedParser.ParseFeedTitle(document);
+
+		Assert.Equal("Example News", title);
+	}
+
+
+	[Fact]
+	public void ParseFeedTitle_Atom_ReturnsFeedTitle()
+	{
+		XDocument document = XDocument.Parse("""
+        <feed xmlns="http://www.w3.org/2005/Atom">
+            <title>Science Weekly</title>
+            <id>https://example.com/feed</id>
+            <updated>2026-11-06T12:00:00Z</updated>
+            <entry>
+                <title>New Discovery</title>
+                <id>https://example.com/article-1</id>
+                <updated>2026-11-06T12:00:00Z</updated>
+            </entry>
+        </feed>
+        """);
+
+		string? title = FeedParser.ParseFeedTitle(document);
+
+		Assert.Equal("Science Weekly", title);
+	}
+
+
+	[Fact]
+	public void ParseFeedTitle_RssMissingTitle_ReturnsNull()
+	{
+		XDocument document = XDocument.Parse("""
+        <rss version="2.0">
+            <channel>
+                <description>A feed without a title.</description>
+            </channel>
+        </rss>
+        """);
+
+		string? title = FeedParser.ParseFeedTitle(document);
+
+		Assert.Null(title);
+	}
+
+	[Fact]
+	public void ParseFeedTitle_AtomWhitespaceTitle_ReturnsNull()
+	{
+		XDocument document = XDocument.Parse("""
+        <feed xmlns="http://www.w3.org/2005/Atom">
+            <title>   </title>
+            <id>https://example.com/feed</id>
+            <updated>2026-11-06T12:00:00Z</updated>
+        </feed>
+        """);
+
+		string? title = FeedParser.ParseFeedTitle(document);
+
+		Assert.Null(title);
+	}
+
 }

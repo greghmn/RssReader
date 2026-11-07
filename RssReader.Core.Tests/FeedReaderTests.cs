@@ -3,6 +3,7 @@ using RssReader.Core;
 using System.Net;
 using System.Text;
 using Xunit;
+using System.Net.Http;
 
 namespace RssReader.Core.Tests;
 
@@ -391,4 +392,85 @@ public class FeedReaderTests
 				"Unsupported feed format",
 				exception.Message);
 	}
+
+
+	[Fact]
+	public async Task ReadTitleAsync_Rss_ReturnsFeedTitle()
+	{
+		const string xml = """
+        <?xml version="1.0" encoding="utf-8"?>
+        <rss version="2.0">
+            <channel>
+                <title>Example News</title>
+                <description>A sample feed.</description>
+            </channel>
+        </rss>
+        """;
+
+		using var httpClient = new HttpClient(
+				new FakeHttpMessageHandler((request, token) =>
+						Task.FromResult(new HttpResponseMessage(
+								HttpStatusCode.OK)
+						{
+							Content = new StringContent(xml)
+						})));
+
+		var reader = new FeedReader(httpClient);
+
+		string? title = await reader.ReadTitleAsync(
+				"https://example.com/feed.xml");
+
+		Assert.Equal("Example News", title);
+	}
+
+
+	[Fact]
+	public async Task ReadTitleAsync_Atom_ReturnsFeedTitle()
+	{
+		const string xml = """
+        <?xml version="1.0" encoding="utf-8"?>
+        <feed xmlns="http://www.w3.org/2005/Atom">
+            <title>Science Weekly</title>
+            <id>https://example.com/feed</id>
+            <updated>2026-11-06T12:00:00Z</updated>
+            <entry>
+                <title>New Discovery</title>
+                <id>https://example.com/article-1</id>
+                <updated>2026-11-06T12:00:00Z</updated>
+            </entry>
+        </feed>
+        """;
+
+		using var httpClient = new HttpClient(
+				new FakeHttpMessageHandler((request, token) =>
+						Task.FromResult(new HttpResponseMessage(
+								HttpStatusCode.OK)
+						{
+							Content = new StringContent(xml)
+						})));
+
+		var reader = new FeedReader(httpClient);
+
+		string? title = await reader.ReadTitleAsync(
+				"https://example.com/atom.xml");
+
+		Assert.Equal("Science Weekly", title);
+	}
+
+
+	[Fact]
+	public async Task ReadTitleAsync_HttpError_ThrowsHttpRequestException()
+	{
+		using var httpClient = new HttpClient(
+				new FakeHttpMessageHandler((request, token) =>
+						Task.FromResult(new HttpResponseMessage(
+								HttpStatusCode.ServiceUnavailable))));
+
+		var reader = new FeedReader(httpClient);
+
+		await Assert.ThrowsAsync<HttpRequestException>(
+				() => reader.ReadTitleAsync(
+						"https://example.com/feed.xml"));
+	}
+
 }

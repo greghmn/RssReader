@@ -1,4 +1,5 @@
 ﻿using RssReader.Core;
+using RssReader.App.Results;
 
 namespace RssReader.App.Tests.Fakes;
 
@@ -13,6 +14,12 @@ public class FakeFeedReader : IFeedReader
 	public TaskCompletionSource<bool>? AllowRead { get; set; }
 
 	public Func<string, CancellationToken, Task<List<FeedItem>>>? ReadHandler { get; set; }
+
+	public string? TitleToReturn { get; set; }
+
+	public Exception? TitleException { get; set; }
+
+	public int TitleReadCount { get; private set; }
 
 	public async Task<List<FeedItem>> ReadAsync(string feedUrl, CancellationToken cancellationToken = default)
 	{
@@ -33,5 +40,19 @@ public class FakeFeedReader : IFeedReader
 		}
 
 		return Items.ToList();
+	}
+
+	public Task<string?> ReadTitleAsync(
+					string feedUrl,
+					CancellationToken cancellationToken = default)
+	{
+		TitleReadCount++;
+
+		if (TitleException is not null)
+		{
+			throw TitleException;
+		}
+
+		return Task.FromResult(TitleToReturn);
 	}
 }

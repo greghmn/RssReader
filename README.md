@@ -4,24 +4,26 @@ A free and open-source (FOSS) desktop feed reader for RSS and Atom built with C#
 
 RSS Reader lets you subscribe to news feeds, read articles, and track your reading progress from a desktop application. SQLite allows for local storage of subscriptions and retrieved articles and keeps track of whether an article has been read. Users can mark articles as read/unread manually.
 
-The project is currently preparing for its first beta release, v0.0.0.0-beta. Versioning, for the time being, follows a Major.Major.Tweak.Debug scheme, a "tweak" referring to under-the-hood refactorings and performance fixes as well as small cosmetic changes to the UI that don't meet the criteria for constituting a separate minor version, with suffixes like "beta" as needed to indicate life cycle stage.
+The project is currently preparing for its first beta release, v0.0.0.0-beta.0. Versioning, for the time being, follows a Major.Major.Tweak.Debug scheme, a "tweak" referring to under-the-hood refactorings and performance fixes as well as small cosmetic changes to the UI that don't meet the criteria for constituting a separate minor version, with suffixes like "beta" as needed to indicate life cycle stage.
 
-As an aside, the name of this project is going to change from the most generic possible to something more interesting once I find one I'm happy with. Any and all suggestions are welcome at this point, and . Proper attention will be given to anything that needs to be modified for releases under that name, especially backward compatibility concerns like retention of SQLite databases and reading histories.
+As an aside, the name of this project is going to change from the most generic possible to something more interesting once I find one I'm happy with. Any and all suggestions are welcome at this point, and credit will be given henceforth to anyone who comes up with a name I like enough to use, or anything else, like a logo or a motto. Bonus points if the name is related to lighthouses in some way! Proper attention will be given to anything that needs to be modified for releases under that name, especially backward compatibility concerns like retention of SQLite databases and reading histories.
 
 ## Installation
 
-### Windows
+### Windows (x64)
 
 The initial release targets Windows x64.
 
-1. Download `RssReader-v-0.0.0.0-beta-win-x64.zip` from the project's GitHub Release page once it becomes available.
-2. Extract the ZIP folder to a folder of your choice.
-3. Open the extracted folder.
-4. Run `RssReader.App.exe.`
+1. Download `RssReader-v0.0.0.0-beta.0-win-x64.zip` from the project's GitHub Releases page once it becomes available.
+2. Install the .NET 10 Runtime for Windows x64 if it is not already installed. Choose .NET Runtime, not SDK. The SDK also works but is unnecessary for running the application.
+3. Extract the ZIP archive to a directory of your choice.
+4. Run RSSReader.App.exe from the extracted directory.
 
-   The Windows distribution is self-contained, so you do not need to install the .NET runtime separately.
+RSS Reader stores its application data locally. Updates should not require deleting your existing subscriptions or article data.
 
-   All files **_must_** be kept in the same folder since the application depends on the accompanying libraries.
+All files **_must_** be kept in the same folder since the application depends on the accompanying libraries.
+
+**Current release target:** Windows x64. Other platforms are planned but are not yet provided as downloadable releases (see the **Other platforms** section for details).
 
 ### Estimated system requirements
 
@@ -33,7 +35,7 @@ The initial release targets Windows x64.
   - Storage: 250 MB for the installation plus whatever is required to store any downloads (this may be quite a bit since support for podcast streaming and downloading is currently in the works)
   - Display: the minimum window size is currently fixed at 600 x 300, so 1280 x 720 is recommended if you want it to tile into a quarter of the screen
   - Internet: yes
-  - .NET runtime: no (see Notes)
+  - .NET 10 Runtime
 - Recommended:
   - OS: Windows 11, 640bit
   - Processor: Dual-core or better, ~2 GHz
@@ -42,15 +44,13 @@ The initial release targets Windows x64.
   - Storage: same as the minimum requirement
   - Display: at least 1366 x 768, but 1920 x 1080 or more is ideal
   - Internet: broadband
-  - .NET runtime: same as minimum
+  - .NET 10 Runtime
 
-  **Notes:** As stated above, the Windows version includes the .NET runtime, so a separate installation is not required. The OS requirement is contingent on the requirements for Avalonia and .NET 10. Avalonia is capable of software rendering, which is why a GPU is likely unnecessary. For Internet, it just needs to be able to retrieve whatever you might want, including but not limited to RSS/Atom feeds, podcasts, and whatever might be supported in the future.
+  **Notes:** As stated previously, this release does not include the .NET Runtime, so the .NET 10 Runtime must be installed separately. The OS requirement is contingent on the requirements for Avalonia and .NET 10. Avalonia is capable of software rendering, which is why a GPU is likely unnecessary. For Internet, it just needs to be able to retrieve whatever you might want, including but not limited to RSS/Atom feeds, podcasts, and whatever might be supported in the future.
 
 ### Other platforms
 
-This application uses Avalonia UI, which is a cross-platform UI .NET framework. For the time being, the initial distribution has solely been packaged and tested for Windows x64. It was tested on bare metal on two Windows 10 machines, both of which are at least seven years old, and worked as intended without any issues.
-
-There are no official distributions for other operating systems, but support is a major priority going forward, though I can't make any promises as to when or how since this I (Greg Homan) am the sole developer. I attempted to run this application through Wine on a late 2014 Mac mini running macOS 12 (Monterey) and a Chrultrabook running Debian 12 (Bookworm) and it did not function properly on either. This may be due to those versions not being compatible with a version of Wine that supports .NET 10, or just a skill issue on my part, but someone can elaborate or correct me if I'm wrong.
+There is no support for anything other than Windows x64 available yet. For more, see **Future plans.**
 
 ## Features
 
@@ -87,8 +87,7 @@ There are no official distributions for other operating systems, but support is 
 - Cached articles continue to display even if feed retrival fails.
 - Monitor visible progress indicators and error messages for feed operations.
 - Keep previously stored articles upon recovery from temporary network failures.
-- Benefit from not needing to install the .NET runtime separately because it's included in the distribution.
-- **_Make use of all of this without compromising your privacy: no account registration or personal information or anything else!!!_**
+- **_Make use of all of this without compromising your privacy: no account registration or personal information or anything else!!!_** (Well, to the extent that I can maximize privacy; some tools used might restrict )
 
 ## Usage
 
@@ -241,7 +240,7 @@ Users should take appropriate precautions to protect their device and local data
 
 ## Known Limitations
 
-RSS Reader v0.0.0.0 is an initial release. While its core reading and subscription-management features are functional, several capabilities and refinements are not yet available.
+RSS Reader v0.0.0.0-beta.0 is an initial release. While its core reading and subscription-management features are functional, several capabilities and refinements are not yet available.
 
 ### Platform Support
 
@@ -280,6 +279,7 @@ RSS Reader v0.0.0.0 is an initial release. While its core reading and subscripti
 - The application does not currently provide notifications for newly retrieved articles.
 - A command-line interface is not included in v0.0.0.0.
 - Application settings and configurations options are limited.
+- You will need to install the .NET 10 Runtime to run this. A fully functional build with a self-contained .NET Runtime is complete, but release is pending since I'm not a lawyer and may need to do a bit more research regarding licensing and further modification of the source code to make sure as much as possible falls under AGPL-3.0-or-later.
 
 ## Building from Source
 
@@ -287,15 +287,13 @@ RSS Reader is developed using C# and .NET 10, with Avalonia UI for its graphical
 
 ### Prerequisites
 
-To build the application, you will need:
+Building RSS Reader from source requires the .NET 10 SDK.
 
-- **.NET 10 SDK** or a compatible later SDK.
-- **Git** to clone the source repository.
-- A compatible development environment, such as Visual Studio or Visual Studio Code (optional).
+Download it from the [official .NET download page](https://dotnet.microsoft.com/en-us/download/dotnet/10.0).
 
-For Windows development using Visual Studio, the **.NET desktop development** workload is recommended.
+The SDK includes the .NET Runtime and the tools needed to restore dependencies, build the application, and run its automated tests.
 
-The .NET SDK includes the tools needed to build and run the application from the command line, so a graphical IDE is not required.
+The separately distributed Windows executable requires only the compatible .NET 10 Runtime, not the full SDK.
 
 ### Obtaining the Source Code
 
@@ -315,7 +313,7 @@ Alternatively, download the source archive from GitHub and extract it.
 From the solution's root directory, run:
 
 ```bash
-dotnet restore
+dotnet restore RssReader.slnx
 ```
 
 This restores the NuGet packages required by the solution.
@@ -327,13 +325,13 @@ An internet connection may be necessary when restoring dependencies for the firs
 To build the solution:
 
 ```bash
-dotnet build
+dotnet build RssReader.slnx
 ```
 
 For an optimized Release build:
 
 ```bash
-dotnet build --configuration Release
+dotnet build RssReader.slnx --configuration Release
 ```
 
 ### Running the Application
@@ -359,24 +357,26 @@ RSS Reader includes automated tests using xUnit.
 Run the solution's tests with:
 
 ```bash
-dotnet test
+dotnet test RssReader.slnx
 ```
 
 The tests cover functionality including feed parsing, subscription management, persistence, HTTP error handling, and application ViewModel behavior.
 
 ### Publishing for Windows
 
-To create a self-contained Windows x64 distribution:
+To create a framework-dependent Windows x64 distribution:
 
 ```bash
-dotnet publish RssReader.App/RssReader.App.csproj --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=false -p:PublishTrimmed=false
+dotnet publish RssReader.App/RssReader.App.csproj --configuration Release --runtime win-x64 --self-contained false -p:PublishSingleFile=false -p:PublishTrimmed=false
 ```
 
-The published application includes the .NET runtime, allowing it to run on compatible Windows x64 systems without a separate .NET installation.
+This produces a Windows x64 build that does not bundle the .NET Runtime.
 
-The output directory is reported by the publish command.
+Users must install a compatible .NET 10 Runtime separately before running the application.
 
-Keep the published files together when distributing or moving the application.
+The publishing command generates the application files but does not necessarily include all repository documentation and licensing files. These must be incorporated into the distribution package separately.
+
+A self-contained Windows build has also been tested successfully. However, it is not currently offered as an official distribution pending completion of additional licensing review.
 
 ### Project Structure
 

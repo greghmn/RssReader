@@ -369,3 +369,6 @@ FodyWeavers.xsd
 /dependency-inventory*.txt
 /package-license-files.txt
 /published-file-inventory.txt
+
+# RSS Reader release archives
+/RssReader-v*-win-x64.zip

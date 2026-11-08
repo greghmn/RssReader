@@ -18,8 +18,20 @@
   </Design.DataContext>
 
 
-  <Grid RowDefinitions="Auto,*"
-        ColumnDefinitions="160*,5,440*">
+
+  <Grid RowDefinitions="Auto,*">
+
+    <Grid.ColumnDefinitions>
+      <!-- Subscriptions pane -->
+      <ColumnDefinition Width="160*" MinWidth="172" />
+
+      <!-- Subscriptions / articles splitter -->
+      <ColumnDefinition Width="5" />
+
+      <!-- Articles and reading pane container -->
+      <ColumnDefinition Width="1040*" MinWidth="330" />
+    </Grid.ColumnDefinitions>
+
     <!-- Header -->
     <TextBlock Text="RSS Reader"
                FontSize="24"
@@ -160,50 +172,50 @@
 
         <ListBox.ItemTemplate>
 
-<DataTemplate>
-  <StackPanel Spacing="4">
+          <DataTemplate>
+            <StackPanel Spacing="4">
 
-    <!-- Subscription title and unread count -->
-    <Grid ColumnDefinitions="*,Auto">
+              <!-- Subscription title and unread count -->
+              <Grid ColumnDefinitions="*,Auto">
 
-      <TextBlock Text="{Binding Title}"
-                 FontWeight="SemiBold"
-                 VerticalAlignment="Center"
-                 TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{Binding Title}"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" />
 
-      <TextBlock Grid.Column="1"
-                 Text="{Binding UnreadCount}"
-                 IsVisible="{Binding HasUnreadCount}"
-                 FontSize="11"
-                 FontWeight="Bold"
-                 Foreground="DodgerBlue"
-                 VerticalAlignment="Center"
-                 Margin="8,0,0,0" />
+                <TextBlock Grid.Column="1"
+                           Text="{Binding UnreadCount}"
+                           IsVisible="{Binding HasUnreadCount}"
+                           FontSize="11"
+                           FontWeight="Bold"
+                           Foreground="DodgerBlue"
+                           VerticalAlignment="Center"
+                           Margin="8,0,0,0" />
 
-    </Grid>
+              </Grid>
 
-    <!-- Background refresh progress -->
-    <TextBlock Text="Refreshing..."
-               IsVisible="{Binding IsRefreshing}"
-               FontSize="11"
-               Opacity="0.7" />
+              <!-- Background refresh progress -->
+              <TextBlock Text="Refreshing..."
+                         IsVisible="{Binding IsRefreshing}"
+                         FontSize="11"
+                         Opacity="0.7" />
 
-    <!-- Background refresh success -->
-    <TextBlock Text="{Binding RefreshStatus}"
-               IsVisible="{Binding !!RefreshStatus}"
-               FontSize="11"
-               Opacity="0.7"
-               TextWrapping="Wrap" />
+              <!-- Background refresh success -->
+              <TextBlock Text="{Binding RefreshStatus}"
+                         IsVisible="{Binding !!RefreshStatus}"
+                         FontSize="11"
+                         Opacity="0.7"
+                         TextWrapping="Wrap" />
 
-    <!-- Background refresh failure -->
-    <TextBlock Text="{Binding RefreshError}"
-               IsVisible="{Binding !!RefreshError}"
-               FontSize="11"
-               Foreground="IndianRed"
-               TextWrapping="Wrap" />
+              <!-- Background refresh failure -->
+              <TextBlock Text="{Binding RefreshError}"
+                         IsVisible="{Binding !!RefreshError}"
+                         FontSize="11"
+                         Foreground="IndianRed"
+                         TextWrapping="Wrap" />
 
-  </StackPanel>
-</DataTemplate>
+            </StackPanel>
+          </DataTemplate>
 
         </ListBox.ItemTemplate>
       </ListBox>
@@ -243,10 +255,22 @@
 
 
 
+
     <Grid Grid.Row="1"
           Grid.Column="2"
-          ColumnDefinitions="2*,5,3*"
           Margin="16">
+
+      <Grid.ColumnDefinitions>
+        <!-- Article list -->
+        <ColumnDefinition Width="2*" MinWidth="132" />
+
+        <!-- Article / reading splitter -->
+        <ColumnDefinition Width="5" />
+
+        <!-- Reading pane -->
+        <ColumnDefinition Width="3*" MinWidth="160" />
+      </Grid.ColumnDefinitions>
+
 
       <!-- Article list -->
       <Grid Grid.Column="0"
@@ -254,19 +278,25 @@
             Margin="0,0,12,0"
             MinWidth="120">
 
+
         <!-- Header -->
-        <Grid ColumnDefinitions="*,Auto">
+        <WrapPanel Orientation="Horizontal"
+                   HorizontalAlignment="Stretch"
+                   VerticalAlignment="Top">
+
           <TextBlock Text="Articles"
                      FontSize="18"
                      FontWeight="SemiBold"
-                     VerticalAlignment="Center" />
+                     VerticalAlignment="Center"
+                     Margin="0,0,8,4" />
 
-          <Button Grid.Column="1"
-                  Content="↻ Refresh"
+          <Button Content="↻ Refresh"
                   Command="{Binding RefreshSelectedFeedCommand}"
                   IsEnabled="{Binding CanRefreshSelectedFeed}"
-                  Margin="8,0,0,0" />
-        </Grid>
+                  Margin="0,0,0,4" />
+
+        </WrapPanel>
+
 
         <!-- Current retrieval status -->
 
@@ -401,27 +431,37 @@
                          Foreground="IndianRed"
                          TextWrapping="Wrap" />
 
+
               <!-- Article actions -->
-              <Grid ColumnDefinitions="*,Auto"
-                    ColumnSpacing="8">
+              <WrapPanel Orientation="Horizontal"
+                         HorizontalAlignment="Stretch"
+                         VerticalAlignment="Top">
 
-                <Button Grid.Column="0"
-                        Content="Open original article ↗"
-                        HorizontalAlignment="Left"
-                        IsVisible="{Binding SelectedArticle.CanOpenArticleLink}"
-                        Click="OpenArticleLinkButton_Click" />
 
-                <Button Grid.Column="1"
-                        Content="Mark as read"
+                <Button IsVisible="{Binding SelectedArticle.CanOpenArticleLink}"
+                        Click="OpenArticleLinkButton_Click"
+                        MaxWidth="130"
+                        Margin="0,0,8,4">
+
+                  <TextBlock Text="Open original article ↗"
+                             TextWrapping="Wrap"
+                             TextAlignment="Center" />
+
+                </Button>
+
+
+                <Button Content="Mark as read"
                         Command="{Binding MarkSelectedArticleAsReadCommand}"
-                        IsVisible="{Binding CanMarkSelectedArticleAsRead}" />
+                        IsVisible="{Binding CanMarkSelectedArticleAsRead}"
+                        Margin="0,0,8,4" />
 
-                <Button Grid.Column="1"
-                        Content="Mark as unread"
+                <Button Content="Mark as unread"
                         Command="{Binding MarkSelectedArticleAsUnreadCommand}"
-                        IsVisible="{Binding CanMarkSelectedArticleAsUnread}" />
+                        IsVisible="{Binding CanMarkSelectedArticleAsUnread}"
+                        Margin="0,0,8,4" />
 
-              </Grid>
+              </WrapPanel>
+
 
               <!-- Article content -->
               <TextBlock Text="{Binding SelectedArticle.DisplayContent}"

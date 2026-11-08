@@ -1,4 +1,7 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+// Copyright (C) 2026 Greg Homan
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms: See ADDITIONAL-TERMS.md in the repository root.
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RssReader.App.Results;
 using RssReader.Core;

@@ -1,4 +1,7 @@
-﻿//read-state table and subscriptions table are independent
+// Copyright (C) 2026 Greg Homan
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms: See ADDITIONAL-TERMS.md in the repository root.
+//read-state table and subscriptions table are independent
 
 using Microsoft.Data.Sqlite;
 

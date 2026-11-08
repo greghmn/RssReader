@@ -1,0 +1,403 @@
+﻿# RSS Reader
+
+A free and open-source (FOSS) desktop feed reader for RSS and Atom built with C#, .NET, and Avalonia UI.
+
+RSS Reader lets you subscribe to news feeds, read articles, and track your reading progress from a desktop application. SQLite allows for local storage of subscriptions and retrieved articles and keeps track of whether an article has been read. Users can mark articles as read/unread manually.
+
+The project is currently preparing for its first beta release, v0.0.0.0-beta. Versioning, for the time being, follows a Major.Major.Tweak.Debug scheme, a "tweak" referring to under-the-hood refactorings and performance fixes as well as small cosmetic changes to the UI that don't meet the criteria for constituting a separate minor version, with suffixes like "beta" as needed to indicate life cycle stage.
+
+As an aside, the name of this project is going to change from the most generic possible to something more interesting once I find one I'm happy with. Any and all suggestions are welcome at this point, and . Proper attention will be given to anything that needs to be modified for releases under that name, especially backward compatibility concerns like retention of SQLite databases and reading histories.
+
+## Installation
+
+### Windows
+
+The initial release targets Windows x64.
+
+1. Download `RssReader-v-0.0.0.0-beta-win-x64.zip` from the project's GitHub Release page once it becomes available.
+2. Extract the ZIP folder to a folder of your choice.
+3. Open the extracted folder.
+4. Run `RssReader.App.exe.`
+
+   The Windows distribution is self-contained, so you do not need to install the .NET runtime separately.
+
+   All files **_must_** be kept in the same folder since the application depends on the accompanying libraries.
+
+### Estimated system requirements
+
+- Minimum:
+  - OS: Windows 10 22H2, 64-bit
+  - Processor: Dual-core x64 CPU, ~1.5 GHz
+  - GPU: optional
+  - RAM: 2 GB for the whole system
+  - Storage: 250 MB for the installation plus whatever is required to store any downloads (this may be quite a bit since support for podcast streaming and downloading is currently in the works)
+  - Display: the minimum window size is currently fixed at 600 x 300, so 1280 x 720 is recommended if you want it to tile into a quarter of the screen
+  - Internet: yes
+  - .NET runtime: no (see Notes)
+- Recommended:
+  - OS: Windows 11, 640bit
+  - Processor: Dual-core or better, ~2 GHz
+  - GPU: again, optional
+  - RAM: at least 4 GB
+  - Storage: same as the minimum requirement
+  - Display: at least 1366 x 768, but 1920 x 1080 or more is ideal
+  - Internet: broadband
+  - .NET runtime: same as minimum
+
+  **Notes:** As stated above, the Windows version includes the .NET runtime, so a separate installation is not required. The OS requirement is contingent on the requirements for Avalonia and .NET 10. Avalonia is capable of software rendering, which is why a GPU is likely unnecessary. For Internet, it just needs to be able to retrieve whatever you might want, including but not limited to RSS/Atom feeds, podcasts, and whatever might be supported in the future.
+
+### Other platforms
+
+This application uses Avalonia UI, which is a cross-platform UI .NET framework. For the time being, the initial distribution has solely been packaged and tested for Windows x64. It was tested on bare metal on two Windows 10 machines, both of which are at least seven years old, and worked as intended without any issues.
+
+There are no official distributions for other operating systems, but support is a major priority going forward, though I can't make any promises as to when or how since this I (Greg Homan) am the sole developer. I attempted to run this application through Wine on a late 2014 Mac mini running macOS 12 (Monterey) and a Chrultrabook running Debian 12 (Bookworm) and it did not function properly on either. This may be due to those versions not being compatible with a version of Wine that supports .NET 10, or just a skill issue on my part, but someone can elaborate or correct me if I'm wrong.
+
+## Features
+
+### RSS and Atom Feed Support
+
+- Subscribe to RSS and Atom feeds with HTTP and HTTPS URLs.
+- Automatically discover the titles of feeds you subscribe to.
+- Read article titles, publication dates, summaries, and available content.
+- Support common feed extensions and XML namespaces.
+- Open original articles in your default web browser.
+- Handle malformed and unavailable feeds without crashing the application.
+
+### Subscription Management
+
+- Add, remove, and rename subscriptions. Note: upon adding a subscription, you can opt to choose a name; the name will be the default (the title discovered by the application) if you omit one.
+- Refresh individual feeds to retrieve new articles.
+- Refresh feeds using the context menu (right-click, etc.) without changing the subscription you've selected currently.
+- Import and export subscriptions using OPML files.
+- Display the last time a feed was retrieved successfully.
+- Show unread article counts for each subscription.
+
+### Reading and Archiving
+
+- Read retrieved article content directly within the application.
+- Mark articles as read or unread.
+- Preserve read/unread state after restarting the application.
+- Cache retrieved articles locally to maintain access to them offline.
+- Retain articles retrieved previously after refreshing the feed.
+- Preserve articles and their read/unread state after unsubscribing so that you can restore them should you choose to resubscribe to that feed's URL.
+
+### Reliability and Privacy
+
+- Confine subscriptions, articles, and reading history to local storage using SQLite.
+- Cached articles continue to display even if feed retrival fails.
+- Monitor visible progress indicators and error messages for feed operations.
+- Keep previously stored articles upon recovery from temporary network failures.
+- Benefit from not needing to install the .NET runtime separately because it's included in the distribution.
+- **_Make use of all of this without compromising your privacy: no account registration or personal information or anything else!!!_**
+
+## Usage
+
+### Adding a Subscription
+
+1. Click **Add subscription** in the subscriptions pane.
+2. Enter the URL of an RSS or Atom feed.
+3. Optionally, enter a custom title. If you leave the title blank, RSS Reader will attempt to retrieve the feed's title automatically.
+4. Confirm to add the subscription.
+
+The new subscription will appear in the subscriptions list.
+
+If the feed is temporarily unavailable, the subscription can still be added. When automatic title discovery fails, the feed URL is used as the fallback title.
+
+### Reading Articles
+
+1. Select a subscription from the subscriptions list.
+2. Choose an article from the article list.
+3. Read its available content in the reading pane.
+
+Use **Open original article** to visit the article's webpage in your default browser, if a valid article URL is available.
+
+RSS Reader displays the content supplied by the feed publisher. Some feeds provide full articles, while others provide only summaries or excerpts.
+
+### Refreshing Feeds
+
+To retrieve the latest articles, select a subscription and click **Refresh** above the article list.
+
+Alternatively, right-click a subscription and choose **Refresh** from its context menu. This allows you to refresh a different subscription without changing the feed you're currently reading.
+
+The application displays refresh progress and reports retrieval errors. Previously cached articles remain available if a refresh fails.
+
+The **Last Retrieved** timestamp indicates when the subscription was last successfully refreshed.
+
+### Tracking Read and Unread Articles
+
+Select an article and use **Mark as read** or **Mark as unread** to change its reading status.
+
+Unread articles are indicated in the article list, and subscriptions display their unread article counts.
+
+Reading states are saved automatically and preserved when you close and reopen the application.
+
+### Managing Subscriptions
+
+Right-click a subscription to access its context menu:
+
+- **Refresh:** Retrieve updated articles.
+- **Open feed URL:** Open the subscription's feed URL.
+- **Rename:** Change the subscription's displayed title.
+- **Remove subscription:** Unsubscribe from the feed.
+
+You can also use the **Remove subscription** button for the currently selected subscription.
+
+**Removing a subscription does not delete its archived articles or their read/unread states.** If you subscribe to the same feed URL again, previously cached articles and their reading states remain available.
+
+### Importing and Exporting Subscriptions
+
+RSS Reader supports OPML, a common format for transferring feed subscriptions between RSS readers.
+
+**Importing subscriptions:**
+
+1. Click **Import OPML...**.
+2. Select an OPML file.
+3. Confirm the import and review the displayed result.
+
+Existing subscriptions are not duplicated.
+
+**Exporting subscriptions:**
+
+1. Click **Export OPML...**.
+2. Choose a destination for the OPML file.
+3. Save the exported subscription list.
+
+OPML import and export transfer subscription information, not cached articles or read/unread history.
+
+### Offline Reading
+
+Previously retrieved articles are cached locally and can be viewed without an internet connection.
+
+To make articles available offline, retrieve them while connected to the internet.
+
+Offline reading is limited to content previously supplied by the feeds. Opening original webpages normally requires an internet connection.
+
+## Data Storage and Privacy
+
+RSS Reader is designed around local data storage and minimal collection of personal information.
+
+The application does not require an account, registration, or the submission of personal information to use its features.
+
+### Local Data Storage
+
+RSS Reader uses SQLite to store application data locally, including:
+
+- Feed subscriptions and their titles.
+- Previously retrieved articles and available feed content.
+- Article read/unread states.
+- Subscription metadata, including retrieval timestamps.
+
+On Windows, application data is stored in the user's local application-data directory:
+
+```text
+%LOCALAPPDATA%\RssReader\
+```
+
+You can open this location by entering the path above into the Windows Run dialog (`Win + R`) or File Explorer's address bar.
+
+Application data is stored separately from the executable and its supporting libraries. Moving, replacing, or updating the application files should not delete existing subscriptions or reading history.
+
+**Important:** Uninstalling or deleting the application folder does not necessarily delete locally stored application data.
+
+### Network Connections
+
+RSS Reader connects to external servers when retrieving RSS and Atom feeds.
+
+When you subscribe to or refresh a feed, the destination server may receive information normally associated with an HTTP request, including your IP address and request headers.
+
+The application does not provide network anonymity. The privacy practices of external feed publishers are outside the project's control.
+
+Opening an original article launches its URL through your operating system's configured application, typically a web browser. Any subsequent communication with that website is subject to the browser's configuration and the website's privacy practices.
+
+### Data Retention
+
+RSS Reader uses a non-destructive approach to archived content.
+
+Removing a subscription does not automatically erase its previously cached articles or their read/unread states.
+
+If you subscribe to the same feed URL again, previously stored articles and their reading states remain available.
+
+This behavior is intentional, but it also means removing a subscription should not be interpreted as deleting all associated local data.
+
+### Backups and Data Portability
+
+RSS Reader supports importing and exporting subscriptions in OPML format.
+
+An OPML export contains subscription information, but **does not constitute a complete backup** of the application's cached articles or reading history.
+
+For a more complete local backup, close RSS Reader and copy its SQLite database files from the application-data directory to a safe location.
+
+Restore procedures and more advanced data-management features may be documented or introduced in future releases.
+
+### Privacy Scope
+
+RSS Reader is designed to operate without user accounts or a centralized synchronization service.
+
+Its local-first approach reduces the need to disclose information to the application developer or a separate application backend.
+
+However, local storage does not itself provide encryption, anonymity, or protection against other software or users with access to the same computer.
+
+Users should take appropriate precautions to protect their device and local data.
+
+## Known Limitations
+
+RSS Reader v0.0.0.0 is an initial release. While its core reading and subscription-management features are functional, several capabilities and refinements are not yet available.
+
+### Platform Support
+
+- The initial binary distribution targets **Windows x64**.
+- Although Avalonia UI and .NET support multiple operating systems, Linux, macOS, and mobile distributions have not yet been officially tested or packaged.
+- Compatibility with Wine or other Windows compatibility layers is not guaranteed.
+
+### Feed Compatibility and Content
+
+- Some RSS and Atom feeds may contain nonstandard XML, unsupported extensions, or unusual content that the application cannot interpret correctly.
+- Article content is limited to the information provided by the feed publisher. Full webpage extraction is not currently supported.
+- Embedded media, interactive content, and complex HTML layouts are not rendered as they would appear in a web browser.
+- Feed retrieval requires network access. Previously cached articles remain available offline.
+
+### Refreshing and Background Operations
+
+- Feeds must be refreshed individually. Automatic scheduled refreshes and bulk refresh are not currently supported.
+- Refresh requests may take time to complete when a feed server is slow or unresponsive.
+- Background refreshes provide per-subscription status messages, but there is no dedicated background-task management interface.
+
+### Data Management
+
+- Removing a subscription does not delete previously cached articles or their reading states.
+- There is currently no dedicated interface for permanently deleting archived articles or clearing individual subscriptions' stored histories.
+- OPML import and export transfer subscriptions, not cached articles or reading progress.
+- There is no built-in synchronization between devices or automatic cloud backup.
+
+### Interface and Accessibility
+
+- The interface is designed to remain usable in relatively small windows, but some information may be truncated at minimum pane widths.
+- Keyboard navigation is supported for primary controls and subscription context menus, although focus behavior may vary after certain actions.
+- Advanced customization, configurable keyboard shortcuts, and extensive accessibility testing remain areas for future improvement.
+
+### Other Limitations
+
+- The application does not currently provide notifications for newly retrieved articles.
+- A command-line interface is not included in v0.0.0.0.
+- Application settings and configurations options are limited.
+
+## Building from Source
+
+RSS Reader is developed using C# and .NET 10, with Avalonia UI for its graphical interface and SQLite for local data storage.
+
+### Prerequisites
+
+To build the application, you will need:
+
+- **.NET 10 SDK** or a compatible later SDK.
+- **Git** to clone the source repository.
+- A compatible development environment, such as Visual Studio or Visual Studio Code (optional).
+
+For Windows development using Visual Studio, the **.NET desktop development** workload is recommended.
+
+The .NET SDK includes the tools needed to build and run the application from the command line, so a graphical IDE is not required.
+
+### Obtaining the Source Code
+
+Clone the project's Git repository:
+
+```bash
+git clone <repository-url>
+cd RssReader
+```
+
+Replace `<repository-url>` with the project's actual GitHub repository URL.
+
+Alternatively, download the source archive from GitHub and extract it.
+
+### Restoring Dependencies
+
+From the solution's root directory, run:
+
+```bash
+dotnet restore
+```
+
+This restores the NuGet packages required by the solution.
+
+An internet connection may be necessary when restoring dependencies for the first time.
+
+### Building the Application
+
+To build the solution:
+
+```bash
+dotnet build
+```
+
+For an optimized Release build:
+
+```bash
+dotnet build --configuration Release
+```
+
+### Running the Application
+
+From the repository's root directory:
+
+```bash
+dotnet run --project RssReader.App/RssReader.App.csproj
+```
+
+This starts the Avalonia desktop application.
+
+To run in Release configuration:
+
+```bash
+dotnet run --project RssReader.App/RssReader.App.csproj --configuration Release
+```
+
+### Running the Tests
+
+RSS Reader includes automated tests using xUnit.
+
+Run the solution's tests with:
+
+```bash
+dotnet test
+```
+
+The tests cover functionality including feed parsing, subscription management, persistence, HTTP error handling, and application ViewModel behavior.
+
+### Publishing for Windows
+
+To create a self-contained Windows x64 distribution:
+
+```bash
+dotnet publish RssReader.App/RssReader.App.csproj --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=false -p:PublishTrimmed=false
+```
+
+The published application includes the .NET runtime, allowing it to run on compatible Windows x64 systems without a separate .NET installation.
+
+The output directory is reported by the publish command.
+
+Keep the published files together when distributing or moving the application.
+
+### Project Structure
+
+The solution is organized into several projects:
+
+| Project                | Purpose                                              |
+| ---------------------- | ---------------------------------------------------- |
+| `RssReader.Core`       | Feed parsing, services, data models, and persistence |
+| `RssReader.App`        | Avalonia desktop user interface                      |
+| `RssReader.Console`    | Console project used during development              |
+| `RssReader.Core.Tests` | Core functionality and persistence tests             |
+| `RssReader.App.Tests`  | Application and ViewModel tests                      |
+
+Contributors should run the existing tests before submitting changes to help identify regressions.
+
+## License
+
+RSS Reader is intended to be released under the **GNU Affero General Public License, version 3 or later (AGPL-3.0-or-later)**.
+
+This license permits users to run, study, modify, and redistribute the software, subject to its terms and conditions.
+
+The repository's `LICENSE` file will contain the full license text. Copyright notices, attribution requirements, and any applicable additional terms will be finalized before the first public release.
+
+Third-party components remain subject to their respective licenses.

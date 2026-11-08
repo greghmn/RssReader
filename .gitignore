@@ -361,3 +361,11 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# RSS Reader release output
+/publish-framework-dependent/
+
+# Temporary dependency and licensing audit inventories
+/dependency-inventory*.txt
+/package-license-files.txt
+/published-file-inventory.txt

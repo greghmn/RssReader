@@ -1,4 +1,7 @@
-﻿using System.Globalization;
+// Copyright (C) 2026 Greg Homan
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms: See ADDITIONAL-TERMS.md in the repository root.
+using System.Globalization;
 using System.Text;
 using System.Xml.Linq;
 using System.Linq;

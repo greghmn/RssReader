@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2026 Greg Homan
+SPDX-License-Identifier: AGPL-3.0-or-later
+Additional terms: See ADDITIONAL-TERMS.md in the repository root.
+-->
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="RssReader.App.Views.RenameSubscriptionWindow"

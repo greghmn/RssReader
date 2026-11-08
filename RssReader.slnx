@@ -1,4 +1,31 @@
 <Solution>
+  <Folder Name="/licenses/">
+    <File Path="Apache-2.0-SQLitePCLRaw.txt" />
+    <File Path="BSD-ANGLE.txt" />
+    <File Path="Microsoft-DotNet-Library-License.txt" />
+    <File Path="MIT-Avalonia.txt" />
+    <File Path="MIT-CommunityToolkit.txt" />
+    <File Path="MIT-DotNet-Runtime.txt" />
+    <File Path="MIT-HarfBuzzSharp.txt" />
+    <File Path="MIT-HtmlAgilityPack.txt" />
+    <File Path="MIT-MicroCom.txt" />
+    <File Path="MIT-Microsoft.Data.Sqlite.txt" />
+    <File Path="MIT-Microsoft.Extensions.txt" />
+    <File Path="MIT-RecyclableMemoryStream.txt" />
+    <File Path="MIT-SkiaSharp.txt" />
+    <File Path="MIT-Tmds.DBus.txt" />
+    <File Path="NOTICE-HarfBuzzSharp.txt" />
+    <File Path="NOTICE-SkiaSharp.txt" />
+    <File Path="NOTICE-SQLitePCLRaw.txt" />
+    <File Path="OFL-Inter.txt" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path="ADDITIONAL-TERMS.md" />
+    <File Path="COPYRIGHT.md" />
+    <File Path="LICENSE.txt" />
+    <File Path="README.md" />
+    <File Path="THIRD-PARTY-NOTICES.md" />
+  </Folder>
   <Project Path="RssReader.App.Tests/RssReader.App.Tests.csproj" Id="86381f0b-3e57-487f-923c-2c3efe138046" />
   <Project Path="RssReader.App/RssReader.App.csproj" Id="0825010e-4e13-4940-852d-3c54a0030e17" />
   <Project Path="RssReader.Console/RssReader.Console.csproj" />

@@ -2,6 +2,17 @@
 # Set default behavior to automatically normalize line endings.
 ###############################################################################
 * text=auto
+# Use LF line endings for source and configuration files.
+*.cs text eol=lf
+*.axaml text eol=lf
+*.csproj text eol=lf
+*.sln text eol=lf
+*.slnx text eol=lf
+*.json text eol=lf
+*.xml text eol=lf
+*.md text eol=lf
+*.props text eol=lf
+*.targets text eol=lf
 
 ###############################################################################
 # Set default behavior for command prompt diff.

@@ -129,8 +129,23 @@ public static class FeedParser
 	}
 	private static DateTimeOffset? ParseDate(string value)
 	{
+		string normalized = value.Trim();
+
+		if (normalized.EndsWith(
+						" EST",
+						StringComparison.OrdinalIgnoreCase))
+		{
+			normalized = normalized[..^4] + " -0500";
+		}
+		else if (normalized.EndsWith(
+						" EDT",
+						StringComparison.OrdinalIgnoreCase))
+		{
+			normalized = normalized[..^4] + " -0400";
+		}
+
 		if (DateTimeOffset.TryParse(
-						value,
+						normalized,
 						CultureInfo.InvariantCulture,
 						DateTimeStyles.AllowWhiteSpaces,
 						out DateTimeOffset date))

@@ -290,6 +290,58 @@ public class FeedParserTests
 				items[0].PublishedAt);
 	}
 
+	[Fact]
+	public void Parse_RssItemWithEstPubDate_ParsesPublishedAt()
+	{
+		XDocument document = XDocument.Parse("""
+    <rss version="2.0">
+        <channel>
+            <title>ESPN News</title>
+            <item>
+                <title>Example Article</title>
+                <pubDate>Mon, 9 Nov 2026 18:02:07 EST</pubDate>
+            </item>
+        </channel>
+    </rss>
+    """);
+
+		List<FeedItem> items = FeedParser.Parse(document);
+
+		Assert.Single(items);
+
+		Assert.Equal(
+						new DateTimeOffset(
+										2026, 11, 9, 18, 2, 7,
+										TimeSpan.FromHours(-5)),
+						items[0].PublishedAt);
+	}
+
+	[Fact]
+	public void Parse_RssItemWithEdtPubDate_ParsesPublishedAt()
+	{
+		XDocument document = XDocument.Parse("""
+    <rss version="2.0">
+        <channel>
+            <title>ESPN News</title>
+            <item>
+                <title>Example Article</title>
+                <pubDate>Mon, 6 Jul 2026 18:02:07 EDT</pubDate>
+            </item>
+        </channel>
+    </rss>
+    """);
+
+		List<FeedItem> items = FeedParser.Parse(document);
+
+		Assert.Single(items);
+
+		Assert.Equal(
+						new DateTimeOffset(
+										2026, 7, 6, 18, 2, 7,
+										TimeSpan.FromHours(-4)),
+						items[0].PublishedAt);
+	}
+
 	//For RSS items that are missing titles 
 
 	[Fact]

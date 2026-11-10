@@ -207,9 +207,7 @@ public partial class MainViewModel : ViewModelBase
 	}
 
 
-	public async Task<AddSubscriptionResult> AddSubscriptionAsync(
-					string url,
-					string title)
+	public async Task<AddSubscriptionResult> AddSubscriptionAsync(string url,string title)
 	{
 		try
 		{
@@ -696,8 +694,7 @@ public partial class MainViewModel : ViewModelBase
 	}
 
 
-	public async Task RefreshSubscriptionInBackgroundAsync(
-					SubscriptionViewModel subscription)
+	public async Task RefreshSubscriptionInBackgroundAsync(SubscriptionViewModel subscription)
 	{
 		string feedUrl = subscription.Item.Url;
 

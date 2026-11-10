@@ -21,9 +21,7 @@ public class FeedService
 	}
 
 
-	public async Task<List<FeedItem>> GetItemsAsync(
-			string feedUrl,
-			CancellationToken cancellationToken = default)
+	public async Task<List<FeedItem>> GetItemsAsync(string feedUrl, CancellationToken cancellationToken = default)
 	{
 		bool isSubscribed =
 				await _subscriptionService.IsSubscribedAsync(feedUrl);

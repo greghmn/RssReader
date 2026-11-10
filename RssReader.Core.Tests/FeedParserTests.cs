@@ -1093,4 +1093,217 @@ public class FeedParserTests
 		Assert.Null(title);
 	}
 
+
+	[Fact]
+	public void Parse_RssItemWithInvalidPubDate_PreservesRawDate()
+	{
+		const string rawDate = "A very strange Tuesday";
+
+		XDocument document = XDocument.Parse($"""
+    <rss version="2.0">
+        <channel>
+            <title>Example Feed</title>
+            <item>
+                <title>Example Article</title>
+                <pubDate>{rawDate}</pubDate>
+            </item>
+        </channel>
+    </rss>
+    """);
+
+		List<FeedItem> items = FeedParser.Parse(document);
+
+		Assert.Single(items);
+		Assert.Null(items[0].PublishedAt);
+		Assert.Equal(rawDate, items[0].RawPublishedDate);
+	}
+
+	[Fact]
+	public void Parse_RssItemWithValidPubDate_PreservesRawDate()
+	{
+		const string rawDate = "Mon, 9 Nov 2026 18:02:07 EST";
+
+		XDocument document = XDocument.Parse($"""
+    <rss version="2.0">
+        <channel>
+            <title>Example Feed</title>
+            <item>
+                <title>Example Article</title>
+                <pubDate>{rawDate}</pubDate>
+            </item>
+        </channel>
+    </rss>
+    """);
+
+		List<FeedItem> items = FeedParser.Parse(document);
+
+		Assert.Single(items);
+
+		Assert.Equal(rawDate, items[0].RawPublishedDate);
+
+		Assert.Equal(
+						new DateTimeOffset(
+										2026, 11, 9, 18, 2, 7,
+										TimeSpan.FromHours(-5)),
+						items[0].PublishedAt);
+	}
+	[Fact]
+	public void Parse_RssItemWithoutDate_ReturnsNullRawPublishedDate()
+	{
+		XDocument document = XDocument.Parse("""
+    <rss version="2.0">
+        <channel>
+            <title>Example Feed</title>
+            <item>
+                <title>Undated Article</title>
+                <description>No publication date supplied.</description>
+            </item>
+        </channel>
+    </rss>
+    """);
+
+		List<FeedItem> items = FeedParser.Parse(document);
+
+		Assert.Single(items);
+		Assert.Null(items[0].PublishedAt);
+		Assert.Null(items[0].RawPublishedDate);
+	}
+
+	[Fact]
+	public void Parse_RssInvalidPubDateWithValidDublinCoreDate_PreservesBoth()
+	{
+		const string rawDate = "An unrecognized date";
+
+		XDocument document = XDocument.Parse($"""
+    <rss version="2.0"
+         xmlns:dc="http://purl.org/dc/elements/1.1/">
+        <channel>
+            <title>Example Feed</title>
+            <item>
+                <title>Example Article</title>
+                <pubDate>{rawDate}</pubDate>
+                <dc:date>2026-11-09T23:02:07Z</dc:date>
+            </item>
+        </channel>
+    </rss>
+    """);
+
+		List<FeedItem> items = FeedParser.Parse(document);
+
+		Assert.Single(items);
+		Assert.Equal(rawDate, items[0].RawPublishedDate);
+
+		Assert.Equal(
+						new DateTimeOffset(
+										2026, 11, 9, 23, 2, 7,
+										TimeSpan.Zero),
+						items[0].PublishedAt);
+	}
+
+	[Fact]
+	public void Parse_AtomEntryWithPublished_PreservesRawDate()
+	{
+		const string rawDate = "2026-11-09T18:02:07-05:00";
+
+		XDocument document = XDocument.Parse($"""
+    <feed xmlns="http://www.w3.org/2005/Atom">
+        <title>Example Feed</title>
+        <entry>
+            <title>Example Article</title>
+            <id>https://example.com/article</id>
+            <published>{rawDate}</published>
+        </entry>
+    </feed>
+    """);
+
+		List<FeedItem> items = FeedParser.Parse(document);
+
+		Assert.Single(items);
+
+		Assert.Equal(rawDate, items[0].RawPublishedDate);
+
+		Assert.Equal(
+						new DateTimeOffset(
+										2026, 11, 9, 18, 2, 7,
+										TimeSpan.FromHours(-5)),
+						items[0].PublishedAt);
+	}
+
+	[Fact]
+	public void Parse_AtomEntryWithoutPublished_PreservesRawUpdatedDate()
+	{
+		const string rawDate = "2026-11-09T23:02:07Z";
+
+		XDocument document = XDocument.Parse($"""
+    <feed xmlns="http://www.w3.org/2005/Atom">
+        <title>Example Feed</title>
+        <entry>
+            <title>Example Article</title>
+            <id>https://example.com/article</id>
+            <updated>{rawDate}</updated>
+        </entry>
+    </feed>
+    """);
+
+		List<FeedItem> items = FeedParser.Parse(document);
+
+		Assert.Single(items);
+
+		Assert.Equal(rawDate, items[0].RawPublishedDate);
+
+		Assert.Equal(
+						new DateTimeOffset(
+										2026, 11, 9, 23, 2, 7,
+										TimeSpan.Zero),
+						items[0].PublishedAt);
+	}
+
+	[Fact]
+	public void Parse_AtomEntryWithoutDates_ReturnsNullRawPublishedDate()
+	{
+		XDocument document = XDocument.Parse("""
+    <feed xmlns="http://www.w3.org/2005/Atom">
+        <title>Example Feed</title>
+        <entry>
+            <title>Undated Article</title>
+            <id>https://example.com/article</id>
+        </entry>
+    </feed>
+    """);
+
+		List<FeedItem> items = FeedParser.Parse(document);
+
+		Assert.Single(items);
+		Assert.Null(items[0].PublishedAt);
+		Assert.Null(items[0].RawPublishedDate);
+	}
+
+	[Fact]
+	public void Parse_AtomInvalidPublishedWithValidUpdated_PreservesRawDate()
+	{
+		const string rawDate = "An unrecognized date";
+
+		XDocument document = XDocument.Parse($"""
+    <feed xmlns="http://www.w3.org/2005/Atom">
+        <title>Example Feed</title>
+        <entry>
+            <title>Example Article</title>
+            <id>https://example.com/article</id>
+            <published>{rawDate}</published>
+            <updated>2026-11-09T23:02:07Z</updated>
+        </entry>
+    </feed>
+    """);
+
+		List<FeedItem> items = FeedParser.Parse(document);
+
+		Assert.Single(items);
+		Assert.Equal(rawDate, items[0].RawPublishedDate);
+
+		Assert.Equal(
+						new DateTimeOffset(
+										2026, 11, 9, 23, 2, 7,
+										TimeSpan.Zero),
+						items[0].PublishedAt);
+	}
 }

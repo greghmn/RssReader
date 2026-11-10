@@ -62,15 +62,14 @@ public class FeedReader : IFeedReader
 	Link = item.Link,
 	Summary = item.Summary,
 	Content = item.Content,
-	PublishedAt = item.PublishedAt
+	PublishedAt = item.PublishedAt,
+	RawPublishedDate = item.RawPublishedDate
 })
 .ToList();
 	}
 
 
-	public async Task<string?> ReadTitleAsync(
-					string feedUrl,
-					CancellationToken cancellationToken = default)
+	public async Task<string?> ReadTitleAsync(string feedUrl, CancellationToken cancellationToken = default)
 	{
 		if (!Uri.TryCreate(
 						feedUrl,

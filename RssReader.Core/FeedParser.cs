@@ -54,6 +54,9 @@ public static class FeedParser
 						Content =
 									FeedContentExtractor.ExtractReadableHtmlText(
 											(string?)element.Element(Content + "encoded") ?? ""),
+						RawPublishedDate = (string?)element.Elements()
+						.FirstOrDefault(e => e.Name.LocalName == "pubDate")
+						?? (string?)element.Element(DublinCore + "date"),
 						PublishedAt = ParseDate(GetElementValue(element, "pubDate"))
 									?? ParseDate((string?)element.Element(DublinCore + "date") ?? ""),
 						Id = GetElementValue(element, "guid")
@@ -72,6 +75,8 @@ public static class FeedParser
 						Summary = ExtractAtomTextConstruct(
 									element.Element(Atom + "summary")),
 						Content = ExtractAtomContent(element),
+						RawPublishedDate = (string?)element.Element(Atom + "published")
+				?? (string?)element.Element(Atom + "updated"),
 						PublishedAt = ParseDate((string?)element.Element(Atom + "published") ?? "") ?? ParseDate((string?)element.Element(Atom + "updated") ?? ""),
 						Id = (string?)element.Element(Atom + "id") ?? ""
 					})
@@ -244,8 +249,7 @@ public static class FeedParser
 		return currentBase;
 	}
 
-	private static string ExtractAtomTextConstruct(
-		XElement? element)
+	private static string ExtractAtomTextConstruct(XElement? element)
 	{
 		if (element is null)
 		{

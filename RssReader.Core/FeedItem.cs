@@ -17,5 +17,6 @@ namespace RssReader.Core
 		//for identifying articles 
 		public string Id { get; init; } = "";
 		public string FeedUrl { get; init; } = "";
+		public string? RawPublishedDate { get; init; }
 	}
 }

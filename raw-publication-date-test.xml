@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Raw Publication Date Test Feed</title>
+    <link>http://localhost:8765/</link>
+    <description>Local fixture for testing parsed and unparseable publication dates.</description>
+    <item>
+      <title>Unparseable date: raw text should appear</title>
+      <link>http://localhost:8765/articles/raw-date</link>
+      <guid isPermaLink="false">raw-date-fixture-001</guid>
+      <description>Expected publication date display: Sometime after the purple moon.</description>
+      <pubDate>Sometime after the purple moon</pubDate>
+    </item>
+    <item>
+      <title>Valid date: formatted local date should appear</title>
+      <link>http://localhost:8765/articles/valid-date</link>
+      <guid isPermaLink="false">raw-date-fixture-002</guid>
+      <description>Expected publication date display: the parsed timestamp formatted in local time, not the original EST text.</description>
+      <pubDate>Mon, 09 Nov 2026 18:02:07 EST</pubDate>
+    </item>
+    <item>
+      <title>Missing date: unknown should appear</title>
+      <link>http://localhost:8765/articles/missing-date</link>
+      <guid isPermaLink="false">raw-date-fixture-003</guid>
+      <description>Expected publication date display: Publication date unknown.</description>
+    </item>
+    <item>
+      <title>Whitespace-only date: unknown should appear</title>
+      <link>http://localhost:8765/articles/blank-date</link>
+      <guid isPermaLink="false">raw-date-fixture-004</guid>
+      <description>Expected publication date display: Publication date unknown.</description>
+      <pubDate>   </pubDate>
+    </item>
+  </channel>
+</rss>

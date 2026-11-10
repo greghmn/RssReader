@@ -17,45 +17,75 @@ public class SqliteArticleRepository : IArticleRepository
 		}.ToString();
 	}
 
+
 	public async Task InitializeAsync()
 	{
 		await using var connection =
-				new SqliteConnection(_connectionString);
+						new SqliteConnection(_connectionString);
 
 		await connection.OpenAsync();
 
 		await using var command = connection.CreateCommand();
 
 		command.CommandText = """
-    CREATE TABLE IF NOT EXISTS Articles (
-        StorageId INTEGER PRIMARY KEY,
-        FeedUrl TEXT NOT NULL,
-        ArticleId TEXT NULL,
-        Link TEXT NOT NULL,
-        Title TEXT NOT NULL,
-        Summary TEXT NOT NULL,
-        Content TEXT NOT NULL,
-        PublishedAt TEXT NULL,
-        IdentityKey TEXT NULL
-    );
+        CREATE TABLE IF NOT EXISTS Articles (
+            StorageId INTEGER PRIMARY KEY,
+            FeedUrl TEXT NOT NULL,
+            ArticleId TEXT NULL,
+            Link TEXT NOT NULL,
+            Title TEXT NOT NULL,
+            Summary TEXT NOT NULL,
+            Content TEXT NOT NULL,
+            PublishedAt TEXT NULL,
+            RawPublishedDate TEXT NULL,
+            IdentityKey TEXT NULL
+        );
 
-    CREATE UNIQUE INDEX IF NOT EXISTS
-        IX_Articles_FeedUrl_IdentityKey
-    ON Articles (FeedUrl, IdentityKey)
-    WHERE IdentityKey IS NOT NULL;
-    """;
+        CREATE UNIQUE INDEX IF NOT EXISTS
+            IX_Articles_FeedUrl_IdentityKey
+        ON Articles (FeedUrl, IdentityKey)
+        WHERE IdentityKey IS NOT NULL;
+        """;
 
 		await command.ExecuteNonQueryAsync();
+
+		command.CommandText = "PRAGMA table_info(Articles);";
+
+		bool hasRawPublishedDate = false;
+
+		await using (var reader = await command.ExecuteReaderAsync())
+		{
+			while (await reader.ReadAsync())
+			{
+				if (reader.GetString(1) == "RawPublishedDate")
+				{
+					hasRawPublishedDate = true;
+					break;
+				}
+			}
+		}
+
+		if (!hasRawPublishedDate)
+		{
+			command.CommandText = """
+            ALTER TABLE Articles
+            ADD COLUMN RawPublishedDate TEXT NULL;
+            """;
+
+			await command.ExecuteNonQueryAsync();
+		}
 	}
 
+
 	//retrieve all locally stored articles belonging to a particular feed, without contacting the network
+
 
 	public async Task<List<FeedItem>> GetByFeedAsync(string feedUrl)
 	{
 		var articles = new List<FeedItem>();
 
 		await using var connection =
-				new SqliteConnection(_connectionString);
+						new SqliteConnection(_connectionString);
 
 		await connection.OpenAsync();
 
@@ -63,7 +93,7 @@ public class SqliteArticleRepository : IArticleRepository
 
 		command.CommandText = """
         SELECT ArticleId, Link, Title, Summary,
-               Content, PublishedAt, FeedUrl
+               Content, PublishedAt, FeedUrl, RawPublishedDate
         FROM Articles
         WHERE FeedUrl = $feedUrl
         ORDER BY PublishedAt DESC, StorageId DESC;
@@ -78,8 +108,8 @@ public class SqliteArticleRepository : IArticleRepository
 			articles.Add(new FeedItem
 			{
 				Id = reader.IsDBNull(0)
-							? ""
-							: reader.GetString(0),
+									? ""
+									: reader.GetString(0),
 
 				Link = reader.GetString(1),
 				Title = reader.GetString(2),
@@ -87,29 +117,33 @@ public class SqliteArticleRepository : IArticleRepository
 				Content = reader.GetString(4),
 
 				PublishedAt = reader.IsDBNull(5)
-							? null
-							: DateTimeOffset.Parse(reader.GetString(5)),
+									? null
+									: DateTimeOffset.Parse(reader.GetString(5)),
 
-				FeedUrl = reader.GetString(6)
+				FeedUrl = reader.GetString(6),
+
+				RawPublishedDate = reader.IsDBNull(7)
+									? null
+									: reader.GetString(7)
 			});
 		}
 
 		return articles;
 	}
 
+
 	//SQLite transaction so batch succeeds or fails as a whole 
 
-	public async Task SaveAsync(
-		string feedUrl,
-		IEnumerable<FeedItem> articles)
+
+	public async Task SaveAsync(string feedUrl, IEnumerable<FeedItem> articles)
 	{
 		await using var connection =
-				new SqliteConnection(_connectionString);
+						new SqliteConnection(_connectionString);
 
 		await connection.OpenAsync();
 
 		await using var transaction =
-				await connection.BeginTransactionAsync();
+						await connection.BeginTransactionAsync();
 
 		try
 		{
@@ -130,6 +164,7 @@ public class SqliteArticleRepository : IArticleRepository
                     Summary,
                     Content,
                     PublishedAt,
+                    RawPublishedDate,
                     IdentityKey
                 )
                 VALUES (
@@ -140,6 +175,7 @@ public class SqliteArticleRepository : IArticleRepository
                     $summary,
                     $content,
                     $publishedAt,
+                    $rawPublishedDate,
                     $identityKey
                 )
                 ON CONFLICT (FeedUrl, IdentityKey)
@@ -150,16 +186,20 @@ public class SqliteArticleRepository : IArticleRepository
                     Title = excluded.Title,
                     Summary = excluded.Summary,
                     Content = excluded.Content,
-                    PublishedAt = excluded.PublishedAt;
+                    PublishedAt = excluded.PublishedAt,
+                    RawPublishedDate = COALESCE(
+                        excluded.RawPublishedDate,
+                        Articles.RawPublishedDate
+                    );
                 """;
 
 				command.Parameters.AddWithValue("$feedUrl", feedUrl);
 
 				command.Parameters.AddWithValue(
-						"$articleId",
-						string.IsNullOrWhiteSpace(article.Id)
-								? DBNull.Value
-								: article.Id);
+								"$articleId",
+								string.IsNullOrWhiteSpace(article.Id)
+												? DBNull.Value
+												: article.Id);
 
 				command.Parameters.AddWithValue("$link", article.Link);
 				command.Parameters.AddWithValue("$title", article.Title);
@@ -167,18 +207,24 @@ public class SqliteArticleRepository : IArticleRepository
 				command.Parameters.AddWithValue("$content", article.Content);
 
 				command.Parameters.AddWithValue(
-						"$publishedAt",
-						article.PublishedAt.HasValue
-								? article.PublishedAt.Value
-										.ToUniversalTime()
-										.ToString("O")
-								: DBNull.Value);
+								"$publishedAt",
+								article.PublishedAt.HasValue
+												? article.PublishedAt.Value
+																.ToUniversalTime()
+																.ToString("O")
+												: DBNull.Value);
 
 				command.Parameters.AddWithValue(
-						"$identityKey",
-						identityKey is null
-								? DBNull.Value
-								: identityKey);
+								"$rawPublishedDate",
+								article.RawPublishedDate is null
+												? DBNull.Value
+												: article.RawPublishedDate);
+
+				command.Parameters.AddWithValue(
+								"$identityKey",
+								identityKey is null
+												? DBNull.Value
+												: identityKey);
 
 				await command.ExecuteNonQueryAsync();
 			}
@@ -191,4 +237,5 @@ public class SqliteArticleRepository : IArticleRepository
 			throw;
 		}
 	}
+
 }

@@ -476,4 +476,42 @@ public class FeedReaderTests
 						"https://example.com/feed.xml"));
 	}
 
+
+	[Fact]
+	public async Task ReadAsync_PreservesRawPublishedDateFromParsedFeed()
+	{
+		const string feedUrl = "https://example.com/feed.xml";
+		const string rawDate = "Sometime after the purple moon";
+
+		const string xml = """
+        <rss version="2.0">
+            <channel>
+                <title>Publication Date Test</title>
+                <description>Tests raw publication dates.</description>
+                <link>https://example.com</link>
+                <item>
+                    <guid>article-123</guid>
+                    <title>Unparseable Date</title>
+                    <link>https://example.com/article-123</link>
+                    <pubDate>Sometime after the purple moon</pubDate>
+                </item>
+            </channel>
+        </rss>
+        """;
+
+		using var httpClient = new HttpClient(
+						new XmlResponseHandler(xml));
+
+		var reader = new FeedReader(httpClient);
+
+		List<FeedItem> items = await reader.ReadAsync(feedUrl);
+
+		FeedItem article = Assert.Single(items);
+
+		Assert.Null(article.PublishedAt);
+		Assert.Equal(rawDate, article.RawPublishedDate);
+		Assert.Equal(feedUrl, article.FeedUrl);
+	}
+
+
 }

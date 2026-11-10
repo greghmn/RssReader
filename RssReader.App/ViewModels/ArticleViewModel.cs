@@ -35,8 +35,10 @@ public partial class ArticleViewModel : ViewModelBase
 	public bool IsUnread => !IsRead;
 
 	public string PublishedDateText =>
-		Item.PublishedAt?.ToLocalTime().ToString("g")
-		?? "Publication date unknown";
+					Item.PublishedAt?.ToLocalTime().ToString("g")
+					?? (string.IsNullOrWhiteSpace(Item.RawPublishedDate)
+									? "Publication date unknown"
+									: Item.RawPublishedDate);
 
 	public ArticleViewModel(FeedItem item, bool isRead)
 	{

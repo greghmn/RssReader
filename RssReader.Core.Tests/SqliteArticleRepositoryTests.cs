@@ -35,7 +35,8 @@ public class SqliteArticleRepositoryTests
 				Title = "An interesting article",
 				Summary = "A short summary.",
 				Content = "The complete article content.",
-				PublishedAt = publishedAt
+				PublishedAt = publishedAt,
+				RawPublishedDate = "Mon, 9 Nov 2026 18:02:07 EST",
 			};
 
 			await repository.SaveAsync(
@@ -56,6 +57,7 @@ public class SqliteArticleRepositoryTests
 			Assert.Equal(article.Summary, saved.Summary);
 			Assert.Equal(article.Content, saved.Content);
 			Assert.Equal(article.PublishedAt, saved.PublishedAt);
+			Assert.Equal(article.RawPublishedDate, saved.RawPublishedDate);
 		}
 		finally
 		{
@@ -607,5 +609,121 @@ public class SqliteArticleRepositoryTests
 			}
 		}
 	}
+
+
+	[Fact]
+	public async Task SaveAsync_WhenRawDateMissing_PreservesExistingRawDate()
+	{
+		string databasePath = Path.Combine(
+						Path.GetTempPath(),
+						$"rss-reader-articles-{Guid.NewGuid():N}.db");
+
+		const string feedUrl = "https://example.com/feed.xml";
+		const string rawDate = "Mon, 9 Nov 2026 18:02:07 EST";
+
+		try
+		{
+			var repository = new SqliteArticleRepository(databasePath);
+			await repository.InitializeAsync();
+
+			var original = new FeedItem
+			{
+				Id = "article-123",
+				FeedUrl = feedUrl,
+				Link = "https://example.com/article-123",
+				Title = "Original title",
+				RawPublishedDate = rawDate
+			};
+
+			await repository.SaveAsync(feedUrl, new[] { original });
+
+			var updated = new FeedItem
+			{
+				Id = "article-123",
+				FeedUrl = feedUrl,
+				Link = "https://example.com/article-123",
+				Title = "Updated title",
+				RawPublishedDate = null
+			};
+
+			await repository.SaveAsync(feedUrl, new[] { updated });
+
+			List<FeedItem> saved =
+							await repository.GetByFeedAsync(feedUrl);
+
+			FeedItem article = Assert.Single(saved);
+
+			Assert.Equal("Updated title", article.Title);
+			Assert.Equal(rawDate, article.RawPublishedDate);
+		}
+		finally
+		{
+			SqliteConnection.ClearAllPools();
+
+			if (File.Exists(databasePath))
+			{
+				File.Delete(databasePath);
+			}
+		}
+	}
+
+
+	[Fact]
+	public async Task SaveAsync_WhenRawDateChanges_UpdatesStoredRawDate()
+	{
+		string databasePath = Path.Combine(
+						Path.GetTempPath(),
+						$"rss-reader-articles-{Guid.NewGuid():N}.db");
+
+		const string feedUrl = "https://example.com/feed.xml";
+		const string originalDate = "Mon, 9 Nov 2026 18:02:07 EST";
+		const string updatedDate = "Tue, 10 Nov 2026 18:02:07 EST";
+
+		try
+		{
+			var repository = new SqliteArticleRepository(databasePath);
+			await repository.InitializeAsync();
+
+			var original = new FeedItem
+			{
+				Id = "article-123",
+				FeedUrl = feedUrl,
+				Link = "https://example.com/article-123",
+				Title = "Original title",
+				RawPublishedDate = originalDate
+			};
+
+			await repository.SaveAsync(feedUrl, new[] { original });
+
+			var updated = new FeedItem
+			{
+				Id = "article-123",
+				FeedUrl = feedUrl,
+				Link = "https://example.com/article-123",
+				Title = "Updated title",
+				RawPublishedDate = updatedDate
+			};
+
+			await repository.SaveAsync(feedUrl, new[] { updated });
+
+			List<FeedItem> saved =
+							await repository.GetByFeedAsync(feedUrl);
+
+			FeedItem article = Assert.Single(saved);
+
+			Assert.Equal("Updated title", article.Title);
+			Assert.Equal(updatedDate, article.RawPublishedDate);
+		}
+		finally
+		{
+			SqliteConnection.ClearAllPools();
+
+			if (File.Exists(databasePath))
+			{
+				File.Delete(databasePath);
+			}
+		}
+	}
+
 
 }

@@ -1512,4 +1512,141 @@ public class SqliteArticleRepositoryTests
 	}
 
 
+	[Fact]
+	public async Task SaveAsync_WhenArticleAcquiresId_StoresDistinctIdentityKeys()
+	{
+		string databasePath = Path.Combine(
+						Path.GetTempPath(),
+						$"rss-reader-articles-{Guid.NewGuid():N}.db");
+
+		const string feedUrl = "https://example.com/feed.xml";
+		const string articleUrl = "https://example.com/story";
+
+		try
+		{
+			var repository = new SqliteArticleRepository(databasePath);
+			await repository.InitializeAsync();
+
+			var original = new FeedItem
+			{
+				FeedUrl = feedUrl,
+				Id = null,
+				Link = articleUrl,
+				Title = "Original article"
+			};
+
+			await repository.SaveAsync(feedUrl, new[] { original });
+
+			var updated = new FeedItem
+			{
+				FeedUrl = feedUrl,
+				Id = "story-123",
+				Link = articleUrl,
+				Title = "Updated article"
+			};
+
+			await repository.SaveAsync(feedUrl, new[] { updated });
+
+			var identityKeys = new List<string>();
+
+			await using (var connection = new SqliteConnection(
+							$"Data Source={databasePath}"))
+			{
+				await connection.OpenAsync();
+
+				await using var command = connection.CreateCommand();
+
+				command.CommandText = """
+                SELECT IdentityKey
+                FROM Articles
+                WHERE FeedUrl = $feedUrl;
+                """;
+
+				command.Parameters.AddWithValue("$feedUrl", feedUrl);
+
+				await using var reader = await command.ExecuteReaderAsync();
+
+				while (await reader.ReadAsync())
+				{
+					identityKeys.Add(reader.GetString(0));
+				}
+			}
+
+			Assert.Equal(2, identityKeys.Count);
+			Assert.Contains(articleUrl, identityKeys);
+			Assert.Contains("story-123", identityKeys);
+		}
+		finally
+		{
+			SqliteConnection.ClearAllPools();
+
+			if (File.Exists(databasePath))
+			{
+				File.Delete(databasePath);
+			}
+		}
+	}
+
+
+	[Fact]
+	public async Task SaveAsync_WhenArticlesHaveNoIdentity_PreservesBoth()
+	{
+		string databasePath = Path.Combine(
+						Path.GetTempPath(),
+						$"rss-reader-articles-{Guid.NewGuid():N}.db");
+
+		const string feedUrl = "https://example.com/feed.xml";
+
+		try
+		{
+			var repository = new SqliteArticleRepository(databasePath);
+			await repository.InitializeAsync();
+
+			var first = new FeedItem
+			{
+				FeedUrl = feedUrl,
+				Id = null,
+				Link = "",
+				Title = "Untitled identity example",
+				Content = "First article content"
+			};
+
+			var second = new FeedItem
+			{
+				FeedUrl = feedUrl,
+				Id = null,
+				Link = "",
+				Title = "Untitled identity example",
+				Content = "Second article content"
+			};
+
+			await repository.SaveAsync(
+							feedUrl,
+							new[] { first, second });
+
+			List<FeedItem> saved =
+							await repository.GetByFeedAsync(feedUrl);
+
+			Assert.Equal(2, saved.Count);
+
+			Assert.Contains(
+							saved,
+							article => article.Content == "First article content");
+
+			Assert.Contains(
+							saved,
+							article => article.Content == "Second article content");
+		}
+		finally
+		{
+			SqliteConnection.ClearAllPools();
+
+			if (File.Exists(databasePath))
+			{
+				File.Delete(databasePath);
+			}
+		}
+	}
+
+
 }

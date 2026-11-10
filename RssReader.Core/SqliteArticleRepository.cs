@@ -182,8 +182,14 @@ public class SqliteArticleRepository : IArticleRepository
                 WHERE IdentityKey IS NOT NULL
                 DO UPDATE SET
                     ArticleId = excluded.ArticleId,
-                    Link = excluded.Link,
-                    Title = excluded.Title,
+                Link = COALESCE(
+                    NULLIF(excluded.Link, ''),
+                    Articles.Link
+                ),
+                Title = COALESCE(
+                    NULLIF(excluded.Title, ''),
+                    Articles.Title
+                ),
                 Summary = COALESCE(
                     NULLIF(excluded.Summary, ''),
                     Articles.Summary
@@ -210,8 +216,16 @@ public class SqliteArticleRepository : IArticleRepository
 												? DBNull.Value
 												: article.Id);
 
-				command.Parameters.AddWithValue("$link", article.Link);
-				command.Parameters.AddWithValue("$title", article.Title);
+				command.Parameters.AddWithValue(
+								"$link",
+								string.IsNullOrWhiteSpace(article.Link)
+												? ""
+												: article.Link);
+				command.Parameters.AddWithValue(
+								"$title",
+								string.IsNullOrWhiteSpace(article.Title)
+												? ""
+												: article.Title);
 				command.Parameters.AddWithValue(
 								"$summary",
 								string.IsNullOrWhiteSpace(article.Summary)

@@ -63,7 +63,8 @@ public class FakeArticleRepository : IArticleRepository
 				Title = article.Title,
 				Summary = article.Summary,
 				Content = article.Content,
-				PublishedAt = article.PublishedAt
+				PublishedAt = article.PublishedAt,
+				RawPublishedDate = article.RawPublishedDate
 			});
 		}
 

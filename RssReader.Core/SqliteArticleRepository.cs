@@ -184,9 +184,18 @@ public class SqliteArticleRepository : IArticleRepository
                     ArticleId = excluded.ArticleId,
                     Link = excluded.Link,
                     Title = excluded.Title,
-                    Summary = excluded.Summary,
-                    Content = excluded.Content,
-                    PublishedAt = excluded.PublishedAt,
+                Summary = COALESCE(
+                    NULLIF(excluded.Summary, ''),
+                    Articles.Summary
+                ),
+                Content = COALESCE(
+                    NULLIF(excluded.Content, ''),
+                    Articles.Content
+                ),
+                    PublishedAt = COALESCE(
+                    excluded.PublishedAt,
+                    Articles.PublishedAt
+                ),
                     RawPublishedDate = COALESCE(
                         excluded.RawPublishedDate,
                         Articles.RawPublishedDate
@@ -203,8 +212,16 @@ public class SqliteArticleRepository : IArticleRepository
 
 				command.Parameters.AddWithValue("$link", article.Link);
 				command.Parameters.AddWithValue("$title", article.Title);
-				command.Parameters.AddWithValue("$summary", article.Summary);
-				command.Parameters.AddWithValue("$content", article.Content);
+				command.Parameters.AddWithValue(
+								"$summary",
+								string.IsNullOrWhiteSpace(article.Summary)
+												? ""
+												: article.Summary);
+				command.Parameters.AddWithValue(
+								"$content",
+								string.IsNullOrWhiteSpace(article.Content)
+												? ""
+												: article.Content);
 
 				command.Parameters.AddWithValue(
 								"$publishedAt",

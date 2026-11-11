@@ -10,6 +10,8 @@ public class FakeSubscriptionRepository : ISubscriptionRepository
 {
 	private readonly List<FeedSubscription> _subscriptions = [];
 
+	public bool CancelOnAdd { get; set; }
+
 	public int AddCount { get; private set; }
 
 	public int? FailOnAddNumber { get; set; }
@@ -22,6 +24,12 @@ public class FakeSubscriptionRepository : ISubscriptionRepository
 	public Task AddAsync(FeedSubscription subscription)
 	{
 		AddCount++;
+
+		if (CancelOnAdd)
+		{
+			throw new OperationCanceledException(
+					"Simulated cancellation.");
+		}
 
 		if (AddCount == FailOnAddNumber)
 		{

@@ -107,21 +107,37 @@ Additional terms: See ADDITIONAL-TERMS.md in the repository root.
 
           <!-- Import status / error -->
           <StackPanel Spacing="4">
-
             <TextBlock Text="Importing subscriptions..."
-                       IsVisible="{Binding IsImportingOpml}"
-                       Opacity="0.7"
-                       TextWrapping="Wrap" />
+                       IsVisible="{Binding IsImportingOpml}" />
 
-            <TextBlock Text="{Binding OpmlImportStatus}"
-                       IsVisible="{Binding !!OpmlImportStatus}"
-                       TextWrapping="Wrap" />
+            <ScrollViewer MaxHeight="120"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          IsVisible="{Binding HasOpmlNotifications}">
+              <ItemsControl ItemsSource="{Binding OpmlNotifications}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <StackPanel Margin="0,4,0,4"
+                                Spacing="2">
+                      <TextBlock Text="{Binding FileName}"
+                                 FontWeight="SemiBold"
+                                 TextWrapping="Wrap" />
 
-            <TextBlock Text="{Binding OpmlImportError}"
-                       IsVisible="{Binding !!OpmlImportError}"
-                       Foreground="IndianRed"
-                       TextWrapping="Wrap" />
-
+                      <TextBlock Text="{Binding Message}"
+                                 TextWrapping="Wrap"
+                                 Classes.error="{Binding IsError}">
+                        <TextBlock.Styles>
+                          <Style Selector="TextBlock.error">
+                            <Setter Property="Foreground"
+                                    Value="IndianRed" />
+                          </Style>
+                        </TextBlock.Styles>
+                      </TextBlock>
+                    </StackPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
           </StackPanel>
 
           <!-- Export status / error -->

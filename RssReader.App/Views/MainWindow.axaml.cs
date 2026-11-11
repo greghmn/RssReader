@@ -12,6 +12,7 @@ using RssReader.Core;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Xml;
 namespace RssReader.App.Views;
@@ -300,33 +301,34 @@ public partial class MainWindow : Window
 
 			if (confirmed)
 			{
-				await viewModel.ExecuteOpmlImportAsync(entries);
+				List<OpmlImportExecutionResult> results =
+								await viewModel.ExecuteOpmlImportAsync(entries);
+
+				string message = viewModel.OpmlImportStatus
+								?? "No new subscriptions imported.";
+
+				bool hasFailures = results.Any(result =>
+								result.Status == OpmlImportExecutionStatus.Failed);
+
+				viewModel.ShowOpmlNotification(fileName, message, hasFailures);
 			}
 
 		}
 		catch (IOException)
 		{
-			viewModel.OpmlImportStatus = null;
-			viewModel.OpmlImportError =
-							$"{fileName}: Unable to read the file.";
+			viewModel.ShowOpmlNotification(fileName, "Unable to read the file.", true);
 		}
 		catch (UnauthorizedAccessException)
 		{
-			viewModel.OpmlImportStatus = null;
-			viewModel.OpmlImportError =
-							$"{fileName}: Permission denied while reading the file.";
+			viewModel.ShowOpmlNotification(fileName, "Permission denied while reading the file.", true);
 		}
-		catch (XmlException ex)
+		catch (XmlException)
 		{
-			viewModel.OpmlImportStatus = null;
-			viewModel.OpmlImportError =
-							$"{fileName}: Malformed XML: {ex.Message}";
+			viewModel.ShowOpmlNotification(fileName, "The file contains malformed XML.", true);
 		}
 		catch (FormatException)
 		{
-			viewModel.OpmlImportStatus = null;
-			viewModel.OpmlImportError =
-							$"{fileName}: Not a valid OPML document.";
+			viewModel.ShowOpmlNotification(fileName, "Not a valid OPML document.", true);
 		}
 	}
 	private async void ExportOpmlButton_Click(object? sender, RoutedEventArgs e)

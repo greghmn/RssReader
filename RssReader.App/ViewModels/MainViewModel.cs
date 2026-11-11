@@ -65,6 +65,7 @@ public partial class MainViewModel : ViewModelBase
 	private readonly FeedService _feedService;
 	private readonly ArticleStateService _articleStateService;
 	private readonly HashSet<string> _backgroundRefreshes = new(StringComparer.OrdinalIgnoreCase);
+	private readonly Dictionary<string, CancellationTokenSource> _opmlNotificationTimers = new(StringComparer.Ordinal);
 	private int _articleLoadRequestId;
 	private CancellationTokenSource? _articleLoadCancellation;
 	private SubscriptionViewModel? _subscriptionBeingRemoved;
@@ -83,6 +84,8 @@ public partial class MainViewModel : ViewModelBase
 	internal Task? InitialArticleLoadTask { get; private set; }
 	public ObservableCollection<SubscriptionViewModel> Subscriptions { get; } = new();
 	public ObservableCollection<ArticleViewModel> Articles { get; } = new();
+	public ObservableCollection<OpmlNotificationViewModel> OpmlNotifications { get; } = new();
+	public bool HasOpmlNotifications => OpmlNotifications.Count > 0;
 	public bool CanMarkSelectedArticleAsRead => SelectedArticle is not null && !SelectedArticle.IsRead;
 	public bool CanMarkSelectedArticleAsUnread => SelectedArticle is not null && SelectedArticle.IsRead;
 	public bool CanRemoveSubscription => HasSelectedSubscription && !IsRemovingSubscription;
@@ -127,14 +130,13 @@ public partial class MainViewModel : ViewModelBase
 		OnPropertyChanged(nameof(CanMarkSelectedArticleAsRead));
 		OnPropertyChanged(nameof(CanMarkSelectedArticleAsUnread));
 	}
-	public MainViewModel(
-					SubscriptionService subscriptionService,
-					FeedService feedService,
-					ArticleStateService articleStateService)
+	public MainViewModel(SubscriptionService subscriptionService, FeedService feedService, ArticleStateService articleStateService)
 	{
 		_subscriptionService = subscriptionService;
 		_feedService = feedService;
 		_articleStateService = articleStateService;
+		OpmlNotifications.CollectionChanged += (_, _) =>
+				OnPropertyChanged(nameof(HasOpmlNotifications));
 	}
 	public async Task LoadSubscriptionsAsync()
 	{
@@ -829,5 +831,62 @@ public partial class MainViewModel : ViewModelBase
 				await _subscriptionService.GetAllAsync();
 
 		return OpmlExporter.Export(subscriptions);
+	}
+	public void ShowOpmlNotification(string fileName, string message, bool isError)
+	{
+		if (_opmlNotificationTimers.Remove(fileName, out CancellationTokenSource? previousTimer))
+		{
+			previousTimer.Cancel();
+			previousTimer.Dispose();
+		}
+
+		OpmlNotificationViewModel? existing = OpmlNotifications
+						.FirstOrDefault(notification => notification.FileName == fileName);
+
+		if (existing is not null)
+		{
+			existing.Message = message;
+			existing.IsError = isError;
+		}
+		else
+		{
+			OpmlNotifications.Add(new OpmlNotificationViewModel(fileName, message, isError));
+		}
+
+		var timer = new CancellationTokenSource();
+		_opmlNotificationTimers[fileName] = timer;
+
+		_ = ExpireOpmlNotificationAsync(fileName, timer, isError ? TimeSpan.FromSeconds(15) : TimeSpan.FromSeconds(10));
+	}
+	private async Task ExpireOpmlNotificationAsync(string fileName, CancellationTokenSource timer, TimeSpan duration)
+	{
+		try
+		{
+			await Task.Delay(duration, timer.Token);
+
+			if (!_opmlNotificationTimers.TryGetValue(fileName, out CancellationTokenSource? currentTimer)
+							|| !ReferenceEquals(currentTimer, timer))
+			{
+				return;
+			}
+
+			_opmlNotificationTimers.Remove(fileName);
+
+			OpmlNotificationViewModel? notification = OpmlNotifications
+							.FirstOrDefault(item => item.FileName == fileName);
+
+			if (notification is not null)
+			{
+				OpmlNotifications.Remove(notification);
+			}
+		}
+		catch (OperationCanceledException)
+		{
+			// A newer notification replaced this one.
+		}
+		finally
+		{
+			timer.Dispose();
+		}
 	}
 }

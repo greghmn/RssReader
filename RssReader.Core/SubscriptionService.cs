@@ -7,29 +7,24 @@ using System.Transactions;
 namespace RssReader.Core;
 
 public class SubscriptionService
-{
+{	
 	private readonly ISubscriptionRepository _repository;
-
 	public SubscriptionService(ISubscriptionRepository repository)
 	{
 		_repository = repository;
 	}
-
 	public async Task<List<FeedSubscription>> GetAllAsync()
 	{
 		return await _repository.GetAllAsync();
 	}
-
 	public async Task<bool> IsSubscribedAsync(string url)
 	{
 		List<FeedSubscription> subscriptions =
 				await _repository.GetAllAsync();
 
 		return subscriptions.Any(subscription =>
-UrlsMatch(subscription.Url, url));
+SubscriptionUrl.Matches(subscription.Url, url));
 	}
-
-
 	public async Task<bool> AddAsync(FeedSubscription subscription)
 	{
 		/*
@@ -39,22 +34,19 @@ UrlsMatch(subscription.Url, url));
 		3. Check for duplicates 
 		4. Save subscription if not present already
 		 */
-		if (!Uri.TryCreate(
-		subscription.Url,
-		UriKind.Absolute,
-		out Uri? feedUri)
-		|| (feedUri.Scheme != Uri.UriSchemeHttp
-		&& feedUri.Scheme != Uri.UriSchemeHttps))
+
+		if (!SubscriptionUrl.IsValid(subscription.Url))
 		{
 			throw new ArgumentException(
-					"The subscription URL must be an absolute HTTP or HTTPS URL.",
-					nameof(subscription));
+							"The subscription URL must be an absolute HTTP or HTTPS URL.",
+							nameof(subscription));
 		}
+
 		List<FeedSubscription> existingSubscriptions =
 				await _repository.GetAllAsync();
 
 		bool alreadyExists = existingSubscriptions.Any(existing =>
-		UrlsMatch(existing.Url, subscription.Url));
+		SubscriptionUrl.Matches(existing.Url, subscription.Url));
 
 		if (alreadyExists)
 		{
@@ -64,7 +56,6 @@ UrlsMatch(subscription.Url, url));
 		await _repository.AddAsync(subscription);
 		return true;
 	}
-
 	public async Task<bool> RemoveAsync(string url)
 	{
 		List<FeedSubscription> existingSubscriptions =
@@ -72,7 +63,7 @@ UrlsMatch(subscription.Url, url));
 
 		FeedSubscription? subscription = existingSubscriptions
 				.FirstOrDefault(existing =>
-		UrlsMatch(existing.Url, url));
+		SubscriptionUrl.Matches(existing.Url, url));
 
 		if (subscription is null)
 		{
@@ -81,15 +72,6 @@ UrlsMatch(subscription.Url, url));
 
 		return await _repository.RemoveAsync(subscription.Url);
 	}
-
-	private static bool UrlsMatch(string first, string second)
-	{
-		return string.Equals(
-				first.TrimEnd('/'),
-				second.TrimEnd('/'),
-				StringComparison.OrdinalIgnoreCase);
-	}
-
 	public async Task<bool> RenameAsync(string url, string title)
 	{
 		if (string.IsNullOrWhiteSpace(title))
@@ -104,7 +86,7 @@ UrlsMatch(subscription.Url, url));
 
 		FeedSubscription? subscription = existingSubscriptions
 				.FirstOrDefault(existing =>
-						UrlsMatch(existing.Url, url));
+						SubscriptionUrl.Matches(existing.Url, url));
 
 		if (subscription is null)
 		{
@@ -115,10 +97,7 @@ UrlsMatch(subscription.Url, url));
 				subscription.Url,
 				title.Trim());
 	}
-
-	public async Task<bool> UpdateLastRetrievedAsync(
-		string url,
-		DateTimeOffset lastRetrieved)
+	public async Task<bool> UpdateLastRetrievedAsync(string url, DateTimeOffset lastRetrieved)
 	{
 		return await _repository.UpdateLastRetrievedAsync(
 				url,

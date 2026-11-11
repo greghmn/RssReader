@@ -11,8 +11,7 @@ namespace RssReader.App.Tests.ViewModels;
 
 public class MainViewModelTests
 {
-	private static (MainViewModel ViewModel, FakeSubscriptionRepository Repository)
-			CreateViewModel()
+	private static (MainViewModel ViewModel, FakeSubscriptionRepository Repository) CreateViewModel()
 	{
 		var repository = new FakeSubscriptionRepository();
 
@@ -34,20 +33,10 @@ public class MainViewModelTests
 		var articleStateService =
 				new ArticleStateService(articleStateRepository);
 
-		var subscriptionImportService = new SubscriptionImportService(
-		new OpmlService(),
-		subscriptionService);
-
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService,
-				subscriptionImportService,
-				new OpmlService());
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
 
 		return (viewModel, repository);
 	}
-
 	private static FeedSubscription CreateSubscription()
 	{
 		return new FeedSubscription
@@ -56,7 +45,6 @@ public class MainViewModelTests
 			Title = "Example Feed"
 		};
 	}
-
 	private static async Task<(MainViewModel ViewModel, FakeArticleStateRepository ArticleStateRepository, FakeFeedReader feedReader, FeedItem Article)> CreateArticleStateViewModel(bool initiallyRead = false)
 	{
 		var subscriptionRepository = new FakeSubscriptionRepository();
@@ -95,16 +83,8 @@ public class MainViewModelTests
 
 		var articleStateService = new ArticleStateService(articleStateRepository);
 
-		var subscriptionImportService = new SubscriptionImportService(
-				new OpmlService(),
-				subscriptionService);
 
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService,
-				subscriptionImportService,
-				new OpmlService());
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
 
 		var subscriptionViewModel = new SubscriptionViewModel(subscription);
 
@@ -117,7 +97,6 @@ public class MainViewModelTests
 
 		return (viewModel, articleStateRepository, feedReader, article);
 	}
-
 	[Fact]
 	public async Task MarkAsRead_WhenRepositoryThrows_PreservesUnreadState()
 	{
@@ -136,7 +115,6 @@ public class MainViewModelTests
 				"Unable to update the article's read status. Please try again.",
 				viewModel.ArticleStateError);
 	}
-
 	[Fact]
 	public async Task MarkAsUnread_WhenRepositoryThrows_PreservesReadState()
 	{
@@ -155,7 +133,6 @@ public class MainViewModelTests
 				"Unable to update the article's read status. Please try again.",
 				viewModel.ArticleStateError);
 	}
-
 	[Fact]
 	public async Task MarkAsRead_WhenRetrySucceeds_ClearsPreviousError()
 	{
@@ -186,7 +163,6 @@ public class MainViewModelTests
 						"https://example.com/feed.xml",
 						ArticleIdentity.GetId(article)));
 	}
-
 	[Fact]
 	public async Task RemoveSubscriptionAsync_WhenSuccessful_RemovesSubscription()
 	{
@@ -210,7 +186,6 @@ public class MainViewModelTests
 		Assert.Null(viewModel.SubscriptionOperationError);
 		Assert.False(viewModel.IsRemovingSubscription);
 	}
-
 	[Fact]
 	public async Task RemoveSubscriptionAsync_WhenSelected_ClearsSelection()
 	{
@@ -235,7 +210,6 @@ public class MainViewModelTests
 		Assert.False(viewModel.HasSelectedSubscription);
 		Assert.True(viewModel.HasNoSelectedSubscription);
 	}
-
 	[Fact]
 	public async Task RemoveSubscriptionAsync_WhenSubscriptionDoesNotExist_ReturnsFalse()
 	{
@@ -255,7 +229,6 @@ public class MainViewModelTests
 
 		Assert.False(viewModel.IsRemovingSubscription);
 	}
-
 	[Fact]
 	public async Task RemoveSubscriptionAsync_WhenRepositoryThrows_PreservesSubscription()
 	{
@@ -287,7 +260,6 @@ public class MainViewModelTests
 
 		Assert.False(viewModel.IsRemovingSubscription);
 	}
-
 	[Fact]
 	public async Task RemoveSubscriptionAsync_WhenAnotherRemovalIsInProgress_RejectsSecondAttempt()
 	{
@@ -339,7 +311,6 @@ public class MainViewModelTests
 		Assert.Empty(repository.Subscriptions);
 		Assert.False(viewModel.IsRemovingSubscription);
 	}
-
 	[Fact]
 	public async Task RemoveSubscriptionAsync_WhenSuccessful_ClearsPreviousError()
 	{
@@ -365,7 +336,6 @@ public class MainViewModelTests
 		Assert.Empty(viewModel.Subscriptions);
 		Assert.Empty(repository.Subscriptions);
 	}
-
 	[Fact]
 	public async Task RefreshSelectedFeed_WhenReaderThrows_PreservesExistingArticles()
 	{
@@ -398,7 +368,6 @@ public class MainViewModelTests
 		Assert.False(viewModel.IsRefreshingArticles);
 		Assert.False(viewModel.IsLoadingArticles);
 	}
-
 	[Fact]
 	public async Task RefreshSelectedFeed_WhenSuccessful_UpdatesArticlesAndPreservesSelection()
 	{
@@ -440,7 +409,6 @@ public class MainViewModelTests
 		Assert.False(viewModel.IsRefreshingArticles);
 		Assert.False(viewModel.IsLoadingArticles);
 	}
-
 	[Fact]
 	public async Task RRefreshSelectedFeed_WhenArticleDisappearsFromFeed_PreservesStoredArticleAndSelection()
 	{
@@ -479,7 +447,6 @@ public class MainViewModelTests
 		Assert.False(viewModel.HasNoSelectedArticle);
 		Assert.False(viewModel.IsRefreshingArticles);
 	}
-
 	[Fact]
 	public async Task RefreshSelectedFeed_WhenFeedIsEmpty_PreservesStoredArticles()
 	{
@@ -517,7 +484,6 @@ public class MainViewModelTests
 		Assert.False(viewModel.IsLoadingArticles);
 		Assert.False(viewModel.IsRefreshingArticles);
 	}
-
 	[Fact]
 	public async Task HasArticlesAwaitingSelection_ReflectsCurrentViewModelState()
 	{
@@ -535,7 +501,6 @@ public class MainViewModelTests
 		viewModel.SelectedSubscription = null;
 		Assert.False(viewModel.HasArticlesAwaitingSelection);
 	}
-
 	[Fact]
 	public async Task HasArticlesAwaitingSelection_IsFalseWhileLoading()
 	{
@@ -546,7 +511,6 @@ public class MainViewModelTests
 
 		Assert.False(viewModel.HasArticlesAwaitingSelection);
 	}
-
 	[Fact]
 	public async Task HasArticlesAwaitingSelection_IsFalseWhenRetrievalFails()
 	{
@@ -558,7 +522,6 @@ public class MainViewModelTests
 
 		Assert.False(viewModel.HasArticlesAwaitingSelection);
 	}
-
 	[Fact]
 	public async Task RenameSubscriptionAsync_WhenSuccessful_UpdatesTitle()
 	{
@@ -586,7 +549,6 @@ public class MainViewModelTests
 		Assert.Null(viewModel.SubscriptionRenameError);
 		Assert.False(viewModel.IsRenamingSubscription);
 	}
-
 	[Fact]
 	public async Task RenameSubscriptionAsync_WhenSubscriptionDoesNotExist_ReturnsFalse()
 	{
@@ -608,7 +570,6 @@ public class MainViewModelTests
 
 		Assert.False(viewModel.IsRenamingSubscription);
 	}
-
 	[Fact]
 	public async Task RenameSubscriptionAsync_WhenRepositoryThrows_PreservesTitle()
 	{
@@ -640,7 +601,6 @@ public class MainViewModelTests
 
 		Assert.False(viewModel.IsRenamingSubscription);
 	}
-
 	[Fact]
 	public async Task RenameSubscriptionAsync_WhenAnotherRenameIsInProgress_RejectsSecondAttempt()
 	{
@@ -695,7 +655,6 @@ public class MainViewModelTests
 		Assert.Equal("First Rename", subscription.Title);
 		Assert.False(viewModel.IsRenamingSubscription);
 	}
-
 	//test cached articles when the network fails 
 	[Fact]
 	public async Task SelectSubscription_WhenReaderThrows_DisplaysStoredArticles()
@@ -737,16 +696,8 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
-		var subscriptionImportService = new SubscriptionImportService(
-				new OpmlService(),
-				subscriptionService);
 
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService,
-				subscriptionImportService,
-				new OpmlService());
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
 
 		var subscriptionViewModel =
 				new SubscriptionViewModel(subscription);
@@ -784,7 +735,6 @@ public class MainViewModelTests
 		Assert.False(viewModel.IsLoadingArticles);
 		Assert.False(viewModel.IsRefreshingArticles);
 	}
-
 	[Fact]
 	public async Task SelectSubscription_WhenPreviousLoadFinishesLater_KeepsCurrentFeed()
 	{
@@ -851,16 +801,8 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
-		var subscriptionImportService = new SubscriptionImportService(
-				new OpmlService(),
-				subscriptionService);
 
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService,
-				subscriptionImportService,
-				new OpmlService());
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
 
 		var subscriptionA = new SubscriptionViewModel(feedA);
 		var subscriptionB = new SubscriptionViewModel(feedB);
@@ -921,7 +863,6 @@ public class MainViewModelTests
 		Assert.False(viewModel.IsLoadingArticles);
 		Assert.False(viewModel.IsRefreshingArticles);
 	}
-
 	[Fact]
 	public async Task SelectSubscription_WhenPreviousLoadFailsLater_DoesNotShowStaleError()
 	{
@@ -988,16 +929,8 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
-		var subscriptionImportService = new SubscriptionImportService(
-				new OpmlService(),
-				subscriptionService);
 
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService,
-				subscriptionImportService,
-				new OpmlService());
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
 
 		var subscriptionA = new SubscriptionViewModel(feedA);
 		var subscriptionB = new SubscriptionViewModel(feedB);
@@ -1051,7 +984,6 @@ public class MainViewModelTests
 		Assert.False(viewModel.IsLoadingArticles);
 		Assert.False(viewModel.IsRefreshingArticles);
 	}
-
 	[Fact]
 	public async Task RefreshSelectedFeed_WhenAlreadyRefreshing_DoesNotStartAnotherRequest()
 	{
@@ -1099,16 +1031,8 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
-		var subscriptionImportService = new SubscriptionImportService(
-				new OpmlService(),
-				subscriptionService);
 
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService,
-				subscriptionImportService,
-				new OpmlService());
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
 
 		var subscriptionViewModel =
 				new SubscriptionViewModel(subscription);
@@ -1143,7 +1067,6 @@ public class MainViewModelTests
 		Assert.False(viewModel.IsLoadingArticles);
 		Assert.Null(viewModel.ArticleLoadError);
 	}
-
 	//verify that a failed save preserves articles and timestamps
 	[Fact]
 	public async Task RefreshSelectedFeed_WhenArticleSaveFails_PreservesArticlesAndTimestamp()
@@ -1179,16 +1102,8 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
-		var subscriptionImportService = new SubscriptionImportService(
-				new OpmlService(),
-				subscriptionService);
 
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService,
-				subscriptionImportService,
-				new OpmlService());
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
 
 		var subscriptionViewModel =
 				new SubscriptionViewModel(subscription);
@@ -1247,7 +1162,6 @@ public class MainViewModelTests
 		Assert.False(viewModel.IsLoadingArticles);
 		Assert.False(viewModel.IsRefreshingArticles);
 	}
-
 	[Fact]
 	public async Task RefreshSelectedFeed_WhenArchiveReadFails_PreservesExistingArticles()
 	{
@@ -1282,16 +1196,8 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
-		var subscriptionImportService = new SubscriptionImportService(
-				new OpmlService(),
-				subscriptionService);
 
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService,
-				subscriptionImportService,
-				new OpmlService());
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
 
 		var subscriptionViewModel =
 				new SubscriptionViewModel(subscription);
@@ -1365,7 +1271,6 @@ public class MainViewModelTests
 		Assert.False(viewModel.IsLoadingArticles);
 		Assert.False(viewModel.IsRefreshingArticles);
 	}
-
 	//intial archive read fails, network retrieval still runs, and retrieved article is saved and displayed
 	[Fact]
 	public async Task SelectSubscription_WhenInitialArchiveReadFails_StillRetrievesFeed()
@@ -1408,16 +1313,8 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
-		var subscriptionImportService = new SubscriptionImportService(
-				new OpmlService(),
-				subscriptionService);
 
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService,
-				subscriptionImportService,
-				new OpmlService());
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
 
 		var subscriptionViewModel =
 				new SubscriptionViewModel(subscription);
@@ -1438,7 +1335,6 @@ public class MainViewModelTests
 		Assert.NotNull(subscription.LastRetrieved);
 		Assert.False(viewModel.IsLoadingArticles);
 	}
-
 	//scenario: archive is persistently unreadable
 	[Fact]
 	public async Task SelectSubscription_WhenArchiveRemainsUnreadable_ReportsStorageError()
@@ -1482,16 +1378,8 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
-		var subscriptionImportService = new SubscriptionImportService(
-				new OpmlService(),
-				subscriptionService);
 
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService,
-				subscriptionImportService,
-				new OpmlService());
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
 
 		var subscriptionViewModel =
 				new SubscriptionViewModel(subscription);
@@ -1563,16 +1451,8 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
-		var subscriptionImportService = new SubscriptionImportService(
-				new OpmlService(),
-				subscriptionService);
 
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService,
-				subscriptionImportService,
-				new OpmlService());
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
 
 		await viewModel.LoadSubscriptionsAsync();
 
@@ -1602,229 +1482,6 @@ public class MainViewModelTests
 
 		Assert.Same(article, Assert.Single(viewModel.Articles));
 	}
-
-	[Fact]
-	public async Task ImportOpmlAsync_WhenSuccessful_ReportsAddedSubscriptions()
-	{
-		var subscriptionRepository = new FakeSubscriptionRepository();
-
-		var subscriptionService =
-				new SubscriptionService(subscriptionRepository);
-
-		var feedService = new FeedService(
-				subscriptionService,
-				new FakeFeedReader(),
-				new FakeArticleRepository());
-
-		var articleStateService = new ArticleStateService(
-				new FakeArticleStateRepository());
-
-		var subscriptionImportService = new SubscriptionImportService(
-				new OpmlService(),
-				subscriptionService);
-
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService,
-				subscriptionImportService,
-				new OpmlService());
-
-		const string xml = """
-        <opml version="2.0">
-          <body>
-            <outline text="First Feed"
-                     xmlUrl="https://example.com/first.xml" />
-            <outline text="Second Feed"
-                     xmlUrl="https://example.com/second.xml" />
-          </body>
-        </opml>
-        """;
-
-		await viewModel.ImportOpmlCommand.ExecuteAsync(xml);
-
-		Assert.Equal(
-				"Imported 2 subscriptions.",
-				viewModel.OpmlImportStatus);
-
-		Assert.Null(viewModel.OpmlImportError);
-		Assert.False(viewModel.IsImportingOpml);
-
-		Assert.Equal(2, viewModel.Subscriptions.Count);
-		Assert.Equal(2, subscriptionRepository.Subscriptions.Count);
-	}
-
-	[Fact]
-	public async Task ImportOpmlAsync_WhenXmlMalformed_ReportsError()
-	{
-		var subscriptionRepository = new FakeSubscriptionRepository();
-
-		var subscriptionService =
-				new SubscriptionService(subscriptionRepository);
-
-		var feedService = new FeedService(
-				subscriptionService,
-				new FakeFeedReader(),
-				new FakeArticleRepository());
-
-		var articleStateService = new ArticleStateService(
-				new FakeArticleStateRepository());
-
-		var subscriptionImportService = new SubscriptionImportService(
-				new OpmlService(),
-				subscriptionService);
-
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService,
-				subscriptionImportService,
-				new OpmlService());
-
-		const string xml = """
-    <opml version="2.0">
-      <body>
-        <outline text="Broken Feed"
-                 xmlUrl="https://example.com/feed.xml">
-      </body>
-    </opml>
-    """;
-
-		await viewModel.ImportOpmlCommand.ExecuteAsync(xml);
-
-		Assert.Null(viewModel.OpmlImportStatus);
-		Assert.NotNull(viewModel.OpmlImportError);
-		Assert.Contains("OPML", viewModel.OpmlImportError);
-		Assert.False(viewModel.IsImportingOpml);
-
-		Assert.Empty(viewModel.Subscriptions);
-		Assert.Empty(subscriptionRepository.Subscriptions);
-	}
-
-	[Fact]
-	public async Task ImportOpmlAsync_WithMixedEntries_ReportsSummary()
-	{
-		var subscriptionRepository = new FakeSubscriptionRepository();
-
-		var subscriptionService =
-				new SubscriptionService(subscriptionRepository);
-
-		await subscriptionService.AddAsync(new FeedSubscription
-		{
-			Url = "https://example.com/existing.xml",
-			Title = "Existing Feed"
-		});
-
-		var feedService = new FeedService(
-				subscriptionService,
-				new FakeFeedReader(),
-				new FakeArticleRepository());
-
-		var articleStateService = new ArticleStateService(
-				new FakeArticleStateRepository());
-
-		var subscriptionImportService = new SubscriptionImportService(
-				new OpmlService(),
-				subscriptionService);
-
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService,
-				subscriptionImportService,
-				new OpmlService());
-
-		const string xml = """
-        <opml version="2.0">
-          <body>
-            <outline text="New Feed"
-                     xmlUrl="https://example.com/new.xml" />
-            <outline text="Existing Feed"
-                     xmlUrl="https://example.com/existing.xml" />
-            <outline text="Invalid Feed"
-                     xmlUrl="not-a-url" />
-          </body>
-        </opml>
-        """;
-
-		await viewModel.ImportOpmlCommand.ExecuteAsync(xml);
-
-		Assert.Equal(
-				"Imported 1 subscription. Already subscribed: 1. Invalid entries: 1.",
-				viewModel.OpmlImportStatus);
-
-		Assert.Null(viewModel.OpmlImportError);
-		Assert.False(viewModel.IsImportingOpml);
-
-		Assert.Equal(2, viewModel.Subscriptions.Count);
-		Assert.Equal(2, subscriptionRepository.Subscriptions.Count);
-	}
-
-	[Fact]
-	public async Task ImportOpmlAsync_WhenSaveFails_ReportsPartialImport()
-	{
-		var subscriptionRepository = new FakeSubscriptionRepository
-		{
-			FailOnAddNumber = 2
-		};
-
-		var subscriptionService =
-				new SubscriptionService(subscriptionRepository);
-
-		var feedService = new FeedService(
-				subscriptionService,
-				new FakeFeedReader(),
-				new FakeArticleRepository());
-
-		var articleStateService = new ArticleStateService(
-				new FakeArticleStateRepository());
-
-		var subscriptionImportService = new SubscriptionImportService(
-				new OpmlService(),
-				subscriptionService);
-
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService,
-				subscriptionImportService,
-				new OpmlService());
-
-		const string xml = """
-        <opml version="2.0">
-          <body>
-            <outline text="First Feed"
-                     xmlUrl="https://example.com/first.xml" />
-            <outline text="Second Feed"
-                     xmlUrl="https://example.com/second.xml" />
-            <outline text="Third Feed"
-                     xmlUrl="https://example.com/third.xml" />
-          </body>
-        </opml>
-        """;
-
-		await viewModel.ImportOpmlCommand.ExecuteAsync(xml);
-
-		Assert.Equal(
-				"Imported 1 subscription. Failed to save: 1. Not attempted: 1.",
-				viewModel.OpmlImportStatus);
-
-		Assert.Null(viewModel.OpmlImportError);
-		Assert.False(viewModel.IsImportingOpml);
-
-		Assert.Equal(2, subscriptionRepository.AddCount);
-
-		FeedSubscription saved =
-				Assert.Single(subscriptionRepository.Subscriptions);
-
-		Assert.Equal("First Feed", saved.Title);
-
-		SubscriptionViewModel displayed =
-				Assert.Single(viewModel.Subscriptions);
-
-		Assert.Equal("First Feed", displayed.Title);
-	}
-
 	[Fact]
 	public async Task ExportOpmlAsync_ExportsPersistedSubscriptions()
 	{
@@ -1853,16 +1510,8 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
-		var subscriptionImportService = new SubscriptionImportService(
-				new OpmlService(),
-				subscriptionService);
 
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService,
-				subscriptionImportService,
-				new OpmlService());
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
 
 		string xml = await viewModel.ExportOpmlAsync();
 
@@ -1892,8 +1541,6 @@ public class MainViewModelTests
 
 		Assert.Empty(viewModel.Subscriptions);
 	}
-
-
 	[Fact]
 	public async Task SelectingAnotherSubscription_CancelsPreviousFeedRequest()
 	{
@@ -1958,16 +1605,8 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
-		var subscriptionImportService = new SubscriptionImportService(
-				new OpmlService(),
-				subscriptionService);
 
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService,
-				subscriptionImportService,
-				new OpmlService());
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
 
 		await viewModel.LoadSubscriptionsAsync();
 
@@ -2001,8 +1640,6 @@ public class MainViewModelTests
 
 		Assert.Null(viewModel.ArticleLoadError);
 	}
-
-
 	[Fact]
 	public async Task DeselectingSubscription_CancelsPendingFeedRequest()
 	{
@@ -2057,16 +1694,8 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
-		var subscriptionImportService = new SubscriptionImportService(
-				new OpmlService(),
-				subscriptionService);
 
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService,
-				subscriptionImportService,
-				new OpmlService());
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
 
 		await viewModel.LoadSubscriptionsAsync();
 
@@ -2095,8 +1724,6 @@ public class MainViewModelTests
 		Assert.False(viewModel.IsRefreshingArticles);
 		Assert.False(viewModel.HasNoArticles);
 	}
-
-
 	[Fact]
 	public async Task RefreshSubscriptionInBackgroundAsync_PreventsDuplicateRequests()
 	{
@@ -2143,16 +1770,8 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
-		var subscriptionImportService = new SubscriptionImportService(
-				new OpmlService(),
-				subscriptionService);
 
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService,
-				subscriptionImportService,
-				new OpmlService());
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
 
 		await viewModel.LoadSubscriptionsAsync();
 
@@ -2182,8 +1801,6 @@ public class MainViewModelTests
 
 		Assert.Equal(1, readCount);
 	}
-
-
 	[Fact]
 	public async Task RefreshSubscriptionInBackgroundAsync_AllowsSubsequentRefresh()
 	{
@@ -2220,16 +1837,8 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
-		var subscriptionImportService = new SubscriptionImportService(
-				new OpmlService(),
-				subscriptionService);
 
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService,
-				subscriptionImportService,
-				new OpmlService());
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
 
 		await viewModel.LoadSubscriptionsAsync();
 
@@ -2242,8 +1851,6 @@ public class MainViewModelTests
 
 		Assert.Equal(2, readCount);
 	}
-
-
 	[Fact]
 	public async Task RefreshSubscriptionInBackgroundAsync_ReportsSuccess()
 	{
@@ -2286,16 +1893,8 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
-		var subscriptionImportService = new SubscriptionImportService(
-				new OpmlService(),
-				subscriptionService);
 
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService,
-				subscriptionImportService,
-				new OpmlService());
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
 
 		await viewModel.LoadSubscriptionsAsync();
 
@@ -2326,8 +1925,6 @@ public class MainViewModelTests
 				subscription.RefreshStatus);
 		Assert.Null(subscription.RefreshError);
 	}
-
-
 	[Fact]
 	public async Task RefreshSubscriptionInBackgroundAsync_ReportsFailure()
 	{
@@ -2373,16 +1970,8 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
-		var subscriptionImportService = new SubscriptionImportService(
-				new OpmlService(),
-				subscriptionService);
 
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService,
-				subscriptionImportService,
-				new OpmlService());
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
 
 		await viewModel.LoadSubscriptionsAsync();
 
@@ -2417,8 +2006,6 @@ public class MainViewModelTests
 		Assert.Null(viewModel.ArticleLoadError);
 		Assert.Null(firstSubscription.RefreshError);
 	}
-
-
 	[Fact]
 	public async Task RefreshSubscriptionInBackgroundAsync_UpdatesUnreadCount()
 	{
@@ -2468,16 +2055,8 @@ public class MainViewModelTests
 				feedUrl,
 				items[0]);
 
-		var subscriptionImportService = new SubscriptionImportService(
-				new OpmlService(),
-				subscriptionService);
 
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService,
-				subscriptionImportService,
-				new OpmlService());
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
 
 		await viewModel.LoadSubscriptionsAsync();
 
@@ -2491,8 +2070,6 @@ public class MainViewModelTests
 		Assert.False(subscription.IsRefreshing);
 		Assert.Null(subscription.RefreshError);
 	}
-
-
 	[Fact]
 	public async Task RefreshSubscriptionInBackgroundAsync_DoesNotUpdateRemovedSubscription()
 	{
@@ -2535,16 +2112,8 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
-		var subscriptionImportService = new SubscriptionImportService(
-				new OpmlService(),
-				subscriptionService);
 
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService,
-				subscriptionImportService,
-				new OpmlService());
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
 
 		await viewModel.LoadSubscriptionsAsync();
 
@@ -2585,8 +2154,6 @@ public class MainViewModelTests
 		Assert.Null(subscription.RefreshStatus);
 		Assert.Null(subscription.RefreshError);
 	}
-
-
 	[Fact]
 	public async Task RefreshSubscriptionInBackgroundAsync_SkipsUpdatesDuringRemoval()
 	{
@@ -2636,16 +2203,8 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
-		var subscriptionImportService = new SubscriptionImportService(
-				new OpmlService(),
-				subscriptionService);
 
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService,
-				subscriptionImportService,
-				new OpmlService());
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
 
 		await viewModel.LoadSubscriptionsAsync();
 
@@ -2713,7 +2272,6 @@ public class MainViewModelTests
 		Assert.Empty(viewModel.Subscriptions);
 		Assert.False(viewModel.IsRemovingSubscription);
 	}
-
 	[Fact]
 	public async Task RefreshSubscriptionInBackgroundAsync_DoesNotReportSuccessWhenTimestampUpdateFails()
 	{
@@ -2750,16 +2308,8 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
-		var subscriptionImportService = new SubscriptionImportService(
-				new OpmlService(),
-				subscriptionService);
 
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService,
-				subscriptionImportService,
-				new OpmlService());
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
 
 		await viewModel.LoadSubscriptionsAsync();
 
@@ -2778,8 +2328,6 @@ public class MainViewModelTests
 		Assert.False(subscription.IsRefreshing);
 		Assert.Null(subscription.LastRetrieved);
 	}
-
-
 	[Fact]
 	public async Task RefreshSubscriptionInBackgroundAsync_AllowsRetryAfterFailure()
 	{
@@ -2822,16 +2370,8 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
-		var subscriptionImportService = new SubscriptionImportService(
-				new OpmlService(),
-				subscriptionService);
 
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService,
-				subscriptionImportService,
-				new OpmlService());
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
 
 		await viewModel.LoadSubscriptionsAsync();
 
@@ -2859,8 +2399,6 @@ public class MainViewModelTests
 				"Refreshed successfully.",
 				subscription.RefreshStatus);
 	}
-
-
 	[Fact]
 	public async Task AddSubscriptionAsync_BlankTitle_UsesDiscoveredFeedTitle()
 	{
@@ -2884,19 +2422,9 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
-		var opmlService = new OpmlService();
 
-		var subscriptionImportService =
-				new SubscriptionImportService(
-						opmlService,
-						subscriptionService);
 
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService,
-				subscriptionImportService,
-				opmlService);
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
 
 		AddSubscriptionResult result =
 				await viewModel.AddSubscriptionAsync(feedUrl, "");
@@ -2915,8 +2443,6 @@ public class MainViewModelTests
 
 		Assert.Equal("Example News", storedSubscription.Title);
 	}
-
-
 	[Fact]
 	public async Task AddSubscriptionAsync_CustomTitle_SkipsTitleDiscovery()
 	{
@@ -2941,19 +2467,9 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
-		var opmlService = new OpmlService();
 
-		var subscriptionImportService =
-				new SubscriptionImportService(
-						opmlService,
-						subscriptionService);
 
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService,
-				subscriptionImportService,
-				opmlService);
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
 
 		var result =
 				await viewModel.AddSubscriptionAsync(
@@ -2975,8 +2491,6 @@ public class MainViewModelTests
 
 		Assert.Equal(customTitle, storedSubscription.Title);
 	}
-
-
 	[Fact]
 	public async Task AddSubscriptionAsync_TitleDiscoveryFails_UsesUrlFallback()
 	{
@@ -3001,19 +2515,9 @@ public class MainViewModelTests
 		var articleStateService = new ArticleStateService(
 				new FakeArticleStateRepository());
 
-		var opmlService = new OpmlService();
 
-		var subscriptionImportService =
-				new SubscriptionImportService(
-						opmlService,
-						subscriptionService);
 
-		var viewModel = new MainViewModel(
-				subscriptionService,
-				feedService,
-				articleStateService,
-				subscriptionImportService,
-				opmlService);
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
 
 		var result =
 				await viewModel.AddSubscriptionAsync(feedUrl, "");
@@ -3030,6 +2534,192 @@ public class MainViewModelTests
 				Assert.Single(subscriptionRepository.Subscriptions);
 
 		Assert.Equal(feedUrl, storedSubscription.Title);
+	}
+	[Fact]
+	public async Task PrepareOpmlImportAsync_DoesNotSaveSubscriptions()
+	{
+		var (viewModel, repository) = CreateViewModel();
+
+		const string xml = """
+        <opml version="2.0">
+          <body>
+            <outline text="New Feed"
+                     xmlUrl="https://example.com/new.xml" />
+          </body>
+        </opml>
+        """;
+
+		List<OpmlImportEntry> entries =
+						await viewModel.PrepareOpmlImportAsync(xml);
+
+		OpmlImportEntry entry = Assert.Single(entries);
+
+		Assert.Equal(OpmlImportStatus.New, entry.Status);
+		Assert.Equal(
+						"https://example.com/new.xml",
+						entry.Subscription.Url);
+
+		Assert.Empty(repository.Subscriptions);
+		Assert.Empty(viewModel.Subscriptions);
+	}
+	[Fact]
+	public async Task PrepareOpmlImportAsync_ClassifiesMixedEntries()
+	{
+		var (viewModel, repository) = CreateViewModel();
+
+		repository.Subscriptions.Add(new FeedSubscription
+		{
+			Url = "https://example.com/existing.xml",
+			Title = "Existing Feed"
+		});
+
+		const string xml = """
+        <opml version="2.0">
+          <body>
+            <outline text="New Feed"
+                     xmlUrl="https://example.com/new.xml" />
+            <outline text="Existing Feed"
+                     xmlUrl="https://example.com/existing.xml" />
+            <outline text="Duplicate Feed"
+                     xmlUrl="https://example.com/new.xml" />
+            <outline text="Invalid Feed"
+                     xmlUrl="not-a-url" />
+          </body>
+        </opml>
+        """;
+
+		List<OpmlImportEntry> entries =
+						await viewModel.PrepareOpmlImportAsync(xml);
+
+		Assert.Equal(4, entries.Count);
+
+		Assert.Equal(OpmlImportStatus.New, entries[0].Status);
+		Assert.Equal(OpmlImportStatus.AlreadySubscribed, entries[1].Status);
+		Assert.Equal(OpmlImportStatus.DuplicateInFile, entries[2].Status);
+		Assert.Equal(OpmlImportStatus.InvalidUrl, entries[3].Status);
+
+		Assert.Single(repository.Subscriptions);
+		Assert.Empty(viewModel.Subscriptions);
+	}
+	[Fact]
+	public async Task ExecuteOpmlImportAsync_SavesOnlyNewSubscriptions()
+	{
+		var (viewModel, repository) = CreateViewModel();
+
+		repository.Subscriptions.Add(new FeedSubscription
+		{
+			Url = "https://example.com/existing.xml",
+			Title = "Existing Feed"
+		});
+
+		const string xml = """
+        <opml version="2.0">
+          <body>
+            <outline text="New Feed"
+                     xmlUrl="https://example.com/new.xml" />
+            <outline text="Existing Feed"
+                     xmlUrl="https://example.com/existing.xml" />
+            <outline text="Duplicate Feed"
+                     xmlUrl="https://example.com/new.xml" />
+            <outline text="Invalid Feed"
+                     xmlUrl="not-a-url" />
+          </body>
+        </opml>
+        """;
+
+		List<OpmlImportEntry> entries =
+						await viewModel.PrepareOpmlImportAsync(xml);
+
+		Assert.Single(repository.Subscriptions);
+
+		List<OpmlImportExecutionResult> results =
+						await viewModel.ExecuteOpmlImportAsync(entries);
+
+		Assert.Equal(4, results.Count);
+
+		Assert.Equal(OpmlImportExecutionStatus.Added, results[0].Status);
+		Assert.Equal(OpmlImportExecutionStatus.Skipped, results[1].Status);
+		Assert.Equal(OpmlImportExecutionStatus.Skipped, results[2].Status);
+		Assert.Equal(OpmlImportExecutionStatus.Skipped, results[3].Status);
+
+		Assert.Equal(2, repository.Subscriptions.Count);
+		Assert.Equal(2, viewModel.Subscriptions.Count);
+	}
+	[Fact]
+	public async Task ExecuteOpmlImportAsync_WhenSaveFails_ReportsPartialImport()
+	{
+		var (viewModel, repository) = CreateViewModel();
+
+		repository.FailOnAddNumber = 2;
+
+		const string xml = """
+        <opml version="2.0">
+          <body>
+            <outline text="First Feed"
+                     xmlUrl="https://example.com/first.xml" />
+            <outline text="Second Feed"
+                     xmlUrl="https://example.com/second.xml" />
+            <outline text="Third Feed"
+                     xmlUrl="https://example.com/third.xml" />
+          </body>
+        </opml>
+        """;
+
+		List<OpmlImportEntry> entries =
+						await viewModel.PrepareOpmlImportAsync(xml);
+
+		List<OpmlImportExecutionResult> results =
+						await viewModel.ExecuteOpmlImportAsync(entries);
+
+		Assert.Equal(3, results.Count);
+
+		Assert.Equal(OpmlImportExecutionStatus.Added, results[0].Status);
+		Assert.Equal(OpmlImportExecutionStatus.Failed, results[1].Status);
+		Assert.Equal(OpmlImportExecutionStatus.Added, results[2].Status);
+
+		Assert.Equal(
+						"Imported 2 subscriptions. Failed: 1.",
+						viewModel.OpmlImportStatus);
+
+		Assert.Equal(2, repository.Subscriptions.Count);
+		Assert.Equal(2, viewModel.Subscriptions.Count);
+	}
+	[Fact]
+	public async Task ExecuteOpmlImportAsync_ReportsSkippedEntriesByReason()
+	{
+		var (viewModel, repository) = CreateViewModel();
+
+		repository.Subscriptions.Add(new FeedSubscription
+		{
+			Url = "https://example.com/existing.xml",
+			Title = "Existing Feed"
+		});
+
+		const string xml = """
+        <opml version="2.0">
+          <body>
+            <outline text="New Feed"
+                     xmlUrl="https://example.com/new.xml" />
+            <outline text="Existing Feed"
+                     xmlUrl="https://example.com/existing.xml" />
+            <outline text="Duplicate Feed"
+                     xmlUrl="https://example.com/new.xml" />
+            <outline text="Invalid Feed"
+                     xmlUrl="not-a-url" />
+          </body>
+        </opml>
+        """;
+
+		List<OpmlImportEntry> entries =
+						await viewModel.PrepareOpmlImportAsync(xml);
+
+		await viewModel.ExecuteOpmlImportAsync(entries);
+
+		Assert.Equal(
+						"Imported 1 subscription. Already subscribed: 1. Duplicates in file: 1. Invalid URLs: 1.",
+						viewModel.OpmlImportStatus);
+
+		Assert.Equal(2, repository.Subscriptions.Count);
 	}
 
 }

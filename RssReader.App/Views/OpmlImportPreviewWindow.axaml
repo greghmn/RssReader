@@ -1,0 +1,58 @@
+
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+
+        xmlns:core="using:RssReader.Core"
+        x:Class="RssReader.App.Views.OpmlImportPreviewWindow"
+
+        Title="Import OPML Preview"
+        Width="650"
+        Height="450"
+        WindowStartupLocation="CenterOwner">
+
+  <Grid RowDefinitions="Auto,*,Auto"
+        Margin="16"
+        RowSpacing="12">
+
+    <TextBlock Grid.Row="0"
+               Text="Review subscriptions before importing"
+               FontSize="18"
+               FontWeight="SemiBold" />
+
+
+    <ListBox x:Name="SubscriptionList"
+             Grid.Row="1">
+
+      <ListBox.ItemTemplate>
+        <DataTemplate x:DataType="core:OpmlImportEntry">
+          <StackPanel Margin="4"
+                      Spacing="4">
+
+            <TextBlock Text="{Binding Subscription.Title}"
+                       FontWeight="SemiBold" />
+
+            <TextBlock Text="{Binding Subscription.Url}"
+                       TextWrapping="Wrap" />
+
+            <TextBlock Text="{Binding Status}" />
+
+          </StackPanel>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+
+
+    <StackPanel Grid.Row="2"
+                Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Spacing="8">
+
+      <Button Content="Cancel"
+              Click="CancelButton_Click" />
+
+      <Button Content="Import"
+              Click="ImportButton_Click" />
+
+    </StackPanel>
+  </Grid>
+</Window>

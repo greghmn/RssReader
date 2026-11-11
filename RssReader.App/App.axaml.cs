@@ -49,12 +49,6 @@ public partial class App : Application
 			var subscriptionService =
 					new SubscriptionService(subscriptionRepository);
 
-			var opmlService = new OpmlService();
-
-			var subscriptionImportService = new SubscriptionImportService(
-					opmlService,
-					subscriptionService);
-
 			var articleStateRepository = new SqliteArticleStateRepository(databasePath);
 
 			await articleStateRepository.InitializeAsync();
@@ -77,9 +71,7 @@ public partial class App : Application
 			var mainViewModel = new MainViewModel(
 					subscriptionService,
 					feedService,
-					articleStateService,
-					subscriptionImportService,
-					opmlService);
+					articleStateService);
 
 			await mainViewModel.LoadSubscriptionsAsync();
 

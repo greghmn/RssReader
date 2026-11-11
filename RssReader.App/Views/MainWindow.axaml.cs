@@ -2,17 +2,18 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms: See ADDITIONAL-TERMS.md in the repository root.
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
+using Avalonia.VisualTree;
 using RssReader.App.ViewModels;
 using RssReader.App.Views;
 using RssReader.Core;
 using System;
-using Avalonia.Input;
-using Avalonia.VisualTree;
-using Avalonia.Platform.Storage;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
-
+using System.Xml;
 namespace RssReader.App.Views;
 
 public partial class MainWindow : Window
@@ -25,7 +26,6 @@ public partial class MainWindow : Window
 		SubscriptionList.AddHandler(InputElement.PointerPressedEvent, SubscriptionList_PointerPressed, RoutingStrategies.Tunnel);
 		AddHandler(InputElement.KeyDownEvent, MainWindow_KeyDown, RoutingStrategies.Tunnel);
 	}
-
 	private void MainWindow_KeyDown(object? sender, KeyEventArgs e)
 	{
 		if (e.Key == Key.W
@@ -35,7 +35,6 @@ public partial class MainWindow : Window
 			e.Handled = true;
 		}
 	}
-
 	private async void AddSubscriptionButton_Click(object? sender, RoutedEventArgs e)
 	{
 		if (DataContext is not MainViewModel viewModel)
@@ -50,7 +49,6 @@ public partial class MainWindow : Window
 
 		bool result = await dialog.ShowDialog<bool>(this);
 	}
-
 	private async void RemoveSubscriptionButton_Click(object? sender, RoutedEventArgs e)
 	{
 		if (DataContext is not MainViewModel viewModel)
@@ -157,7 +155,6 @@ public partial class MainWindow : Window
 			mainViewModel.ClearArticleSelectionCommand.Execute(null);
 		}
 	}
-
 	private void SubscriptionList_PointerPressed(object? sender, PointerPressedEventArgs e)
 	{
 		var properties =
@@ -204,7 +201,6 @@ public partial class MainWindow : Window
 			mainViewModel.ClearSubscriptionSelectionCommand.Execute(null);
 		}
 	}
-
 	private async void RenameSubscriptionMenuItem_Click(object? sender, RoutedEventArgs e)
 	{
 		if (sender is not MenuItem menuItem)
@@ -224,7 +220,6 @@ public partial class MainWindow : Window
 
 		await dialog.ShowDialog<bool>(this);
 	}
-
 	private async void RemoveSubscriptionMenuItem_Click(object? sender, RoutedEventArgs e)
 	{
 		if (sender is not MenuItem menuItem)
@@ -254,7 +249,6 @@ public partial class MainWindow : Window
 
 		await viewModel.RemoveSubscriptionAsync(subscription);
 	}
-
 	private async void ImportOpmlButton_Click(object? sender, RoutedEventArgs e)
 	{
 		var files = await StorageProvider.OpenFilePickerAsync(
@@ -281,6 +275,11 @@ public partial class MainWindow : Window
 			return;
 		}
 
+		string fileName = files[0].Name;
+
+		viewModel.OpmlImportStatus = null;
+		viewModel.OpmlImportError = null;
+
 		try
 		{
 			await using Stream stream = await files[0].OpenReadAsync();
@@ -292,22 +291,44 @@ public partial class MainWindow : Window
 
 			string xml = await reader.ReadToEndAsync();
 
-			await viewModel.ImportOpmlCommand.ExecuteAsync(xml);
+			List<OpmlImportEntry> entries =
+							await viewModel.PrepareOpmlImportAsync(xml);
+
+			var dialog = new OpmlImportPreviewWindow(entries);
+
+			bool confirmed = await dialog.ShowDialog<bool>(this);
+
+			if (confirmed)
+			{
+				await viewModel.ExecuteOpmlImportAsync(entries);
+			}
+
 		}
 		catch (IOException)
 		{
 			viewModel.OpmlImportStatus = null;
 			viewModel.OpmlImportError =
-					"Unable to read the selected OPML file.";
+							$"{fileName}: Unable to read the file.";
 		}
 		catch (UnauthorizedAccessException)
 		{
 			viewModel.OpmlImportStatus = null;
 			viewModel.OpmlImportError =
-					"Permission denied while reading the selected OPML file.";
+							$"{fileName}: Permission denied while reading the file.";
+		}
+		catch (XmlException ex)
+		{
+			viewModel.OpmlImportStatus = null;
+			viewModel.OpmlImportError =
+							$"{fileName}: Malformed XML: {ex.Message}";
+		}
+		catch (FormatException)
+		{
+			viewModel.OpmlImportStatus = null;
+			viewModel.OpmlImportError =
+							$"{fileName}: Not a valid OPML document.";
 		}
 	}
-
 	private async void ExportOpmlButton_Click(object? sender, RoutedEventArgs e)
 	{
 		if (DataContext is not MainViewModel viewModel)
@@ -356,8 +377,6 @@ public partial class MainWindow : Window
 					new UTF8Encoding(
 							encoderShouldEmitUTF8Identifier: false));
 
-			await writer.WriteLineAsync(
-					"<?xml version=\"1.0\" encoding=\"utf-8\"?>");
 
 			await writer.WriteAsync(xml);
 
@@ -384,7 +403,6 @@ public partial class MainWindow : Window
 			viewModel.IsExportingOpml = false;
 		}
 	}
-
 	private async void OpenFeedUrlMenuItem_Click(object? sender, RoutedEventArgs e)
 	{
 		if (sender is not MenuItem menuItem)
@@ -407,7 +425,6 @@ public partial class MainWindow : Window
 		await TopLevel.GetTopLevel(this)!
 						.Launcher.LaunchUriAsync(uri);
 	}
-
 	private async void RefreshSubscriptionMenuItem_Click(object? sender, RoutedEventArgs e)
 	{
 		if (sender is not MenuItem menuItem)

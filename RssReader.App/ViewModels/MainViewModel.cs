@@ -19,89 +19,55 @@ public partial class MainViewModel : ViewModelBase
 {
 	[ObservableProperty]
 	public partial SubscriptionViewModel? SelectedSubscription { get; set; }
-
 	[ObservableProperty]
 	public partial string? ArticleLoadError { get; set; }
-
 	[ObservableProperty]
 	public partial bool IsLoadingArticles { get; set; }
-
 	[ObservableProperty]
 	public partial bool HasSelectedSubscription { get; set; }
-
 	[ObservableProperty]
 	public partial bool HasNoSelectedSubscription { get; set; } = true;
-
 	[ObservableProperty]
 	public partial bool HasNoArticles { get; set; }
-
 	[ObservableProperty]
 	public partial ArticleViewModel? SelectedArticle { get; set; }
-
 	[ObservableProperty]
 	public partial bool HasSelectedArticle { get; set; }
-
 	[ObservableProperty]
 	public partial bool HasNoSelectedArticle { get; set; } = true;
-
 	[ObservableProperty]
 	public partial bool IsRefreshingArticles { get; set; }
-
 	[ObservableProperty]
 	public partial bool IsRemovingSubscription { get; set; }
-
 	[ObservableProperty]
 	public partial bool IsRenamingSubscription { get; set; }
-
 	[ObservableProperty]
 	public partial string? SubscriptionRenameError { get; set; }
-
 	[ObservableProperty]
 	public partial string? SubscriptionOperationError { get; set; }
-
 	[ObservableProperty]
 	public partial string? ArticleStateError { get; set; }
-
 	[ObservableProperty]
 	public partial bool HasEmptyFeed { get; set; }
-
 	[ObservableProperty]
 	public partial bool IsImportingOpml { get; set; }
-
 	[ObservableProperty]
 	public partial string? OpmlImportStatus { get; set; }
-
 	[ObservableProperty]
 	public partial string? OpmlImportError { get; set; }
-
 	[ObservableProperty]
 	public partial bool IsExportingOpml { get; set; }
-
 	[ObservableProperty]
 	public partial string? OpmlExportStatus { get; set; }
-
 	[ObservableProperty]
 	public partial string? OpmlExportError { get; set; }
-
 	private readonly SubscriptionService _subscriptionService;
-
-	private readonly OpmlService _opmlService;
-
 	private readonly FeedService _feedService;
-
 	private readonly ArticleStateService _articleStateService;
-
-	private readonly SubscriptionImportService _subscriptionImportService;
-
-	private readonly HashSet<string> _backgroundRefreshes =
-				new(StringComparer.OrdinalIgnoreCase);
-
+	private readonly HashSet<string> _backgroundRefreshes = new(StringComparer.OrdinalIgnoreCase);
 	private int _articleLoadRequestId;
-
 	private CancellationTokenSource? _articleLoadCancellation;
-
 	private SubscriptionViewModel? _subscriptionBeingRemoved;
-
 	private CancellationTokenSource BeginArticleLoad()
 	{
 		_articleLoadCancellation?.Cancel();
@@ -110,81 +76,65 @@ public partial class MainViewModel : ViewModelBase
 
 		return _articleLoadCancellation;
 	}
-
 	private void CancelArticleLoad()
 	{
 		_articleLoadCancellation?.Cancel();
 	}
-
 	internal Task? InitialArticleLoadTask { get; private set; }
-
 	public ObservableCollection<SubscriptionViewModel> Subscriptions { get; } = new();
-
 	public ObservableCollection<ArticleViewModel> Articles { get; } = new();
-
 	public bool CanMarkSelectedArticleAsRead => SelectedArticle is not null && !SelectedArticle.IsRead;
-
 	public bool CanMarkSelectedArticleAsUnread => SelectedArticle is not null && SelectedArticle.IsRead;
-
 	public bool CanRemoveSubscription => HasSelectedSubscription && !IsRemovingSubscription;
-
 	public bool CanRefreshSelectedFeed =>
 			HasSelectedSubscription
 			&& !IsLoadingArticles
 			&& !IsRefreshingArticles;
 
 	public bool HasArticlesAwaitingSelection => HasSelectedSubscription && HasNoSelectedArticle && !HasNoArticles && !IsLoadingArticles && ArticleLoadError is null;
-
 	partial void OnHasSelectedSubscriptionChanged(bool value)
 	{
 		OnPropertyChanged(nameof(CanRemoveSubscription));
 		OnPropertyChanged(nameof(HasArticlesAwaitingSelection));
 		OnPropertyChanged(nameof(CanRefreshSelectedFeed));
 	}
-
 	partial void OnIsRemovingSubscriptionChanged(bool value)
 	{
 		OnPropertyChanged(nameof(CanRemoveSubscription));
 	}
-
 	partial void OnIsRefreshingArticlesChanged(bool value)
 	{
 		OnPropertyChanged(nameof(CanRefreshSelectedFeed));
 	}
-
 	partial void OnHasNoSelectedArticleChanged(bool value)
 	{
 		OnPropertyChanged(nameof(HasArticlesAwaitingSelection));
 	}
-
 	partial void OnHasNoArticlesChanged(bool value)
 	{
 		OnPropertyChanged(nameof(HasArticlesAwaitingSelection));
 	}
-
 	partial void OnIsLoadingArticlesChanged(bool value)
 	{
 		OnPropertyChanged(nameof(HasArticlesAwaitingSelection));
 	}
-
 	partial void OnArticleLoadErrorChanged(string? value)
 	{
 		OnPropertyChanged(nameof(HasArticlesAwaitingSelection));
 	}
-
 	private void RefreshSelectedArticleReadState()
 	{
 		OnPropertyChanged(nameof(CanMarkSelectedArticleAsRead));
 		OnPropertyChanged(nameof(CanMarkSelectedArticleAsUnread));
 	}
-
-	public MainViewModel(SubscriptionService subscriptionService, FeedService feedService, ArticleStateService articleStateService, SubscriptionImportService subscriptionImportService, OpmlService opmlService)
+	public MainViewModel(
+					SubscriptionService subscriptionService,
+					FeedService feedService,
+					ArticleStateService articleStateService)
 	{
 		_subscriptionService = subscriptionService;
 		_feedService = feedService;
 		_articleStateService = articleStateService;
-		_subscriptionImportService = subscriptionImportService;
-		_opmlService = opmlService;
 	}
 	public async Task LoadSubscriptionsAsync()
 	{
@@ -205,9 +155,7 @@ public partial class MainViewModel : ViewModelBase
 			}
 		}
 	}
-
-
-	public async Task<AddSubscriptionResult> AddSubscriptionAsync(string url,string title)
+	public async Task<AddSubscriptionResult> AddSubscriptionAsync(string url, string title)
 	{
 		try
 		{
@@ -267,9 +215,6 @@ public partial class MainViewModel : ViewModelBase
 			return AddSubscriptionResult.Failed;
 		}
 	}
-
-
-
 	partial void OnSelectedSubscriptionChanged(SubscriptionViewModel? value)
 	{
 		HasSelectedSubscription = value is not null;
@@ -291,7 +236,6 @@ public partial class MainViewModel : ViewModelBase
 			IsRefreshingArticles = false;
 		}
 	}
-
 	//introduce a cache-loading helper
 	private async Task<List<ArticleViewModel>> GetStoredArticleViewModelsAsync(string feedUrl)
 	{
@@ -311,8 +255,6 @@ public partial class MainViewModel : ViewModelBase
 
 		return articles;
 	}
-
-
 	private async Task LoadArticlesSafelyAsync(FeedSubscription subscription, bool isRefresh = false)
 	{
 		CancellationTokenSource cancellationSource = BeginArticleLoad();
@@ -554,17 +496,13 @@ public partial class MainViewModel : ViewModelBase
 			cancellationSource.Dispose();
 		}
 	}
-
-
 	partial void OnSelectedArticleChanged(ArticleViewModel? value)
 	{
 		HasSelectedArticle = value is not null;
 		HasNoSelectedArticle = value is null;
 		RefreshSelectedArticleReadState();
 	}
-
 	//failed removal sim is in the following, for future reference 
-
 	public async Task<bool> RemoveSubscriptionAsync(SubscriptionViewModel subscription)
 	{
 		if (IsRemovingSubscription)
@@ -622,7 +560,6 @@ public partial class MainViewModel : ViewModelBase
 			_subscriptionBeingRemoved = null;
 		}
 	}
-
 	public async Task<bool> RenameSubscriptionAsync(SubscriptionViewModel subscription, string newTitle)
 	{
 		if (IsRenamingSubscription)
@@ -671,13 +608,11 @@ public partial class MainViewModel : ViewModelBase
 	{
 		return SetSelectedArticleReadStateAsync(true);
 	}
-
 	[RelayCommand]
 	private Task MarkSelectedArticleAsUnreadAsync()
 	{
 		return SetSelectedArticleReadStateAsync(false);
 	}
-
 	[RelayCommand]
 	private Task RefreshSelectedFeedAsync()
 	{
@@ -692,8 +627,6 @@ public partial class MainViewModel : ViewModelBase
 				SelectedSubscription.Item,
 				isRefresh: true);
 	}
-
-
 	public async Task RefreshSubscriptionInBackgroundAsync(SubscriptionViewModel subscription)
 	{
 		string feedUrl = subscription.Item.Url;
@@ -766,8 +699,6 @@ public partial class MainViewModel : ViewModelBase
 			_backgroundRefreshes.Remove(feedUrl);
 		}
 	}
-
-
 	private async Task SetSelectedArticleReadStateAsync(bool isRead)
 	{
 		ArticleViewModel? article = SelectedArticle;
@@ -812,77 +743,84 @@ public partial class MainViewModel : ViewModelBase
 					"Unable to update the article's read status. Please try again.";
 		}
 	}
-
 	[RelayCommand]
 	private void ClearArticleSelection()
 	{
 		SelectedArticle = null;
 	}
-
 	[RelayCommand]
 	private void ClearSubscriptionSelection()
 	{
 		SelectedSubscription = null;
 	}
-
-	[RelayCommand]
-	private async Task ImportOpmlAsync(string xml)
+	public async Task<List<OpmlImportEntry>> PrepareOpmlImportAsync(string xml)
 	{
-		IsImportingOpml = true;
-		OpmlImportStatus = null;
-		OpmlImportError = null;
+		List<FeedSubscription> candidates =
+						OpmlImporter.Import(xml);
 
-		try
+		List<FeedSubscription> existing =
+						await _subscriptionService.GetAllAsync();
+
+		return OpmlImportPlanner.Plan(candidates, existing);
+	}
+	public async Task<List<OpmlImportExecutionResult>> ExecuteOpmlImportAsync(IEnumerable<OpmlImportEntry> entries)
+	{
+		List<OpmlImportExecutionResult> results =
+						await OpmlImportExecutor.ExecuteAsync(
+										entries,
+										_subscriptionService);
+
+		await LoadSubscriptionsAsync();
+
+		int added = results.Count(result =>
+						result.Status == OpmlImportExecutionStatus.Added);
+
+
+		int alreadySubscribed = results.Count(result =>
+						result.Status == OpmlImportExecutionStatus.Skipped
+						&& result.PlannedStatus == RssReader.Core.OpmlImportStatus.AlreadySubscribed);
+
+		int duplicates = results.Count(result =>
+						result.Status == OpmlImportExecutionStatus.Skipped
+						&& result.PlannedStatus == RssReader.Core.OpmlImportStatus.DuplicateInFile);
+
+		int invalid = results.Count(result =>
+						result.Status == OpmlImportExecutionStatus.Skipped
+						&& result.PlannedStatus == RssReader.Core.OpmlImportStatus.InvalidUrl);
+
+
+		int failed = results.Count(result =>
+						result.Status == OpmlImportExecutionStatus.Failed);
+
+		string subscriptionWord =
+						added == 1 ? "subscription" : "subscriptions";
+
+		OpmlImportStatus =
+						$"Imported {added} {subscriptionWord}.";
+
+
+		if (alreadySubscribed > 0)
 		{
-			SubscriptionImportResult result =
-					await _subscriptionImportService.ImportAsync(xml);
-
-			await LoadSubscriptionsAsync();
-
-			string subscriptionWord =
-					result.Added.Count == 1 ? "subscription" : "subscriptions";
-
-			OpmlImportStatus =
-					$"Imported {result.Added.Count} {subscriptionWord}.";
-
-			if (result.AlreadySubscribed.Count > 0)
-			{
-				OpmlImportStatus +=
-						$" Already subscribed: {result.AlreadySubscribed.Count}.";
-			}
-
-			if (result.Issues.Count > 0)
-			{
-				OpmlImportStatus +=
-						$" Invalid entries: {result.Issues.Count}.";
-			}
-
-			if (result.Failures.Count > 0)
-			{
-				OpmlImportStatus +=
-						$" Failed to save: {result.Failures.Count}.";
-			}
-
-			if (result.NotAttempted.Count > 0)
-			{
-				OpmlImportStatus +=
-						$" Not attempted: {result.NotAttempted.Count}.";
-			}
+			OpmlImportStatus += $" Already subscribed: {alreadySubscribed}.";
 		}
-		catch (XmlException)
+
+		if (duplicates > 0)
 		{
-			OpmlImportError =
-					"Unable to import OPML: The file contains malformed XML.";
+			OpmlImportStatus += $" Duplicates in file: {duplicates}.";
 		}
-		catch (FormatException)
+
+		if (invalid > 0)
 		{
-			OpmlImportError =
-					"Unable to import OPML: The file is not a valid OPML document.";
+			OpmlImportStatus += $" Invalid URLs: {invalid}.";
 		}
-		finally
+
+
+		if (failed > 0)
 		{
-			IsImportingOpml = false;
+			OpmlImportStatus += $" Failed: {failed}.";
 		}
+
+		return results;
 	}
 
 	public async Task<string> ExportOpmlAsync()
@@ -890,6 +828,6 @@ public partial class MainViewModel : ViewModelBase
 		List<FeedSubscription> subscriptions =
 				await _subscriptionService.GetAllAsync();
 
-		return _opmlService.Export(subscriptions);
+		return OpmlExporter.Export(subscriptions);
 	}
 }

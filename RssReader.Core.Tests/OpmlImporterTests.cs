@@ -391,5 +391,16 @@ public class OpmlImporterTests
 				subscriptions[0].Url,
 				subscriptions[1].Url);
 	}
+	[Fact]
+	public void Import_ThrowsFormatException_WhenXmlIsNotOpml()
+	{
+		const string xml = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <document>
+                <title>This is not an OPML file</title>
+            </document>
+            """;
 
+		Assert.Throws<FormatException>(() => OpmlImporter.Import(xml));
+	}
 }

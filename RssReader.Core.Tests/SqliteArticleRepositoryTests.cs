@@ -1153,7 +1153,7 @@ public class SqliteArticleRepositoryTests
 			var original = new FeedItem
 			{
 				FeedUrl = feedUrl,
-				Id = null,
+				Id = "",
 				Link = articleUrl,
 				Title = "Original article",
 				Summary = "Original summary",
@@ -1239,7 +1239,7 @@ public class SqliteArticleRepositoryTests
 			var updated = new FeedItem
 			{
 				FeedUrl = feedUrl,
-				Id = null,
+				Id = "",
 				Link = articleUrl,
 				Title = "Updated article",
 				Summary = "Updated summary",
@@ -1530,7 +1530,7 @@ public class SqliteArticleRepositoryTests
 			var original = new FeedItem
 			{
 				FeedUrl = feedUrl,
-				Id = null,
+				Id = "",
 				Link = articleUrl,
 				Title = "Original article"
 			};
@@ -1605,7 +1605,7 @@ public class SqliteArticleRepositoryTests
 			var first = new FeedItem
 			{
 				FeedUrl = feedUrl,
-				Id = null,
+				Id = "",
 				Link = "",
 				Title = "Untitled identity example",
 				Content = "First article content"
@@ -1614,7 +1614,7 @@ public class SqliteArticleRepositoryTests
 			var second = new FeedItem
 			{
 				FeedUrl = feedUrl,
-				Id = null,
+				Id = "",
 				Link = "",
 				Title = "Untitled identity example",
 				Content = "Second article content"

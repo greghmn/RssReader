@@ -69,7 +69,9 @@ public class MainViewModelTests
 
 		if (initiallyRead)
 		{
-			await articleStateRepository.MarkAsReadAsync(subscription.Url, ArticleIdentity.GetId(article));
+			string articleId = Assert.IsType<string>(ArticleIdentity.GetId(article));
+
+			await articleStateRepository.MarkAsReadAsync(subscription.Url, articleId);
 		}
 
 		var subscriptionService = new SubscriptionService(subscriptionRepository);
@@ -158,10 +160,12 @@ public class MainViewModelTests
 		Assert.Equal(0, viewModel.SelectedSubscription!.UnreadCount);
 		Assert.Null(viewModel.ArticleStateError);
 
+		string articleId = Assert.IsType<string>(ArticleIdentity.GetId(article));
+
 		Assert.True(
-				await repository.IsReadAsync(
-						"https://example.com/feed.xml",
-						ArticleIdentity.GetId(article)));
+						await repository.IsReadAsync(
+										"https://example.com/feed.xml",
+										articleId));
 	}
 	[Fact]
 	public async Task RemoveSubscriptionAsync_WhenSuccessful_RemovesSubscription()
@@ -1625,7 +1629,7 @@ public class MainViewModelTests
 		await firstReadStarted.Task.WaitAsync(
 				TimeSpan.FromSeconds(5));
 
-		Task firstLoad = viewModel.InitialArticleLoadTask;
+		Task firstLoad = Assert.IsAssignableFrom<Task>(viewModel.InitialArticleLoadTask);
 
 		viewModel.SelectedSubscription = secondSubscription;
 
@@ -1707,7 +1711,7 @@ public class MainViewModelTests
 		await readStarted.Task.WaitAsync(
 				TimeSpan.FromSeconds(5));
 
-		Task pendingLoad = viewModel.InitialArticleLoadTask;
+		Task pendingLoad = Assert.IsAssignableFrom<Task>(viewModel.InitialArticleLoadTask);
 
 		viewModel.SelectedSubscription = null;
 
@@ -1987,7 +1991,9 @@ public class MainViewModelTests
 
 		viewModel.SelectedSubscription = firstSubscription;
 
-		await viewModel.InitialArticleLoadTask;
+		Task initialLoad = Assert.IsAssignableFrom<Task>(viewModel.InitialArticleLoadTask);
+
+		await initialLoad;
 
 		await viewModel.RefreshSubscriptionInBackgroundAsync(
 				secondSubscription);

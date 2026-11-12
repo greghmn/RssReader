@@ -252,19 +252,39 @@ public partial class MainWindow : Window
 	}
 	private async void ImportOpmlButton_Click(object? sender, RoutedEventArgs e)
 	{
-		var files = await StorageProvider.OpenFilePickerAsync(
-				new FilePickerOpenOptions
-				{
-					Title = "Import OPML subscriptions",
-					AllowMultiple = false,
-					FileTypeFilter =
-						[
-								new FilePickerFileType("OPML files")
-								{
-										Patterns = ["*.opml", "*.xml"]
-								}
-						]
-				});
+		IReadOnlyList<IStorageFile> files;
+
+		try
+		{
+			files = await StorageProvider.OpenFilePickerAsync(
+							new FilePickerOpenOptions
+							{
+								Title = "Import OPML subscriptions",
+								AllowMultiple = false,
+								FileTypeFilter =
+											[
+													new FilePickerFileType("OPML files")
+												{
+														Patterns = ["*.opml", "*.xml"]
+												}
+											]
+							});
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Trace.WriteLine(
+							$"Unable to open OPML file picker: {ex}");
+
+			if (DataContext is MainViewModel vm)
+			{
+				vm.ShowOpmlNotification(
+								"File selection",
+								"Unable to open the file picker.",
+								true);
+			}
+
+			return;
+		}
 
 		if (files.Count == 0)
 		{
@@ -329,6 +349,16 @@ public partial class MainWindow : Window
 		catch (FormatException)
 		{
 			viewModel.ShowOpmlNotification(fileName, "Not a valid OPML document.", true);
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Trace.WriteLine(
+							$"Unexpected OPML import error ({fileName}): {ex}");
+
+			viewModel.ShowOpmlNotification(
+							fileName,
+							"An unexpected error occurred during import. See diagnostic output for details.",
+							true);
 		}
 	}
 	private async void ExportOpmlButton_Click(object? sender, RoutedEventArgs e)

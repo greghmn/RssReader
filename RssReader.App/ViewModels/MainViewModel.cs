@@ -687,8 +687,35 @@ public partial class MainViewModel : ViewModelBase
 			subscription.RefreshStatus =
 							"Refreshed successfully.";
 		}
+		catch (ArticleStorageException ex)
+		{
+			if (!Subscriptions.Contains(subscription)
+				|| ReferenceEquals(_subscriptionBeingRemoved, subscription))
+			{
+				return;
+			}
+			Console.Error.WriteLine(
+							$"Background article storage failed for {feedUrl}: {ex}");
+
+			subscription.RefreshError = ex.Operation switch
+			{
+				ArticleStorageOperation.Read =>
+								"Unable to read saved articles from local storage.",
+
+				ArticleStorageOperation.Write =>
+								"Unable to save retrieved articles to local storage.",
+
+				_ =>
+								"Unable to access local article storage."
+			};
+		}
 		catch (Exception ex)
 		{
+			if (!Subscriptions.Contains(subscription)
+				|| ReferenceEquals(_subscriptionBeingRemoved, subscription))
+			{
+				return;
+			}
 			Console.Error.WriteLine(
 							$"Background refresh failed for {feedUrl}: {ex}");
 

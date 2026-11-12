@@ -1930,6 +1930,59 @@ public class MainViewModelTests
 		Assert.Null(subscription.RefreshError);
 	}
 	[Fact]
+	public async Task RefreshSubscriptionInBackgroundAsync_WhenSaveFails_ReportsStorageError()
+	{
+		const string feedUrl = "https://example.com/feed.xml";
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+		var subscriptionService =
+						new SubscriptionService(subscriptionRepository);
+
+		await subscriptionService.AddAsync(new FeedSubscription
+		{
+			Url = feedUrl,
+			Title = "Test Feed"
+		});
+
+		var articleRepository = new FakeArticleRepository
+		{
+			SaveException =
+								new InvalidOperationException("Simulated database failure")
+		};
+
+		var feedService = new FeedService(
+						subscriptionService,
+						new FakeFeedReader(),
+						articleRepository);
+
+		var articleStateService = new ArticleStateService(
+						new FakeArticleStateRepository());
+
+		var viewModel = new MainViewModel(
+						subscriptionService,
+						feedService,
+						articleStateService);
+
+		await viewModel.LoadSubscriptionsAsync();
+
+		SubscriptionViewModel subscription =
+						Assert.Single(viewModel.Subscriptions);
+
+		await viewModel.RefreshSubscriptionInBackgroundAsync(subscription);
+
+		Assert.Equal(
+						"Unable to save retrieved articles to local storage.",
+						subscription.RefreshError);
+
+		Assert.Null(subscription.RefreshStatus);
+		Assert.Null(subscription.LastRetrieved);
+		Assert.False(subscription.IsRefreshing);
+
+		Assert.Equal(
+						0,
+						subscriptionRepository.UpdateLastRetrievedCount);
+	}
+	[Fact]
 	public async Task RefreshSubscriptionInBackgroundAsync_ReportsFailure()
 	{
 		const string firstUrl = "https://example.com/first.xml";
@@ -2159,6 +2212,86 @@ public class MainViewModelTests
 
 		Assert.Null(subscription.RefreshStatus);
 		Assert.Null(subscription.RefreshError);
+	}
+	[Fact]
+	public async Task RefreshSubscriptionInBackgroundAsync_WhenRemovedAndRequestFails_DoesNotReportError()
+	{
+		const string feedUrl = "https://example.com/feed.xml";
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+		var subscriptionService =
+						new SubscriptionService(subscriptionRepository);
+
+		await subscriptionService.AddAsync(new FeedSubscription
+		{
+			Url = feedUrl,
+			Title = "Test Feed"
+		});
+
+		var readStarted = new TaskCompletionSource<bool>(
+						TaskCreationOptions.RunContinuationsAsynchronously);
+
+		var allowFailure = new TaskCompletionSource<bool>(
+						TaskCreationOptions.RunContinuationsAsynchronously);
+
+		var feedReader = new FakeFeedReader
+		{
+			ReadHandler = async (url, token) =>
+			{
+				readStarted.TrySetResult(true);
+
+				await allowFailure.Task;
+
+				throw new HttpRequestException(
+								"Simulated delayed network failure.");
+			}
+		};
+
+		var feedService = new FeedService(
+						subscriptionService,
+						feedReader,
+						new FakeArticleRepository());
+
+		var articleStateService = new ArticleStateService(
+						new FakeArticleStateRepository());
+
+		var viewModel = new MainViewModel(
+						subscriptionService,
+						feedService,
+						articleStateService);
+
+		await viewModel.LoadSubscriptionsAsync();
+
+		SubscriptionViewModel subscription =
+						Assert.Single(viewModel.Subscriptions);
+
+		Task refreshTask =
+						viewModel.RefreshSubscriptionInBackgroundAsync(subscription);
+
+		try
+		{
+			await readStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+			bool removed =
+							await viewModel.RemoveSubscriptionAsync(subscription);
+
+			Assert.True(removed);
+			Assert.Empty(viewModel.Subscriptions);
+		}
+		finally
+		{
+			allowFailure.TrySetResult(true);
+			await refreshTask;
+		}
+
+		Assert.False(subscription.IsRefreshing);
+		Assert.Null(subscription.RefreshError);
+		Assert.Null(subscription.RefreshStatus);
+		Assert.Null(subscription.LastRetrieved);
+
+		Assert.Equal(
+						0,
+						subscriptionRepository.UpdateLastRetrievedCount);
 	}
 	[Fact]
 	public async Task RefreshSubscriptionInBackgroundAsync_SkipsUpdatesDuringRemoval()

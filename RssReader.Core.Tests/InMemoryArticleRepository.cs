@@ -9,6 +9,10 @@ public class InMemoryArticleRepository : IArticleRepository
 {
 	private readonly List<FeedItem> _articles = new();
 
+	public int SaveCount { get; private set; }
+
+	public Exception? SaveException { get; set; }
+
 	public Task<List<FeedItem>> GetByFeedAsync(string feedUrl)
 	{
 		List<FeedItem> articles = _articles
@@ -22,6 +26,11 @@ public class InMemoryArticleRepository : IArticleRepository
 			string feedUrl,
 			IEnumerable<FeedItem> articles)
 	{
+		SaveCount++;
+		if (SaveException is not null)
+		{
+			throw SaveException;
+		}
 		foreach (FeedItem article in articles)
 		{
 			_articles.Add(new FeedItem

@@ -274,4 +274,121 @@ public class FeedServiceTests
 				cancellationSource.Token,
 				feedReader.ReceivedToken);
 	}
+
+	[Fact]
+	public async Task GetItemsAsync_WhenRetrievalFails_PreservesStoredArticles()
+	{
+		const string feedUrl = "https://example.com/feed.xml";
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+		var subscriptionService =
+						new SubscriptionService(subscriptionRepository);
+
+		await subscriptionService.AddAsync(new FeedSubscription
+		{
+			Url = feedUrl,
+			Title = "Example Feed",
+			DateAdded = DateTimeOffset.UtcNow
+		});
+
+		var articleRepository = new InMemoryArticleRepository();
+
+		var originalArticle = new FeedItem
+		{
+			Id = "article-1",
+			FeedUrl = feedUrl,
+			Link = "https://example.com/article-1",
+			Title = "Original title",
+			Summary = "Original summary",
+			Content = "Original content"
+		};
+
+		await articleRepository.SaveAsync(
+						feedUrl,
+						new[] { originalArticle });
+
+		Assert.Equal(1, articleRepository.SaveCount);
+
+		var fakeReader = new FakeFeedReader
+		{
+			ReadException = new HttpRequestException(
+								"Simulated server failure")
+		};
+
+		var feedService = new FeedService(
+						subscriptionService,
+						fakeReader,
+						articleRepository);
+
+		await Assert.ThrowsAsync<HttpRequestException>(
+						() => feedService.GetItemsAsync(feedUrl));
+
+		Assert.Equal(1, articleRepository.SaveCount);
+
+		List<FeedItem> stored =
+						await articleRepository.GetByFeedAsync(feedUrl);
+
+		FeedItem preserved = Assert.Single(stored);
+
+		Assert.Equal(originalArticle.Id, preserved.Id);
+		Assert.Equal(originalArticle.Title, preserved.Title);
+		Assert.Equal(originalArticle.Summary, preserved.Summary);
+		Assert.Equal(originalArticle.Content, preserved.Content);
+
+		Assert.Equal(1, fakeReader.ReadCount);
+	}
+	[Fact]
+	public async Task GetItemsAsync_WhenSavingFails_ThrowsArticleStorageException()
+	{
+		const string feedUrl = "https://example.com/feed.xml";
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+		var subscriptionService =
+						new SubscriptionService(subscriptionRepository);
+
+		await subscriptionService.AddAsync(new FeedSubscription
+		{
+			Url = feedUrl,
+			Title = "Example Feed",
+			DateAdded = DateTimeOffset.UtcNow
+		});
+
+		var originalException = new IOException(
+						"Simulated storage failure");
+
+		var articleRepository = new InMemoryArticleRepository
+		{
+			SaveException = originalException
+		};
+
+		var fakeReader = new FakeFeedReader
+		{
+			ItemsToReturn =
+				[
+						new FeedItem
+						{
+								Id = "article-1",
+								FeedUrl = feedUrl,
+								Title = "Example article"
+						}
+				]
+		};
+
+		var feedService = new FeedService(
+						subscriptionService,
+						fakeReader,
+						articleRepository);
+
+		ArticleStorageException exception =
+						await Assert.ThrowsAsync<ArticleStorageException>(
+										() => feedService.GetItemsAsync(feedUrl));
+
+		Assert.Equal(
+						ArticleStorageOperation.Write,
+						exception.Operation);
+
+		Assert.Same(originalException, exception.InnerException);
+		Assert.Equal(1, fakeReader.ReadCount);
+		Assert.Equal(1, articleRepository.SaveCount);
+	}
 }

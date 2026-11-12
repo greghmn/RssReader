@@ -12,45 +12,64 @@ As an aside, the name of this project is going to change from the most generic p
 
 ### Windows (x64)
 
-The initial release targets Windows x64.
+The initial release targets Windows x64 and is distributed as a **framework-dependent application**. The .NET runtime is not included in the download and must be installed separately.
 
 1. Download `RssReader-v0.0.0.0-beta.0-win-x64.zip` from the project's GitHub Releases page once it becomes available.
-2. Install the .NET 10 Runtime for Windows x64 if it is not already installed. Choose .NET Runtime, not SDK. The SDK also works but is unnecessary for running the application.
+2. Install the **[.NET 10 Runtime for Windows x64](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)** if it is not already installed. Select **.NET Runtime**, not **ASP.NET Core Runtime** or **.NET Desktop Runtime**. The .NET SDK also works but is unnecessary for running the application.
 3. Extract the ZIP archive to a directory of your choice.
-4. Run RSSReader.App.exe from the extracted directory.
+4. Run `RssReader.App.exe` from the extracted directory.
 
-RSS Reader stores its application data locally. Updates should not require deleting your existing subscriptions or article data.
+**Important:** Keep all extracted application files together in their original directory structure. The executable depends on accompanying libraries and other files, and moving or deleting them may prevent the application from starting or functioning correctly.
 
-All files **_must_** be kept in the same folder since the application depends on the accompanying libraries.
+RSS Reader stores its application data locally. Installing an updated version should not require deleting existing subscriptions, saved articles, or other application data. Nevertheless, backing up important data before updating is recommended, particularly while the software is in beta.
 
-**Current release target:** Windows x64. Other platforms are planned but are not yet provided as downloadable releases (see the **Other platforms** section for details).
+**Current release target:** Windows x64. Other platforms are planned but are not yet available as downloadable releases. See **Other platforms** and **Future plans** for additional information.
 
 ### Estimated system requirements
 
-- Minimum:
-  - OS: Windows 10 22H2, 64-bit
-  - Processor: Dual-core x64 CPU, ~1.5 GHz
-  - GPU: optional
-  - RAM: 2 GB for the whole system
-  - Storage: 250 MB for the installation plus whatever is required to store any downloads (this may be quite a bit since support for podcast streaming and downloading is currently in the works)
-  - Display: the minimum window size is currently fixed at 600 x 300, so 1280 x 720 is recommended if you want it to tile into a quarter of the screen
-  - Internet: yes
-  - .NET 10 Runtime
-- Recommended:
-  - OS: Windows 11, 640bit
-  - Processor: Dual-core or better, ~2 GHz
-  - GPU: again, optional
-  - RAM: at least 4 GB
-  - Storage: same as the minimum requirement
-  - Display: at least 1366 x 768, but 1920 x 1080 or more is ideal
-  - Internet: broadband
-  - .NET 10 Runtime
+The following specifications are preliminary estimates, not independently verified minimum or recommended requirements. Actual performance and compatibility may vary depending on the system, the number of subscriptions, and the amount of content stored.
 
-  **Notes:** As stated previously, this release does not include the .NET Runtime, so the .NET 10 Runtime must be installed separately. The OS requirement is contingent on the requirements for Avalonia and .NET 10. Avalonia is capable of software rendering, which is why a GPU is likely unnecessary. For Internet, it just needs to be able to retrieve whatever you might want, including but not limited to RSS/Atom feeds, podcasts, and whatever might be supported in the future.
+#### Minimum (estimated)
+
+- **Operating system:** Windows 10 22H2, 64-bit (intended compatibility target)
+- **Processor:** Dual-core x64 CPU, approximately 1.5 GHz
+- **Graphics:** Dedicated GPU not expected to be necessary
+- **Memory:** 2 GB RAM for the entire system
+- **Storage:** Approximately 250 MB for application files, plus additional space for the separately installed .NET runtime and locally retained content
+- **Display:** Minimum application window size of 600 × 300 pixels; a resolution of at least 1280 × 720 is suggested for comfortable use
+- **Internet:** Connection required to retrieve feeds and access online content
+- **Runtime:** .NET 10 Runtime, Windows x64
+
+#### Recommended (estimated)
+
+- **Operating system:** Windows 11, 64-bit
+- **Processor:** Dual-core x64 CPU or better, approximately 2 GHz or faster
+- **Graphics:** Dedicated GPU not expected to be necessary
+- **Memory:** At least 4 GB RAM
+- **Storage:** Approximately 250 MB for application files, plus additional space for the separately installed .NET runtime and locally retained content
+- **Display:** At least 1366 × 768 pixels; 1920 × 1080 or higher is preferable
+- **Internet:** Broadband connection
+- **Runtime:** .NET 10 Runtime, Windows x64
+
+#### Additional notes
+
+**Runtime dependency:** This is a framework-dependent release. The .NET 10 Runtime must be installed separately, and the application requires a compatible .NET 10 runtime version. The full .NET SDK is not required.
+
+**Operating system compatibility:** Windows 10 22H2 is an intended compatibility target, but Windows 10 reached the end of its general support lifecycle in October 2025. Compatibility with an operating system does not imply that the operating system continues to receive general security updates or support from its manufacturer. Compatibility and performance across different Windows configurations have not yet been comprehensively tested.
+
+**Graphics:** Avalonia supports software rendering, so a dedicated graphics processor should not be necessary. However, compatibility with every graphics configuration, driver, or rendering environment is not guaranteed.
+
+**Memory and processing:** The CPU and RAM specifications are estimates. Resource usage may vary depending on the number and size of feeds, the amount of retained content, and other applications running simultaneously.
+
+**Storage:** The estimated installation size does not include the separately installed .NET runtime or accumulated application data. Storage requirements may increase substantially as articles and other supported content are retained locally. Future features, including potential podcast downloading and other media-related capabilities, may introduce additional storage requirements.
+
+**Internet connectivity:** An internet connection is necessary to retrieve or refresh RSS/Atom feeds and access external resources. Previously saved articles may remain accessible without an active connection, depending on the content available in local storage. The application is not guaranteed to preserve every externally hosted resource referenced by an article.
 
 ### Other platforms
 
-There is no support for anything other than Windows x64 available yet. For more, see **Future plans.**
+The initial downloadable release targets **Windows x64 only**.
+
+Support for additional operating systems and architectures is planned, but no release dates or guarantees of availability are currently provided. See **Future plans** for more information about the project's intended direction.
 
 ## Features
 

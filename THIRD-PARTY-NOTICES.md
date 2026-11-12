@@ -2,7 +2,7 @@
 
 RSS Reader incorporates third-party open-source software. The copyrights and licenses of these components belong to their respective rights holders.
 
-RSS Reader's own source code is intended to be licensed under the GNU Affero General Public License, version 3 or later (AGPL-3.0-or-later). That license does not replace the licenses governing third-party components.
+RSS Reader's original source code is licensed under the GNU Affero General Public License, version 3 or later (AGPL-3.0-or-later). That license does not replace the licenses governing third-party components.
 
 The full license texts and additional notices are maintained in the [`licenses/`](licenses/) directory.
 
@@ -33,4 +33,10 @@ The `licenses/` directory also contains notices for other dependencies and distr
 
 ## Release Audit Status
 
-This document is a pre-release draft. The complete dependency inventory, license-file versions, applicable upstream notices, and distribution contents must be checked before the public beta is published.
+The third-party dependency versions listed above have been compared against the dependency inventory generated for the Windows x64 framework-dependent release.
+
+The accompanying `licenses/` directory contains license texts and notices associated with the identified components.
+
+This inventory reflects the dependencies identified during release preparation. It does not constitute an exhaustive audit of every upstream component incorporated into third-party binaries.
+
+Additional license files may be included for dependencies or distribution formats not used in this particular release.

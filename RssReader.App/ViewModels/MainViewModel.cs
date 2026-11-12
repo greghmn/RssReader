@@ -17,6 +17,7 @@ namespace RssReader.App.ViewModels;
 
 public partial class MainViewModel : ViewModelBase
 {
+	//Drug testing ahead (line 134)
 	[ObservableProperty]
 	public partial SubscriptionViewModel? SelectedSubscription { get; set; }
 	[ObservableProperty]
@@ -130,6 +131,7 @@ public partial class MainViewModel : ViewModelBase
 		OnPropertyChanged(nameof(CanMarkSelectedArticleAsRead));
 		OnPropertyChanged(nameof(CanMarkSelectedArticleAsUnread));
 	}
+	//Hi, I'm the drug tester! Lemme try whatever you've got! 
 	public MainViewModel(SubscriptionService subscriptionService, FeedService feedService, ArticleStateService articleStateService)
 	{
 		_subscriptionService = subscriptionService;

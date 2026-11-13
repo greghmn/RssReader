@@ -2860,5 +2860,151 @@ public class MainViewModelTests
 
 		Assert.Equal(2, repository.Subscriptions.Count);
 	}
+	[Fact]
+	public async Task SelectSubscription_WhenReaderThrowsAndArchiveIsEmpty_ShowsOnlyError()
+	{
+		var subscription = CreateSubscription();
 
+		var subscriptionRepository = new FakeSubscriptionRepository();
+		subscriptionRepository.Subscriptions.Add(subscription);
+
+		var subscriptionService = new SubscriptionService(subscriptionRepository);
+
+		var feedReader = new FakeFeedReader
+		{
+			ReadException = new HttpRequestException("Simulated network failure.")
+		};
+
+		var articleRepository = new FakeArticleRepository();
+		var feedService = new FeedService(subscriptionService, feedReader, articleRepository);
+
+		var articleStateService = new ArticleStateService(new FakeArticleStateRepository());
+
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
+
+		var subscriptionViewModel = new SubscriptionViewModel(subscription);
+		viewModel.Subscriptions.Add(subscriptionViewModel);
+
+		// Selection triggers cached-article loading followed by retrieval.
+		viewModel.SelectedSubscription = subscriptionViewModel;
+
+		Assert.NotNull(viewModel.InitialArticleLoadTask);
+		await viewModel.InitialArticleLoadTask;
+
+		// No cached or newly retrieved articles exist.
+		Assert.Empty(viewModel.Articles);
+
+		// The network failure must be reported.
+		Assert.Equal("Unable to load articles. Check your connection and try again.", viewModel.ArticleLoadError);
+
+		// A retrieval failure must not be presented as an empty feed.
+		Assert.False(viewModel.HasNoArticles);
+
+		// Loading has finished.
+		Assert.False(viewModel.IsLoadingArticles);
+		Assert.False(viewModel.IsRefreshingArticles);
+	}
+	[Fact]
+	public async Task SelectSubscription_WhenArticleSaveFailsAndArchiveIsEmpty_ShowsOnlyError()
+	{
+		var subscription = CreateSubscription();
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+		subscriptionRepository.Subscriptions.Add(subscription);
+
+		var subscriptionService = new SubscriptionService(subscriptionRepository);
+
+		var feedReader = new FakeFeedReader
+		{
+			Items = new List<FeedItem>
+		{
+			new FeedItem
+			{
+				Id = "article-1",
+				Title = "Retrieved Article",
+				Link = "https://example.com/article-1"
+			}
+		}
+		};
+
+		var articleRepository = new FakeArticleRepository
+		{
+			SaveException = new InvalidOperationException("Simulated database failure")
+		};
+
+		var feedService = new FeedService(subscriptionService, feedReader, articleRepository);
+
+		var articleStateService = new ArticleStateService(new FakeArticleStateRepository());
+
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
+
+		var subscriptionViewModel = new SubscriptionViewModel(subscription);
+		viewModel.Subscriptions.Add(subscriptionViewModel);
+
+		viewModel.SelectedSubscription = subscriptionViewModel;
+
+		Assert.NotNull(viewModel.InitialArticleLoadTask);
+		await viewModel.InitialArticleLoadTask;
+
+		Assert.Empty(viewModel.Articles);
+
+		Assert.Equal("Unable to save retrieved articles. Your previously saved articles are still available.", viewModel.ArticleLoadError);
+
+		Assert.False(viewModel.HasNoArticles);
+
+		Assert.False(viewModel.IsLoadingArticles);
+		Assert.False(viewModel.IsRefreshingArticles);
+	}
+	[Fact]
+	public async Task SelectSubscription_WhenArchiveIsEmpty_DoesNotShowEmptyStateWhileRetrieving()
+	{
+		var subscription = CreateSubscription();
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+		subscriptionRepository.Subscriptions.Add(subscription);
+
+		var subscriptionService = new SubscriptionService(subscriptionRepository);
+
+		var readStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+		var allowRead = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+		var feedReader = new FakeFeedReader
+		{
+			ReadStarted = readStarted,
+			AllowRead = allowRead
+		};
+
+		var articleRepository = new FakeArticleRepository();
+		var feedService = new FeedService(subscriptionService, feedReader, articleRepository);
+
+		var articleStateService = new ArticleStateService(new FakeArticleStateRepository());
+
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
+
+		var subscriptionViewModel = new SubscriptionViewModel(subscription);
+		viewModel.Subscriptions.Add(subscriptionViewModel);
+
+		viewModel.SelectedSubscription = subscriptionViewModel;
+
+		try
+		{
+			await readStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+			Assert.True(viewModel.IsLoadingArticles);
+			Assert.Empty(viewModel.Articles);
+			Assert.False(viewModel.HasNoArticles);
+		}
+		finally
+		{
+			allowRead.TrySetResult(true);
+		}
+
+		Assert.NotNull(viewModel.InitialArticleLoadTask);
+		await viewModel.InitialArticleLoadTask;
+
+		Assert.False(viewModel.IsLoadingArticles);
+		Assert.True(viewModel.HasNoArticles);
+		Assert.Empty(viewModel.Articles);
+		Assert.Null(viewModel.ArticleLoadError);
+	}
 }

@@ -305,7 +305,7 @@ public partial class MainViewModel : ViewModelBase
 						Articles.Add(article);
 					}
 
-					HasNoArticles = Articles.Count == 0;
+
 
 					SubscriptionViewModel? selectedSubscription =
 									Subscriptions.FirstOrDefault(
@@ -457,6 +457,8 @@ public partial class MainViewModel : ViewModelBase
 			Console.Error.WriteLine(
 							$"Failed to save articles from {subscription.Url}: {ex}");
 
+			HasNoArticles = false;
+
 			ArticleLoadError = ex.Operation switch
 			{
 				ArticleStorageOperation.Read =>
@@ -476,11 +478,10 @@ public partial class MainViewModel : ViewModelBase
 				return;
 			}
 
-			Console.Error.WriteLine(
-							$"Failed to load articles from {subscription.Url}: {ex}");
+			Console.Error.WriteLine($"Failed to load articles from {subscription.Url}: {ex}");
 
-			ArticleLoadError =
-							"Unable to load articles. Check your connection and try again.";
+			HasNoArticles = false;
+			ArticleLoadError = "Unable to load articles. Check your connection and try again.";
 		}
 		finally
 		{

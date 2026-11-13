@@ -513,5 +513,363 @@ public class FeedReaderTests
 		Assert.Equal(feedUrl, article.FeedUrl);
 	}
 
+	[Fact]
+	public async Task ReadAsync_WhenContentLengthExceedsLimit_RejectsFeed()
+	{
+		using var httpClient = new HttpClient(
+				new FakeHttpMessageHandler((request, token) =>
+				{
+					var response = new HttpResponseMessage(
+							HttpStatusCode.OK)
+					{
+						Content = new StringContent(
+									"<rss version=\"2.0\"><channel /></rss>")
+					};
 
+					response.Content.Headers.ContentLength =
+							11 * 1024 * 1024;
+
+					return Task.FromResult(response);
+				}));
+
+		var reader = new FeedReader(httpClient);
+
+		await Assert.ThrowsAsync<InvalidDataException>(
+				() => reader.ReadAsync(
+						"https://example.com/feed.xml"));
+	}
+	[Fact]
+	public async Task ReadAsync_WhenBodyExceedsLimitWithoutContentLength_RejectsFeed()
+	{
+		const int oversizedLength = 11 * 1024 * 1024;
+
+		byte[] body = new byte[oversizedLength];
+
+		using var httpClient = new HttpClient(
+				new FakeHttpMessageHandler((request, token) =>
+				{
+					var response = new HttpResponseMessage(
+							HttpStatusCode.OK)
+					{
+						Content = new StreamContent(
+									new MemoryStream(body))
+					};
+
+					return Task.FromResult(response);
+				}));
+
+		var reader = new FeedReader(httpClient);
+
+		await Assert.ThrowsAsync<InvalidDataException>(
+				() => reader.ReadAsync(
+						"https://example.com/feed.xml"));
+	}
+
+	// Helper class to simulate a non-seekable stream for testing purposes.
+
+	private sealed class NonSeekableStream : Stream
+	{
+		private readonly Stream _inner;
+
+		public NonSeekableStream(Stream inner)
+		{
+			_inner = inner;
+		}
+
+		public override bool CanRead => _inner.CanRead;
+		public override bool CanSeek => false;
+		public override bool CanWrite => false;
+
+		public override long Length =>
+				throw new NotSupportedException();
+
+		public override long Position
+		{
+			get => throw new NotSupportedException();
+			set => throw new NotSupportedException();
+		}
+
+		public override int Read(
+				byte[] buffer,
+				int offset,
+				int count)
+		{
+			return _inner.Read(buffer, offset, count);
+		}
+
+		public override ValueTask<int> ReadAsync(
+				Memory<byte> buffer,
+				CancellationToken cancellationToken = default)
+		{
+			return _inner.ReadAsync(buffer, cancellationToken);
+		}
+
+		public override void Flush()
+		{
+			throw new NotSupportedException();
+		}
+
+		public override long Seek(
+				long offset,
+				SeekOrigin origin)
+		{
+			throw new NotSupportedException();
+		}
+
+		public override void SetLength(long value)
+		{
+			throw new NotSupportedException();
+		}
+
+		public override void Write(
+				byte[] buffer,
+				int offset,
+				int count)
+		{
+			throw new NotSupportedException();
+		}
+
+		protected override void Dispose(bool disposing)
+		{
+			if (disposing)
+			{
+				_inner.Dispose();
+			}
+
+			base.Dispose(disposing);
+		}
+	}
+	[Fact]
+	public async Task ReadAsync_WhenNonSeekableBodyExceedsLimit_RejectsFeed()
+	{
+		const int oversizedLength = 11 * 1024 * 1024;
+
+		byte[] body = new byte[oversizedLength];
+
+		using var httpClient = new HttpClient(
+				new FakeHttpMessageHandler((request, token) =>
+				{
+					var response = new HttpResponseMessage(
+							HttpStatusCode.OK)
+					{
+						Content = new StreamContent(
+									new NonSeekableStream(
+											new MemoryStream(body)))
+					};
+
+					Assert.Null(
+							response.Content.Headers.ContentLength);
+
+					return Task.FromResult(response);
+				}));
+
+		var reader = new FeedReader(httpClient);
+
+		await Assert.ThrowsAsync<InvalidDataException>(
+				() => reader.ReadAsync(
+						"https://example.com/feed.xml"));
+	}
+	[Fact]
+	public async Task ReadTitleAsync_WhenContentLengthExceedsLimit_RejectsFeed()
+	{
+		using var httpClient = new HttpClient(
+				new FakeHttpMessageHandler((request, token) =>
+				{
+					var response = new HttpResponseMessage(
+							HttpStatusCode.OK)
+					{
+						Content = new StringContent(
+									"<rss version=\"2.0\"><channel /></rss>")
+					};
+
+					response.Content.Headers.ContentLength =
+							11 * 1024 * 1024;
+
+					return Task.FromResult(response);
+				}));
+
+		var reader = new FeedReader(httpClient);
+
+		await Assert.ThrowsAsync<InvalidDataException>(
+				() => reader.ReadTitleAsync(
+						"https://example.com/feed.xml"));
+	}
+
+	[Fact]
+	public async Task ReadTitleAsync_WhenNonSeekableBodyExceedsLimit_RejectsFeed()
+	{
+		const int oversizedLength = 11 * 1024 * 1024;
+
+		byte[] body = new byte[oversizedLength];
+
+		using var httpClient = new HttpClient(
+				new FakeHttpMessageHandler((request, token) =>
+				{
+					var response = new HttpResponseMessage(
+							HttpStatusCode.OK)
+					{
+						Content = new StreamContent(
+									new NonSeekableStream(
+											new MemoryStream(body)))
+					};
+
+					Assert.Null(
+							response.Content.Headers.ContentLength);
+
+					return Task.FromResult(response);
+				}));
+
+		var reader = new FeedReader(httpClient);
+
+		await Assert.ThrowsAsync<InvalidDataException>(
+				() => reader.ReadTitleAsync(
+						"https://example.com/feed.xml"));
+	}
+	[Fact]
+	public async Task ReadAsync_WhenDecompressedBodyExceedsLimit_RejectsFeed()
+	{
+		byte[] body = new byte[11 * 1024 * 1024];
+
+		using var httpClient = new HttpClient(
+				new FakeHttpMessageHandler((request, token) =>
+				{
+					var response = new HttpResponseMessage(
+							HttpStatusCode.OK)
+					{
+						Content = new StreamContent(
+									new NonSeekableStream(
+											new MemoryStream(body)))
+					};
+
+					response.Content.Headers.ContentEncoding.Add("gzip");
+
+					return Task.FromResult(response);
+				}));
+
+		var reader = new FeedReader(httpClient);
+
+		await Assert.ThrowsAsync<InvalidDataException>(
+				() => reader.ReadAsync(
+						"https://example.com/feed.xml"));
+	}
+	[Fact]
+	public async Task ReadAsync_WhenResponseBodyStalls_TimesOut()
+	{
+		using var cancellationSource =
+				new CancellationTokenSource(
+						TimeSpan.FromSeconds(2));
+
+		using var httpClient = new HttpClient(
+				new FakeHttpMessageHandler((request, token) =>
+				{
+					var response = new HttpResponseMessage(
+							HttpStatusCode.OK)
+					{
+						Content = new StreamContent(
+									new StallingStream())
+					};
+
+					return Task.FromResult(response);
+				}))
+		{
+			Timeout = TimeSpan.FromMilliseconds(100)
+		};
+
+		var reader = new FeedReader(httpClient);
+
+		await Assert.ThrowsAnyAsync<OperationCanceledException>(
+				async () => await reader.ReadAsync(
+						"https://example.com/feed.xml",
+						cancellationSource.Token));
+
+		Assert.False(
+				cancellationSource.IsCancellationRequested,
+				"The retrieval should time out before the test's safety cancellation.");
+	}
+
+	private sealed class StallingStream : Stream
+	{
+		public override bool CanRead => true;
+		public override bool CanSeek => false;
+		public override bool CanWrite => false;
+
+		public override long Length =>
+				throw new NotSupportedException();
+
+		public override long Position
+		{
+			get => throw new NotSupportedException();
+			set => throw new NotSupportedException();
+		}
+
+		public override async ValueTask<int> ReadAsync(
+				Memory<byte> buffer,
+				CancellationToken cancellationToken = default)
+		{
+			await Task.Delay(
+					Timeout.InfiniteTimeSpan,
+					cancellationToken);
+
+			return 0;
+		}
+
+		public override int Read(
+				byte[] buffer,
+				int offset,
+				int count)
+		{
+			throw new NotSupportedException();
+		}
+
+		public override void Flush() =>
+				throw new NotSupportedException();
+
+		public override long Seek(
+				long offset,
+				SeekOrigin origin) =>
+				throw new NotSupportedException();
+
+		public override void SetLength(long value) =>
+				throw new NotSupportedException();
+
+		public override void Write(
+				byte[] buffer,
+				int offset,
+				int count) =>
+				throw new NotSupportedException();
+	}
+	[Fact]
+	public async Task ReadTitleAsync_WhenResponseBodyStalls_TimesOut()
+	{
+		using var cancellationSource =
+				new CancellationTokenSource(
+						TimeSpan.FromSeconds(2));
+
+		using var httpClient = new HttpClient(
+				new FakeHttpMessageHandler((request, token) =>
+				{
+					var response = new HttpResponseMessage(
+							HttpStatusCode.OK)
+					{
+						Content = new StreamContent(
+									new StallingStream())
+					};
+
+					return Task.FromResult(response);
+				}))
+		{
+			Timeout = TimeSpan.FromMilliseconds(100)
+		};
+
+		var reader = new FeedReader(httpClient);
+
+		await Assert.ThrowsAnyAsync<OperationCanceledException>(
+				() => reader.ReadTitleAsync(
+						"https://example.com/feed.xml",
+						cancellationSource.Token));
+
+		Assert.False(
+				cancellationSource.IsCancellationRequested,
+				"Title retrieval should time out before the test's safety cancellation.");
+	}
 }

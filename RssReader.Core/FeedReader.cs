@@ -11,7 +11,14 @@ public class FeedReader : IFeedReader
 	private readonly HttpClient _httpClient;
 
 	public FeedReader()
-			: this(new HttpClient
+			: this(new HttpClient(
+					new HttpClientHandler
+					{
+						AutomaticDecompression =
+									System.Net.DecompressionMethods.GZip
+									| System.Net.DecompressionMethods.Deflate
+									| System.Net.DecompressionMethods.Brotli
+					})
 			{
 				Timeout = TimeSpan.FromSeconds(30)
 			})
@@ -27,79 +34,118 @@ public class FeedReader : IFeedReader
 	{
 		if (!Uri.TryCreate(feedUrl, UriKind.Absolute, out Uri? feedUri) || (feedUri.Scheme != Uri.UriSchemeHttp && feedUri.Scheme != Uri.UriSchemeHttps))
 		{
-			throw new ArgumentException(
-					"The feed URL must be an absolute HTTP or HTTPS URL.",
-					nameof(feedUrl));
+			throw new ArgumentException("The feed URL must be an absolute HTTP or HTTPS URL.", nameof(feedUrl));
 		}
-		using HttpResponseMessage response =
-				await _httpClient.GetAsync(
-						feedUri,
-						HttpCompletionOption.ResponseHeadersRead,
-						cancellationToken);
+
+		// Combine caller cancellation with the HTTP timeout.
+		using var timeoutSource = CreateTimeoutSource(cancellationToken);
+		CancellationToken effectiveToken = timeoutSource.Token;
+
+		// Request headers without buffering the entire response.
+		using HttpResponseMessage response = await _httpClient.GetAsync(feedUri, HttpCompletionOption.ResponseHeadersRead, effectiveToken);
 
 		response.EnsureSuccessStatusCode();
 
-		await using var stream =
-				await response.Content.ReadAsStreamAsync(cancellationToken);
+		// Enforce the 10 MiB limit while downloading and parsing.
+		XDocument document = await LoadBoundedXmlAsync(response, effectiveToken);
 
-		XDocument document = await XDocument.LoadAsync(
-				stream,
-				LoadOptions.None,
-				cancellationToken);
-
+		// Resolve relative links against the final URL after redirects.
 		Uri finalFeedUri = response.RequestMessage?.RequestUri ?? feedUri;
 
 		List<FeedItem> items = FeedParser.Parse(document, finalFeedUri);
 
-		//note: FeedItem's properties have init, not set; the immutability removes any potential shared state issue, but it might be computationally costly to copy like so. We'll see/figure out a workaround if necessary.
-
 		return items
-.Select(item => new FeedItem
-{
-	Id = item.Id,
-	FeedUrl = feedUrl,
-	Title = item.Title,
-	Link = item.Link,
-	Summary = item.Summary,
-	Content = item.Content,
-	PublishedAt = item.PublishedAt,
-	RawPublishedDate = item.RawPublishedDate
-})
-.ToList();
+			.Select(item => new FeedItem
+			{
+				Id = item.Id,
+				FeedUrl = feedUrl,
+				Title = item.Title,
+				Link = item.Link,
+				Summary = item.Summary,
+				Content = item.Content,
+				PublishedAt = item.PublishedAt,
+				RawPublishedDate = item.RawPublishedDate
+			})
+			.ToList();
 	}
-
 
 	public async Task<string?> ReadTitleAsync(string feedUrl, CancellationToken cancellationToken = default)
 	{
-		if (!Uri.TryCreate(
-						feedUrl,
-						UriKind.Absolute,
-						out Uri? feedUri)
-						|| (feedUri.Scheme != Uri.UriSchemeHttp
-								&& feedUri.Scheme != Uri.UriSchemeHttps))
+		if (!Uri.TryCreate(feedUrl, UriKind.Absolute, out Uri? feedUri) || (feedUri.Scheme != Uri.UriSchemeHttp && feedUri.Scheme != Uri.UriSchemeHttps))
 		{
-			throw new ArgumentException(
-							"The feed URL must be an absolute HTTP or HTTPS URL.",
-							nameof(feedUrl));
+			throw new ArgumentException("The feed URL must be an absolute HTTP or HTTPS URL.", nameof(feedUrl));
 		}
 
-		using HttpResponseMessage response =
-						await _httpClient.GetAsync(
-										feedUri,
-										HttpCompletionOption.ResponseHeadersRead,
-										cancellationToken);
+		// Combine caller cancellation with the HTTP timeout.
+		using var timeoutSource = CreateTimeoutSource(cancellationToken);
+		CancellationToken effectiveToken = timeoutSource.Token;
+
+		using HttpResponseMessage response = await _httpClient.GetAsync(feedUri, HttpCompletionOption.ResponseHeadersRead, effectiveToken);
 
 		response.EnsureSuccessStatusCode();
 
-		await using var stream =
-						await response.Content.ReadAsStreamAsync(cancellationToken);
-
-		XDocument document = await XDocument.LoadAsync(
-						stream,
-						LoadOptions.None,
-						cancellationToken);
+		XDocument document = await LoadBoundedXmlAsync(response, effectiveToken);
 
 		return FeedParser.ParseFeedTitle(document);
 	}
+	//note: this method is used to load the feed XML document, but it also checks the size of the feed and throws an exception if it exceeds a reasonable limit. This is to prevent downloading very large feeds that could cause performance issues or memory exhaustion.
+	private static async Task<XDocument> LoadBoundedXmlAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+	{
+		const long maximumFeedSize = 10L * 1024 * 1024;
 
+		long? declaredSize =
+				response.Content.Headers.ContentLength;
+
+		if (declaredSize.HasValue &&
+				declaredSize.Value > maximumFeedSize)
+		{
+			throw new InvalidDataException(
+					"The feed exceeds the maximum permitted size.");
+		}
+
+		await using var stream =
+				await response.Content.ReadAsStreamAsync(cancellationToken);
+
+		using var buffer = new MemoryStream();
+
+		byte[] chunk = new byte[81920];
+
+		while (true)
+		{
+			int bytesRead = await stream.ReadAsync(
+					chunk.AsMemory(),
+					cancellationToken);
+
+			if (bytesRead == 0)
+			{
+				break;
+			}
+
+			if (buffer.Length + bytesRead > maximumFeedSize)
+			{
+				throw new InvalidDataException(
+						"The feed exceeds the maximum permitted size.");
+			}
+
+			buffer.Write(chunk, 0, bytesRead);
+		}
+
+		buffer.Position = 0;
+
+		return await XDocument.LoadAsync(
+				buffer,
+				LoadOptions.None,
+				cancellationToken);
+	}
+	private CancellationTokenSource CreateTimeoutSource(CancellationToken cancellationToken)
+	{
+		var source = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+		if (_httpClient.Timeout != Timeout.InfiniteTimeSpan)
+		{
+			source.CancelAfter(_httpClient.Timeout);
+		}
+
+		return source;
+	}
 }

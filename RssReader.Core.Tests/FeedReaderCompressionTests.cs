@@ -80,7 +80,7 @@ public class FeedReaderCompressionTests
 
 		try
 		{
-			await Assert.ThrowsAsync<InvalidDataException>(
+			await Assert.ThrowsAsync<FeedSizeLimitExceededException>(
 					() => feedReader.ReadAsync(
 							$"http://127.0.0.1:{port}/feed.xml"));
 

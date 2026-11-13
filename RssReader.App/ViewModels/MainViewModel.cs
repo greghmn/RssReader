@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
@@ -259,6 +260,8 @@ public partial class MainViewModel : ViewModelBase
 
 		return articles;
 	}
+
+
 	private async Task LoadArticlesSafelyAsync(FeedSubscription subscription, bool isRefresh = false)
 	{
 		CancellationTokenSource cancellationSource = BeginArticleLoad();
@@ -266,13 +269,8 @@ public partial class MainViewModel : ViewModelBase
 
 		int requestId = ++_articleLoadRequestId;
 
-		string? selectedArticleId = isRefresh
-						? SelectedArticle?.Item.Id
-						: null;
-
-		string? selectedArticleLink = isRefresh
-						? SelectedArticle?.Item.Link
-						: null;
+		string? selectedArticleId = isRefresh ? SelectedArticle?.Item.Id : null;
+		string? selectedArticleLink = isRefresh ? SelectedArticle?.Item.Link : null;
 
 		IsLoadingArticles = !isRefresh;
 		IsRefreshingArticles = isRefresh;
@@ -292,8 +290,7 @@ public partial class MainViewModel : ViewModelBase
 			{
 				try
 				{
-					List<ArticleViewModel> storedArticles =
-									await GetStoredArticleViewModelsAsync(subscription.Url);
+					List<ArticleViewModel> storedArticles = await GetStoredArticleViewModelsAsync(subscription.Url);
 
 					if (requestId != _articleLoadRequestId)
 					{
@@ -305,16 +302,11 @@ public partial class MainViewModel : ViewModelBase
 						Articles.Add(article);
 					}
 
-
-
-					SubscriptionViewModel? selectedSubscription =
-									Subscriptions.FirstOrDefault(
-													s => s.Item.Url == subscription.Url);
+					SubscriptionViewModel? selectedSubscription = Subscriptions.FirstOrDefault(s => s.Item.Url == subscription.Url);
 
 					if (selectedSubscription is not null)
 					{
-						selectedSubscription.UnreadCount =
-										storedArticles.Count(article => !article.IsRead);
+						selectedSubscription.UnreadCount = storedArticles.Count(article => !article.IsRead);
 					}
 				}
 				catch (ArticleStorageException ex)
@@ -324,15 +316,11 @@ public partial class MainViewModel : ViewModelBase
 						return;
 					}
 
-					Console.Error.WriteLine(
-									$"Unable to read cached articles from {subscription.Url}: {ex}");
+					Console.Error.WriteLine($"Unable to read cached articles from {subscription.Url}: {ex}");
 				}
 			}
 
-			List<FeedItem> retrievedArticles =
-							await _feedService.GetItemsAsync(
-											subscription.Url,
-											cancellationToken);
+			List<FeedItem> retrievedArticles = await _feedService.GetItemsAsync(subscription.Url, cancellationToken);
 
 			if (requestId != _articleLoadRequestId)
 			{
@@ -345,21 +333,17 @@ public partial class MainViewModel : ViewModelBase
 			{
 				articles = await _feedService.GetStoredItemsAsync(subscription.Url);
 			}
-			catch (ArticleStorageException ex)
-							when (ex.Operation == ArticleStorageOperation.Read && !isRefresh)
+			catch (ArticleStorageException ex) when (ex.Operation == ArticleStorageOperation.Read && !isRefresh)
 			{
 				if (requestId != _articleLoadRequestId)
 				{
 					return;
 				}
 
-				Console.Error.WriteLine(
-								$"Unable to read saved articles from {subscription.Url}: {ex}");
+				Console.Error.WriteLine($"Unable to read saved articles from {subscription.Url}: {ex}");
 
 				articles = retrievedArticles;
-
-				ArticleLoadError =
-								"Unable to read saved articles from local storage. Showing recently retrieved articles instead.";
+				ArticleLoadError = "Unable to read saved articles from local storage. Showing recently retrieved articles instead.";
 			}
 
 			if (requestId != _articleLoadRequestId)
@@ -372,9 +356,7 @@ public partial class MainViewModel : ViewModelBase
 
 			foreach (var article in articles)
 			{
-				bool isRead = await _articleStateService.IsReadAsync(
-								subscription.Url,
-								article);
+				bool isRead = await _articleStateService.IsReadAsync(subscription.Url, article);
 
 				if (requestId != _articleLoadRequestId)
 				{
@@ -401,16 +383,11 @@ public partial class MainViewModel : ViewModelBase
 				Articles.Add(article);
 			}
 
-			SelectedArticle = loadedArticles.FirstOrDefault(
-							article =>
-											(!string.IsNullOrEmpty(selectedArticleId)
-											&& article.Item.Id == selectedArticleId)
-											|| (!string.IsNullOrEmpty(selectedArticleLink)
-											&& article.Item.Link == selectedArticleLink));
+			SelectedArticle = loadedArticles.FirstOrDefault(article =>
+				(!string.IsNullOrEmpty(selectedArticleId) && article.Item.Id == selectedArticleId)
+				|| (!string.IsNullOrEmpty(selectedArticleLink) && article.Item.Link == selectedArticleLink));
 
-			SubscriptionViewModel? subscriptionViewModel =
-							Subscriptions.FirstOrDefault(
-											s => s.Item.Url == subscription.Url);
+			SubscriptionViewModel? subscriptionViewModel = Subscriptions.FirstOrDefault(s => s.Item.Url == subscription.Url);
 
 			if (subscriptionViewModel is not null)
 			{
@@ -423,10 +400,7 @@ public partial class MainViewModel : ViewModelBase
 			{
 				DateTimeOffset lastRetrieved = DateTimeOffset.UtcNow;
 
-				bool timestampUpdated =
-								await _subscriptionService.UpdateLastRetrievedAsync(
-												subscription.Url,
-												lastRetrieved);
+				bool timestampUpdated = await _subscriptionService.UpdateLastRetrievedAsync(subscription.Url, lastRetrieved);
 
 				if (timestampUpdated)
 				{
@@ -437,15 +411,25 @@ public partial class MainViewModel : ViewModelBase
 				}
 				else
 				{
-					Console.Error.WriteLine(
-									$"Unable to update retrieval timestamp for {subscription.Url}");
+					Console.Error.WriteLine($"Unable to update retrieval timestamp for {subscription.Url}");
 				}
 			}
 		}
-		catch (OperationCanceledException)
-						when (cancellationToken.IsCancellationRequested)
+		catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
 		{
 			// An obsolete request was canceled intentionally.
+		}
+		catch (TimeoutException ex)
+		{
+			if (requestId != _articleLoadRequestId)
+			{
+				return;
+			}
+
+			Console.Error.WriteLine($"Feed retrieval timed out for {subscription.Url}: {ex}");
+
+			HasNoArticles = false;
+			ArticleLoadError = "Feed retrieval timed out. The server took too long to respond. Try again later.";
 		}
 		catch (ArticleStorageException ex)
 		{
@@ -454,22 +438,59 @@ public partial class MainViewModel : ViewModelBase
 				return;
 			}
 
-			Console.Error.WriteLine(
-							$"Failed to save articles from {subscription.Url}: {ex}");
+			Console.Error.WriteLine($"Failed to save articles from {subscription.Url}: {ex}");
 
 			HasNoArticles = false;
 
 			ArticleLoadError = ex.Operation switch
 			{
-				ArticleStorageOperation.Read =>
-								"Unable to read saved articles from local storage.",
-
-				ArticleStorageOperation.Write =>
-								"Unable to save retrieved articles. Your previously saved articles are still available.",
-
-				_ =>
-								"Unable to access local article storage."
+				ArticleStorageOperation.Read => "Unable to read saved articles from local storage.",
+				ArticleStorageOperation.Write => "Unable to save retrieved articles. Your previously saved articles are still available.",
+				_ => "Unable to access local article storage."
 			};
+		}
+		catch (HttpRequestException ex)
+		{
+			if (requestId != _articleLoadRequestId)
+			{
+				return;
+			}
+
+			Console.Error.WriteLine($"Failed to retrieve feed from {subscription.Url}: {ex}");
+
+			HasNoArticles = false;
+
+			ArticleLoadError = ex.StatusCode switch
+			{
+				System.Net.HttpStatusCode.Forbidden => "Feed access denied (HTTP 403). The server refused the request.",
+				System.Net.HttpStatusCode.NotFound => "Feed not found (HTTP 404). Check whether the subscription URL is still correct.",
+				System.Net.HttpStatusCode.TooManyRequests => "Feed temporarily rate-limited (HTTP 429). Wait a while before refreshing again.",
+				_ => "Unable to load articles. Check your connection and try again."
+			};
+		}
+		catch (FeedSizeLimitExceededException ex)
+		{
+			if (requestId != _articleLoadRequestId)
+			{
+				return;
+			}
+
+			Console.Error.WriteLine($"Feed exceeds size limit at {subscription.Url}: {ex}");
+
+			HasNoArticles = false;
+			ArticleLoadError = "The feed exceeds the maximum supported size of 10 MiB.";
+		}
+		catch (System.Xml.XmlException ex)
+		{
+			if (requestId != _articleLoadRequestId)
+			{
+				return;
+			}
+
+			Console.Error.WriteLine($"Malformed feed XML from {subscription.Url}: {ex}");
+
+			HasNoArticles = false;
+			ArticleLoadError = "Unable to parse the feed. The server returned malformed XML.";
 		}
 		catch (Exception ex)
 		{
@@ -491,9 +512,7 @@ public partial class MainViewModel : ViewModelBase
 				IsRefreshingArticles = false;
 			}
 
-			if (ReferenceEquals(
-							_articleLoadCancellation,
-							cancellationSource))
+			if (ReferenceEquals(_articleLoadCancellation, cancellationSource))
 			{
 				_articleLoadCancellation = null;
 			}
@@ -501,6 +520,8 @@ public partial class MainViewModel : ViewModelBase
 			cancellationSource.Dispose();
 		}
 	}
+
+
 	partial void OnSelectedArticleChanged(ArticleViewModel? value)
 	{
 		HasSelectedArticle = value is not null;

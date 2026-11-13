@@ -2905,6 +2905,49 @@ public class MainViewModelTests
 		Assert.False(viewModel.IsRefreshingArticles);
 	}
 	[Fact]
+	public async Task SelectSubscription_WhenFeedReturns404_ShowsNotFoundError()
+	{
+		var subscription = CreateSubscription();
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+		subscriptionRepository.Subscriptions.Add(subscription);
+
+		var subscriptionService = new SubscriptionService(subscriptionRepository);
+
+		var feedReader = new FakeFeedReader
+		{
+			ReadException = new HttpRequestException(
+				"Simulated HTTP 404 response.",
+				null,
+				System.Net.HttpStatusCode.NotFound)
+		};
+
+		var articleRepository = new FakeArticleRepository();
+		var feedService = new FeedService(subscriptionService, feedReader, articleRepository);
+
+		var articleStateService = new ArticleStateService(new FakeArticleStateRepository());
+
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
+
+		var subscriptionViewModel = new SubscriptionViewModel(subscription);
+		viewModel.Subscriptions.Add(subscriptionViewModel);
+
+		viewModel.SelectedSubscription = subscriptionViewModel;
+
+		Assert.NotNull(viewModel.InitialArticleLoadTask);
+		await viewModel.InitialArticleLoadTask;
+
+		Assert.Empty(viewModel.Articles);
+
+		Assert.Equal(
+			"Feed not found (HTTP 404). Check whether the subscription URL is still correct.",
+			viewModel.ArticleLoadError);
+
+		Assert.False(viewModel.HasNoArticles);
+		Assert.False(viewModel.IsLoadingArticles);
+		Assert.False(viewModel.IsRefreshingArticles);
+	}
+	[Fact]
 	public async Task SelectSubscription_WhenArticleSaveFailsAndArchiveIsEmpty_ShowsOnlyError()
 	{
 		var subscription = CreateSubscription();
@@ -3006,5 +3049,197 @@ public class MainViewModelTests
 		Assert.True(viewModel.HasNoArticles);
 		Assert.Empty(viewModel.Articles);
 		Assert.Null(viewModel.ArticleLoadError);
+	}
+	[Fact]
+	public async Task SelectSubscription_WhenFeedReturns403_ShowsAccessDeniedError()
+	{
+		var subscription = CreateSubscription();
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+		subscriptionRepository.Subscriptions.Add(subscription);
+
+		var subscriptionService = new SubscriptionService(subscriptionRepository);
+
+		var feedReader = new FakeFeedReader
+		{
+			ReadException = new HttpRequestException(
+				"Simulated HTTP 403 response.",
+				null,
+				System.Net.HttpStatusCode.Forbidden)
+		};
+
+		var articleRepository = new FakeArticleRepository();
+		var feedService = new FeedService(subscriptionService, feedReader, articleRepository);
+
+		var articleStateService = new ArticleStateService(new FakeArticleStateRepository());
+
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
+
+		var subscriptionViewModel = new SubscriptionViewModel(subscription);
+		viewModel.Subscriptions.Add(subscriptionViewModel);
+
+		viewModel.SelectedSubscription = subscriptionViewModel;
+
+		Assert.NotNull(viewModel.InitialArticleLoadTask);
+		await viewModel.InitialArticleLoadTask;
+
+		Assert.Empty(viewModel.Articles);
+
+		Assert.Equal("Feed access denied (HTTP 403). The server refused the request.", viewModel.ArticleLoadError);
+
+		Assert.False(viewModel.HasNoArticles);
+		Assert.False(viewModel.IsLoadingArticles);
+		Assert.False(viewModel.IsRefreshingArticles);
+	}
+	[Fact]
+	public async Task SelectSubscription_WhenFeedReturns429_ShowsRateLimitError()
+	{
+		var subscription = CreateSubscription();
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+		subscriptionRepository.Subscriptions.Add(subscription);
+
+		var subscriptionService = new SubscriptionService(subscriptionRepository);
+
+		var feedReader = new FakeFeedReader
+		{
+			ReadException = new HttpRequestException(
+				"Simulated HTTP 429 response.",
+				null,
+				System.Net.HttpStatusCode.TooManyRequests)
+		};
+
+		var articleRepository = new FakeArticleRepository();
+		var feedService = new FeedService(subscriptionService, feedReader, articleRepository);
+
+		var articleStateService = new ArticleStateService(new FakeArticleStateRepository());
+
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
+
+		var subscriptionViewModel = new SubscriptionViewModel(subscription);
+		viewModel.Subscriptions.Add(subscriptionViewModel);
+
+		viewModel.SelectedSubscription = subscriptionViewModel;
+
+		Assert.NotNull(viewModel.InitialArticleLoadTask);
+		await viewModel.InitialArticleLoadTask;
+
+		Assert.Empty(viewModel.Articles);
+
+		Assert.Equal("Feed temporarily rate-limited (HTTP 429). Wait a while before refreshing again.", viewModel.ArticleLoadError);
+
+		Assert.False(viewModel.HasNoArticles);
+		Assert.False(viewModel.IsLoadingArticles);
+		Assert.False(viewModel.IsRefreshingArticles);
+	}
+	[Fact]
+	public async Task SelectSubscription_WhenRetrievalTimesOut_ShowsTimeoutError()
+	{
+		var subscription = CreateSubscription();
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+		subscriptionRepository.Subscriptions.Add(subscription);
+
+		var subscriptionService = new SubscriptionService(subscriptionRepository);
+
+		var feedReader = new FakeFeedReader
+		{
+			ReadException = new TimeoutException(
+				"Simulated retrieval timeout.",
+				new OperationCanceledException("The retrieval deadline expired."))
+		};
+
+		var articleRepository = new FakeArticleRepository();
+		var feedService = new FeedService(subscriptionService, feedReader, articleRepository);
+
+		var articleStateService = new ArticleStateService(new FakeArticleStateRepository());
+
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
+
+		var subscriptionViewModel = new SubscriptionViewModel(subscription);
+		viewModel.Subscriptions.Add(subscriptionViewModel);
+
+		viewModel.SelectedSubscription = subscriptionViewModel;
+
+		Assert.NotNull(viewModel.InitialArticleLoadTask);
+		await viewModel.InitialArticleLoadTask;
+
+		Assert.Empty(viewModel.Articles);
+		Assert.Equal("Feed retrieval timed out. The server took too long to respond. Try again later.", viewModel.ArticleLoadError);
+		Assert.False(viewModel.HasNoArticles);
+		Assert.False(viewModel.IsLoadingArticles);
+		Assert.False(viewModel.IsRefreshingArticles);
+	}
+	[Fact]
+	public async Task SelectSubscription_WhenFeedContainsMalformedXml_ShowsParsingError()
+	{
+		var subscription = CreateSubscription();
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+		subscriptionRepository.Subscriptions.Add(subscription);
+
+		var subscriptionService = new SubscriptionService(subscriptionRepository);
+
+		var feedReader = new FakeFeedReader
+		{
+			ReadException = new System.Xml.XmlException("Simulated malformed XML.")
+		};
+
+		var articleRepository = new FakeArticleRepository();
+		var feedService = new FeedService(subscriptionService, feedReader, articleRepository);
+
+		var articleStateService = new ArticleStateService(new FakeArticleStateRepository());
+
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
+
+		var subscriptionViewModel = new SubscriptionViewModel(subscription);
+		viewModel.Subscriptions.Add(subscriptionViewModel);
+
+		viewModel.SelectedSubscription = subscriptionViewModel;
+
+		Assert.NotNull(viewModel.InitialArticleLoadTask);
+		await viewModel.InitialArticleLoadTask;
+
+		Assert.Empty(viewModel.Articles);
+		Assert.Equal("Unable to parse the feed. The server returned malformed XML.", viewModel.ArticleLoadError);
+		Assert.False(viewModel.HasNoArticles);
+		Assert.False(viewModel.IsLoadingArticles);
+		Assert.False(viewModel.IsRefreshingArticles);
+	}
+	[Fact]
+	public async Task SelectSubscription_WhenFeedExceedsSizeLimit_ShowsSizeError()
+	{
+		var subscription = CreateSubscription();
+
+		var subscriptionRepository = new FakeSubscriptionRepository();
+		subscriptionRepository.Subscriptions.Add(subscription);
+
+		var subscriptionService = new SubscriptionService(subscriptionRepository);
+
+		var feedReader = new FakeFeedReader
+		{
+			ReadException = new FeedSizeLimitExceededException()
+		};
+
+		var articleRepository = new FakeArticleRepository();
+		var feedService = new FeedService(subscriptionService, feedReader, articleRepository);
+
+		var articleStateService = new ArticleStateService(new FakeArticleStateRepository());
+
+		var viewModel = new MainViewModel(subscriptionService, feedService, articleStateService);
+
+		var subscriptionViewModel = new SubscriptionViewModel(subscription);
+		viewModel.Subscriptions.Add(subscriptionViewModel);
+
+		viewModel.SelectedSubscription = subscriptionViewModel;
+
+		Assert.NotNull(viewModel.InitialArticleLoadTask);
+		await viewModel.InitialArticleLoadTask;
+
+		Assert.Empty(viewModel.Articles);
+		Assert.Equal("The feed exceeds the maximum supported size of 10 MiB.", viewModel.ArticleLoadError);
+		Assert.False(viewModel.HasNoArticles);
+		Assert.False(viewModel.IsLoadingArticles);
+		Assert.False(viewModel.IsRefreshingArticles);
 	}
 }

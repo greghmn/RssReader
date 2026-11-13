@@ -41,16 +41,27 @@ public class FeedReader : IFeedReader
 		using var timeoutSource = CreateTimeoutSource(cancellationToken);
 		CancellationToken effectiveToken = timeoutSource.Token;
 
-		// Request headers without buffering the entire response.
-		using HttpResponseMessage response = await _httpClient.GetAsync(feedUri, HttpCompletionOption.ResponseHeadersRead, effectiveToken);
+		XDocument document;
+		Uri finalFeedUri;
 
-		response.EnsureSuccessStatusCode();
+		try
+		{
+			// Request headers without buffering the entire response.
+			using HttpResponseMessage response = await _httpClient.GetAsync(feedUri, HttpCompletionOption.ResponseHeadersRead, effectiveToken);
 
-		// Enforce the 10 MiB limit while downloading and parsing.
-		XDocument document = await LoadBoundedXmlAsync(response, effectiveToken);
+			response.EnsureSuccessStatusCode();
 
-		// Resolve relative links against the final URL after redirects.
-		Uri finalFeedUri = response.RequestMessage?.RequestUri ?? feedUri;
+			// Enforce the 10 MiB limit while downloading and parsing.
+			document = await LoadBoundedXmlAsync(response, effectiveToken);
+
+			// Resolve relative links against the final URL after redirects.
+			finalFeedUri = response.RequestMessage?.RequestUri ?? feedUri;
+		}
+		catch (OperationCanceledException ex) when (timeoutSource.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+		{
+			throw new TimeoutException("Feed retrieval timed out.", ex);
+		}
+
 
 		List<FeedItem> items = FeedParser.Parse(document, finalFeedUri);
 
@@ -80,13 +91,20 @@ public class FeedReader : IFeedReader
 		using var timeoutSource = CreateTimeoutSource(cancellationToken);
 		CancellationToken effectiveToken = timeoutSource.Token;
 
-		using HttpResponseMessage response = await _httpClient.GetAsync(feedUri, HttpCompletionOption.ResponseHeadersRead, effectiveToken);
+		try
+		{
+			using HttpResponseMessage response = await _httpClient.GetAsync(feedUri, HttpCompletionOption.ResponseHeadersRead, effectiveToken);
 
-		response.EnsureSuccessStatusCode();
+			response.EnsureSuccessStatusCode();
 
-		XDocument document = await LoadBoundedXmlAsync(response, effectiveToken);
+			XDocument document = await LoadBoundedXmlAsync(response, effectiveToken);
 
-		return FeedParser.ParseFeedTitle(document);
+			return FeedParser.ParseFeedTitle(document);
+		}
+		catch (OperationCanceledException ex) when (timeoutSource.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+		{
+			throw new TimeoutException("Feed title retrieval timed out.", ex);
+		}
 	}
 	//note: this method is used to load the feed XML document, but it also checks the size of the feed and throws an exception if it exceeds a reasonable limit. This is to prevent downloading very large feeds that could cause performance issues or memory exhaustion.
 	private static async Task<XDocument> LoadBoundedXmlAsync(HttpResponseMessage response, CancellationToken cancellationToken)
@@ -99,8 +117,7 @@ public class FeedReader : IFeedReader
 		if (declaredSize.HasValue &&
 				declaredSize.Value > maximumFeedSize)
 		{
-			throw new InvalidDataException(
-					"The feed exceeds the maximum permitted size.");
+			throw new FeedSizeLimitExceededException();
 		}
 
 		await using var stream =
@@ -123,8 +140,7 @@ public class FeedReader : IFeedReader
 
 			if (buffer.Length + bytesRead > maximumFeedSize)
 			{
-				throw new InvalidDataException(
-						"The feed exceeds the maximum permitted size.");
+				throw new FeedSizeLimitExceededException();
 			}
 
 			buffer.Write(chunk, 0, bytesRead);

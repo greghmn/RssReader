@@ -307,7 +307,7 @@ public class FeedReaderTests
 	}
 
 	[Fact]
-	public async Task ReadAsync_WhenHttpRequestTimesOut_ThrowsOperationCanceledException()
+	public async Task ReadAsync_WhenHttpRequestTimesOut_ThrowsTimeoutException()
 	{
 		using var httpClient = new HttpClient(
 				new NeverCompletingHandler())
@@ -317,9 +317,10 @@ public class FeedReaderTests
 
 		var reader = new FeedReader(httpClient);
 
-		await Assert.ThrowsAnyAsync<OperationCanceledException>(
-				() => reader.ReadAsync(
-						"https://example.com/feed.xml"));
+		TimeoutException exception = await Assert.ThrowsAsync<TimeoutException>(
+			() => reader.ReadAsync("https://example.com/feed.xml"));
+
+		Assert.IsAssignableFrom<OperationCanceledException>(exception.InnerException);
 	}
 
 	[Fact]
@@ -534,7 +535,7 @@ public class FeedReaderTests
 
 		var reader = new FeedReader(httpClient);
 
-		await Assert.ThrowsAsync<InvalidDataException>(
+		await Assert.ThrowsAsync<FeedSizeLimitExceededException>(
 				() => reader.ReadAsync(
 						"https://example.com/feed.xml"));
 	}
@@ -560,7 +561,7 @@ public class FeedReaderTests
 
 		var reader = new FeedReader(httpClient);
 
-		await Assert.ThrowsAsync<InvalidDataException>(
+		await Assert.ThrowsAsync<FeedSizeLimitExceededException>(
 				() => reader.ReadAsync(
 						"https://example.com/feed.xml"));
 	}
@@ -665,7 +666,7 @@ public class FeedReaderTests
 
 		var reader = new FeedReader(httpClient);
 
-		await Assert.ThrowsAsync<InvalidDataException>(
+		await Assert.ThrowsAsync<FeedSizeLimitExceededException>(
 				() => reader.ReadAsync(
 						"https://example.com/feed.xml"));
 	}
@@ -690,7 +691,7 @@ public class FeedReaderTests
 
 		var reader = new FeedReader(httpClient);
 
-		await Assert.ThrowsAsync<InvalidDataException>(
+		await Assert.ThrowsAsync<FeedSizeLimitExceededException>(
 				() => reader.ReadTitleAsync(
 						"https://example.com/feed.xml"));
 	}
@@ -721,7 +722,7 @@ public class FeedReaderTests
 
 		var reader = new FeedReader(httpClient);
 
-		await Assert.ThrowsAsync<InvalidDataException>(
+		await Assert.ThrowsAsync<FeedSizeLimitExceededException>(
 				() => reader.ReadTitleAsync(
 						"https://example.com/feed.xml"));
 	}
@@ -748,7 +749,7 @@ public class FeedReaderTests
 
 		var reader = new FeedReader(httpClient);
 
-		await Assert.ThrowsAsync<InvalidDataException>(
+		await Assert.ThrowsAsync<FeedSizeLimitExceededException>(
 				() => reader.ReadAsync(
 						"https://example.com/feed.xml"));
 	}
@@ -777,10 +778,10 @@ public class FeedReaderTests
 
 		var reader = new FeedReader(httpClient);
 
-		await Assert.ThrowsAnyAsync<OperationCanceledException>(
-				async () => await reader.ReadAsync(
-						"https://example.com/feed.xml",
-						cancellationSource.Token));
+		TimeoutException exception = await Assert.ThrowsAsync<TimeoutException>(
+				() => reader.ReadAsync("https://example.com/feed.xml", cancellationSource.Token));
+
+		Assert.IsAssignableFrom<OperationCanceledException>(exception.InnerException);
 
 		Assert.False(
 				cancellationSource.IsCancellationRequested,
@@ -863,10 +864,10 @@ public class FeedReaderTests
 
 		var reader = new FeedReader(httpClient);
 
-		await Assert.ThrowsAnyAsync<OperationCanceledException>(
-				() => reader.ReadTitleAsync(
-						"https://example.com/feed.xml",
-						cancellationSource.Token));
+		TimeoutException exception = await Assert.ThrowsAsync<TimeoutException>(
+				() => reader.ReadTitleAsync("https://example.com/feed.xml", cancellationSource.Token));
+
+		Assert.IsAssignableFrom<OperationCanceledException>(exception.InnerException);
 
 		Assert.False(
 				cancellationSource.IsCancellationRequested,

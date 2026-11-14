@@ -711,6 +711,74 @@ public partial class MainViewModel : ViewModelBase
 			subscription.RefreshStatus =
 							"Refreshed successfully.";
 		}
+		catch (TimeoutException ex)
+		{
+			if (!Subscriptions.Contains(subscription)
+				|| ReferenceEquals(_subscriptionBeingRemoved, subscription))
+			{
+				return;
+			}
+
+			Console.Error.WriteLine(
+				$"Background refresh timed out for {feedUrl}: {ex}");
+
+			subscription.RefreshError =
+				"Feed retrieval timed out. The server took too long to respond. Try again later.";
+		}
+		catch (HttpRequestException ex)
+		{
+			if (!Subscriptions.Contains(subscription)
+				|| ReferenceEquals(_subscriptionBeingRemoved, subscription))
+			{
+				return;
+			}
+
+			Console.Error.WriteLine(
+				$"Background HTTP refresh failed for {feedUrl}: {ex}");
+
+			subscription.RefreshError = ex.StatusCode switch
+			{
+				System.Net.HttpStatusCode.NotFound =>
+					"Feed not found (HTTP 404). Check whether the subscription URL is still correct.",
+
+				System.Net.HttpStatusCode.Forbidden =>
+					"Feed access denied (HTTP 403). The server refused the request.",
+
+				System.Net.HttpStatusCode.TooManyRequests =>
+					"Feed temporarily rate-limited (HTTP 429). Wait a while before refreshing again.",
+
+				_ =>
+					"Unable to refresh feed. Check your connection and try again."
+			};
+		}
+		catch (FeedSizeLimitExceededException ex)
+		{
+			if (!Subscriptions.Contains(subscription)
+				|| ReferenceEquals(_subscriptionBeingRemoved, subscription))
+			{
+				return;
+			}
+
+			Console.Error.WriteLine(
+				$"Background feed size limit exceeded for {feedUrl}: {ex}");
+
+			subscription.RefreshError =
+				"The feed exceeds the maximum supported size of 10 MiB.";
+		}
+		catch (System.Xml.XmlException ex)
+		{
+			if (!Subscriptions.Contains(subscription)
+				|| ReferenceEquals(_subscriptionBeingRemoved, subscription))
+			{
+				return;
+			}
+
+			Console.Error.WriteLine(
+				$"Background XML parsing failed for {feedUrl}: {ex}");
+
+			subscription.RefreshError =
+				"Unable to parse feed XML. The feed may be malformed.";
+		}
 		catch (ArticleStorageException ex)
 		{
 			if (!Subscriptions.Contains(subscription)
@@ -752,13 +820,28 @@ public partial class MainViewModel : ViewModelBase
 			_backgroundRefreshes.Remove(feedUrl);
 		}
 	}
-	private async Task SetSelectedArticleReadStateAsync(bool isRead)
+	private Task SetSelectedArticleReadStateAsync(bool isRead)
 	{
-		ArticleViewModel? article = SelectedArticle;
+		if (SelectedArticle is null)
+		{
+			return Task.CompletedTask;
+		}
+
+		return SetArticleReadStateAsync(SelectedArticle, isRead);
+	}
+
+	public async Task SetArticleReadStateAsync(
+					ArticleViewModel article,
+					bool isRead)
+	{
 		SubscriptionViewModel? subscription = SelectedSubscription;
 
-		if (article is null || subscription is null)
+		if (article is null
+						|| subscription is null
+						|| !Articles.Contains(article))
+		{
 			return;
+		}
 
 		ArticleStateError = null;
 
@@ -780,7 +863,11 @@ public partial class MainViewModel : ViewModelBase
 			bool wasRead = article.IsRead;
 
 			article.IsRead = isRead;
-			RefreshSelectedArticleReadState();
+
+			if (ReferenceEquals(SelectedArticle, article))
+			{
+				RefreshSelectedArticleReadState();
+			}
 
 			if (subscription.UnreadCount.HasValue && wasRead != isRead)
 			{

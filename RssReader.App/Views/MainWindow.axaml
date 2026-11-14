@@ -202,7 +202,7 @@ Additional terms: See ADDITIONAL-TERMS.md in the repository root.
                 <TextBlock Text="{Binding Title}"
                            FontWeight="SemiBold"
                            VerticalAlignment="Center"
-                           TextTrimming="CharacterEllipsis" />
+                           TextWrapping="Wrap" />
 
                 <TextBlock Grid.Column="1"
                            Text="{Binding UnreadCount}"
@@ -337,11 +337,13 @@ Additional terms: See ADDITIONAL-TERMS.md in the repository root.
 
           <TextBlock Text="Loading articles..."
                      IsVisible="{Binding IsLoadingArticles}"
-                     Opacity="0.7" />
+                     Opacity="0.7"
+                     TextWrapping="Wrap"/>
 
           <TextBlock Text="Refreshing articles..."
                      IsVisible="{Binding IsRefreshingArticles}"
-                     Opacity="0.7" />
+                     Opacity="0.7"
+                     TextWrapping="Wrap"/>
 
           <TextBlock Text="{Binding ArticleLoadError}"
                      IsVisible="{Binding ArticleLoadError}"
@@ -356,12 +358,43 @@ Additional terms: See ADDITIONAL-TERMS.md in the repository root.
                    Text="{Binding SelectedSubscription.LastRetrievedText}"
                    IsVisible="{Binding HasSelectedSubscription}"
                    MinHeight="20"
-                   Opacity="0.7" />
+                   Opacity="0.7"
+                   TextWrapping="Wrap"/>
 
         <ListBox x:Name="ArticleList"
                  Grid.Row="4"
                  ItemsSource="{Binding Articles}"
                  SelectedItem="{Binding SelectedArticle, Mode=TwoWay}">
+          <ListBox.ItemContainerTheme>
+            <ControlTheme TargetType="ListBoxItem"
+                          BasedOn="{StaticResource {x:Type ListBoxItem}}">
+
+              <Setter Property="ContextMenu">
+                <ContextMenu x:DataType="vm:ArticleViewModel">
+
+                  <MenuItem Header="Open original"
+                            Click="OpenArticleMenuItem_Click" />
+
+                  <Separator />
+
+                  <MenuItem Header="Mark as read"
+                            Click="MarkArticleReadMenuItem_Click"
+                            IsVisible="{Binding IsUnread}" />
+
+                  <MenuItem Header="Mark as unread"
+                            Click="MarkArticleUnreadMenuItem_Click"
+                            IsVisible="{Binding IsRead}" />
+
+                  <Separator />
+
+                  <MenuItem Header="Copy article URL"
+                            Click="CopyArticleUrlMenuItem_Click" />
+
+                </ContextMenu>
+              </Setter>
+
+            </ControlTheme>
+          </ListBox.ItemContainerTheme>
 
 
           <ListBox.ItemTemplate>
@@ -435,6 +468,28 @@ Additional terms: See ADDITIONAL-TERMS.md in the repository root.
                      TextWrapping="Wrap" />
 
           <ScrollViewer IsVisible="{Binding HasSelectedArticle}">
+
+            <ScrollViewer.ContextMenu>
+              <ContextMenu>
+                <MenuItem Header="Open original"
+                          Click="OpenArticleLinkButton_Click"
+                          IsVisible="{Binding SelectedArticle.CanOpenArticleLink}" />
+
+                <MenuItem Header="Copy article URL"
+                          Click="CopySelectedArticleUrlMenuItem_Click"
+                          IsVisible="{Binding SelectedArticle.CanOpenArticleLink}" />
+
+                <Separator />
+
+                <MenuItem Header="Mark as read"
+                          Command="{Binding MarkSelectedArticleAsReadCommand}"
+                          IsVisible="{Binding CanMarkSelectedArticleAsRead}" />
+
+                <MenuItem Header="Mark as unread"
+                          Command="{Binding MarkSelectedArticleAsUnreadCommand}"
+                          IsVisible="{Binding CanMarkSelectedArticleAsUnread}" />
+              </ContextMenu>
+            </ScrollViewer.ContextMenu>
 
             <StackPanel Spacing="8">
 

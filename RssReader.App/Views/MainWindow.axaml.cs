@@ -3,6 +3,7 @@
 // Additional terms: See ADDITIONAL-TERMS.md in the repository root.
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
@@ -15,6 +16,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Xml;
+using System.Threading.Tasks;
 namespace RssReader.App.Views;
 
 public partial class MainWindow : Window
@@ -124,6 +126,19 @@ public partial class MainWindow : Window
 	}
 	private void ArticleList_PointerPressed(object? sender, PointerPressedEventArgs e)
 	{
+		var properties =
+				e.GetCurrentPoint(ArticleList).Properties;
+
+		if (properties.IsRightButtonPressed)
+		{
+			e.Handled = true;
+			return;
+		}
+
+		if (!properties.IsLeftButtonPressed)
+		{
+			return;
+		}
 		if (sender is not ListBox listBox)
 			return;
 
@@ -485,5 +500,137 @@ public partial class MainWindow : Window
 			await viewModel.RefreshSubscriptionInBackgroundAsync(
 							subscription);
 		}
+	}
+	private async void OpenArticleMenuItem_Click(
+				object? sender,
+				RoutedEventArgs e)
+	{
+		if (sender is not MenuItem menuItem)
+		{
+			return;
+		}
+
+		if (menuItem.DataContext is not ArticleViewModel article)
+		{
+			return;
+		}
+
+		if (!Uri.TryCreate(
+						article.Item.Link,
+						UriKind.Absolute,
+						out Uri? uri))
+		{
+			return;
+		}
+
+		if (uri.Scheme != Uri.UriSchemeHttp
+						&& uri.Scheme != Uri.UriSchemeHttps)
+		{
+			return;
+		}
+
+		try
+		{
+			var launcher = TopLevel.GetTopLevel(this)?.Launcher;
+
+			if (launcher is null)
+			{
+				return;
+			}
+
+			bool launched = await launcher.LaunchUriAsync(uri);
+
+			if (!launched)
+			{
+				Console.Error.WriteLine(
+								$"Unable to open article URL: {uri}");
+			}
+		}
+		catch (Exception ex)
+		{
+			Console.Error.WriteLine(
+							$"Failed to open article URL: {ex}");
+		}
+	}
+	private async void MarkArticleReadMenuItem_Click(
+				object? sender,
+				RoutedEventArgs e)
+	{
+		if (sender is not MenuItem menuItem
+						|| menuItem.DataContext is not ArticleViewModel article
+						|| DataContext is not MainViewModel viewModel)
+		{
+			return;
+		}
+
+		await viewModel.SetArticleReadStateAsync(article, true);
+	}
+
+	private async void MarkArticleUnreadMenuItem_Click(
+					object? sender,
+					RoutedEventArgs e)
+	{
+		if (sender is not MenuItem menuItem
+						|| menuItem.DataContext is not ArticleViewModel article
+						|| DataContext is not MainViewModel viewModel)
+		{
+			return;
+		}
+
+		await viewModel.SetArticleReadStateAsync(article, false);
+	}
+	private async void CopyArticleUrlMenuItem_Click(
+					object? sender,
+					RoutedEventArgs e)
+	{
+		if (sender is not MenuItem menuItem
+						|| menuItem.DataContext is not ArticleViewModel article)
+		{
+			return;
+		}
+
+		await CopyArticleUrlAsync(article);
+	}
+	private async Task CopyArticleUrlAsync(ArticleViewModel article)
+	{
+		if (!Uri.TryCreate(
+						article.Item.Link,
+						UriKind.Absolute,
+						out Uri? uri)
+						|| (uri.Scheme != Uri.UriSchemeHttp
+										&& uri.Scheme != Uri.UriSchemeHttps))
+		{
+			return;
+		}
+
+		try
+		{
+			var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
+
+			if (clipboard is null)
+			{
+				return;
+			}
+
+			await clipboard.SetTextAsync(uri.AbsoluteUri);
+		}
+		catch (Exception ex)
+		{
+			Console.Error.WriteLine(
+							$"Failed to copy article URL: {ex}");
+		}
+	}
+	private async void CopySelectedArticleUrlMenuItem_Click(
+		object? sender,
+		RoutedEventArgs e)
+	{
+		Console.Error.WriteLine("Reading-pane copy handler invoked.");
+		if (DataContext is not MainViewModel viewModel
+				|| viewModel.SelectedArticle is not ArticleViewModel article)
+		{
+			return;
+		}
+
+		await CopyArticleUrlAsync(article);
 	}
 }

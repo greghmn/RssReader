@@ -465,6 +465,7 @@ public partial class MainViewModel : ViewModelBase
 				System.Net.HttpStatusCode.Forbidden => "Feed access denied (HTTP 403). The server refused the request.",
 				System.Net.HttpStatusCode.NotFound => "Feed not found (HTTP 404). Check whether the subscription URL is still correct.",
 				System.Net.HttpStatusCode.TooManyRequests => "Feed temporarily rate-limited (HTTP 429). Wait a while before refreshing again.",
+				System.Net.HttpStatusCode.InternalServerError => "Feed server error (HTTP 500). The server encountered an internal error. Try again later.",
 				_ => "Unable to load articles. Check your connection and try again."
 			};
 		}
@@ -491,6 +492,18 @@ public partial class MainViewModel : ViewModelBase
 
 			HasNoArticles = false;
 			ArticleLoadError = "Unable to parse the feed. The server returned malformed XML.";
+		}
+		catch (System.IO.InvalidDataException ex)
+		{
+			if (requestId != _articleLoadRequestId)
+			{
+				return;
+			}
+
+			Console.Error.WriteLine($"Invalid feed format from {subscription.Url}: {ex}");
+
+			HasNoArticles = false;
+			ArticleLoadError = "Unable to parse the feed. The server returned an unsupported feed format.";
 		}
 		catch (Exception ex)
 		{

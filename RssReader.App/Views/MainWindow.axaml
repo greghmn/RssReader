@@ -13,8 +13,8 @@ Additional terms: See ADDITIONAL-TERMS.md in the repository root.
         x:DataType="vm:MainViewModel"
         Icon="/Assets/avalonia-logo.ico"
         Title="RssReader.App"
-        MinWidth="600"
-        MinHeight="300">
+        MinWidth="640"
+        MinHeight="480">
 
   <Design.DataContext>
     <!-- This only sets the DataContext for the previewer in an IDE,
@@ -48,7 +48,7 @@ Additional terms: See ADDITIONAL-TERMS.md in the repository root.
     <!-- Subscription pane -->
     <Grid Grid.Row="1"
           Grid.Column="0"
-          RowDefinitions="Auto,2*,3*,Auto"
+          RowDefinitions="Auto,3*,5*,Auto"
           Margin="16"
           MinWidth="140">
 
@@ -60,6 +60,7 @@ Additional terms: See ADDITIONAL-TERMS.md in the repository root.
 
       <!-- Scrollable subscription controls -->
       <ScrollViewer Grid.Row="1"
+                    MaxHeight="240"
                     VerticalScrollBarVisibility="Auto"
                     HorizontalScrollBarVisibility="Disabled">
 
@@ -67,17 +68,22 @@ Additional terms: See ADDITIONAL-TERMS.md in the repository root.
                     Margin="0,8,0,8">
 
           <!-- Add subscription -->
-          <Button Content="Add subscription"
-                  HorizontalAlignment="Stretch"
-                  Click="AddSubscriptionButton_Click" />
+          <Button HorizontalAlignment="Stretch"
+                  Click="AddSubscriptionButton_Click">
+            <TextBlock Text="Add subscription"
+                       TextWrapping="Wrap"
+                       TextAlignment="Center" />
+          </Button>
 
           <!-- Remove subscription -->
           <Button x:Name="RemoveSubscriptionButton"
-                  Content="Remove subscription"
                   HorizontalAlignment="Stretch"
                   IsEnabled="{Binding CanRemoveSubscription}"
-                  Click="RemoveSubscriptionButton_Click" />
-
+                  Click="RemoveSubscriptionButton_Click">
+            <TextBlock Text="Remove subscription"
+                       TextWrapping="Wrap"
+                       TextAlignment="Center" />
+          </Button>
           <!-- Remove status / error -->
           <StackPanel Spacing="4">
 
@@ -94,16 +100,22 @@ Additional terms: See ADDITIONAL-TERMS.md in the repository root.
           </StackPanel>
 
           <!-- Import OPML -->
-          <Button Content="Import OPML..."
-                  HorizontalAlignment="Stretch"
-                  Margin="0,12,0,0"
-                  Click="ImportOpmlButton_Click" />
+          <Button HorizontalAlignment="Stretch"
+                  Margin="0,12,0,12"
+                  Click="ImportOpmlButton_Click">
+            <TextBlock Text="Import OPML..."
+                       TextWrapping="Wrap"
+                       TextAlignment="Center" />
+          </Button>
 
           <!-- Export OPML -->
-          <Button Content="Export OPML..."
-                  HorizontalAlignment="Stretch"
+          <Button HorizontalAlignment="Stretch"
                   IsEnabled="{Binding !IsExportingOpml}"
-                  Click="ExportOpmlButton_Click" />
+                  Click="ExportOpmlButton_Click">
+            <TextBlock Text="Export OPML..."
+                       TextWrapping="Wrap"
+                       TextAlignment="Center" />
+          </Button>
 
           <!-- Import status / error -->
           <StackPanel Spacing="4">
@@ -165,6 +177,7 @@ Additional terms: See ADDITIONAL-TERMS.md in the repository root.
       <ListBox x:Name="SubscriptionList"
                Grid.Row="2"
                MinHeight="40"
+               Margin="0,8,0,0"
                ItemsSource="{Binding Subscriptions}"
                SelectedItem="{Binding SelectedSubscription, Mode=TwoWay}">
 
@@ -211,7 +224,7 @@ Additional terms: See ADDITIONAL-TERMS.md in the repository root.
                            FontWeight="Bold"
                            Foreground="DodgerBlue"
                            VerticalAlignment="Center"
-                           Margin="8,0,0,0" />
+                           Margin="4,0,4,0" />
 
               </Grid>
 
@@ -242,35 +255,47 @@ Additional terms: See ADDITIONAL-TERMS.md in the repository root.
       </ListBox>
 
       <!-- Scrollable subscription details -->
-      <ScrollViewer Grid.Row="3"
-                    MinHeight="48"
-                    MaxHeight="80"
-                    Margin="0,8,0,0"
-                    VerticalScrollBarVisibility="Auto"
-                    HorizontalScrollBarVisibility="Auto"
-                    IsVisible="{Binding HasSelectedSubscription}">
+      <!-- Subscription details -->
+      <Grid Grid.Row="3"
+            RowDefinitions="Auto,*"
+            MinHeight="48"
+            MaxHeight="160"
+            Margin="0,8,0,8"
+            IsVisible="{Binding HasSelectedSubscription}">
 
-        <StackPanel Spacing="6"
-                    Margin="0,0,0,18">
+        <TextBlock Grid.Row="0"
+                   Text="Subscription details"
+                   FontWeight="SemiBold"
+                   FontSize="14" />
 
-          <TextBlock Text="Subscription details"
-                     FontWeight="SemiBold"
-                     FontSize="14" />
+        <ScrollViewer Grid.Row="1"
+                      MaxHeight="160"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
 
-          <TextBlock Text="{Binding SelectedSubscription.Title}"
-                     FontWeight="SemiBold"
-                     TextWrapping="Wrap" />
+          <StackPanel Spacing="6"
+                      Margin="0,6,0,8">
 
-          <TextBlock Text="Feed URL"
-                     FontSize="11"
-                     Opacity="0.7" />
+            <TextBlock Text="{Binding SelectedSubscription.Title}"
+                       FontWeight="SemiBold"
+                       TextWrapping="Wrap" />
 
-          <HyperlinkButton NavigateUri="{Binding SelectedSubscription.FeedUri}"
-                           Content="{Binding SelectedSubscription.Item.Url}"
-                           HorizontalAlignment="Left" />
+            <TextBlock Text="Feed URL"
+                       FontSize="11"
+                       Opacity="0.7" />
 
-        </StackPanel>
-      </ScrollViewer>
+            <HyperlinkButton NavigateUri="{Binding SelectedSubscription.FeedUri}"
+                             HorizontalAlignment="Stretch"
+                             HorizontalContentAlignment="Left"
+                             Padding="0">
+              <TextBlock Text="{Binding SelectedSubscription.Item.Url}"
+                         TextWrapping="Wrap"
+                         TextTrimming="None" />
+            </HyperlinkButton>
+
+          </StackPanel>
+        </ScrollViewer>
+      </Grid>
 
     </Grid>
 
@@ -345,10 +370,12 @@ Additional terms: See ADDITIONAL-TERMS.md in the repository root.
                      Opacity="0.7"
                      TextWrapping="Wrap"/>
 
+
           <TextBlock Text="{Binding ArticleLoadError}"
-                     IsVisible="{Binding ArticleLoadError}"
+                     IsVisible="{Binding ArticleLoadError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                      Foreground="IndianRed"
                      TextWrapping="Wrap" />
+
 
         </StackPanel>
 

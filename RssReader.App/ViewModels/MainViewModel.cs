@@ -284,6 +284,8 @@ public partial class MainViewModel : ViewModelBase
 
 		ArticleLoadError = null;
 
+		// different issues, HTTP errors, timeouts, storage errors, etc. are handled in the catch blocks below
+
 		try
 		{
 			if (!isRefresh)
